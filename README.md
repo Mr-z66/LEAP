@@ -54,10 +54,34 @@ python build_dataset.py
 - `mean_hidden_state`
 - `prefix_text`
 
-### 2. 使用 32B 裁判模型打标
+### 2. 使用裁判模型做 prefix-level 打标
 
 ```powershell
 python referee_32b_labeling.py
+```
+
+如果你是第一次跑，建议先做小样本试跑，而不是直接全量跑完。例如：
+
+```powershell
+python referee_32b_labeling.py --num-samples 100 --save-every 5
+```
+
+如果实验中断，可以继续续跑：
+
+```powershell
+python referee_32b_labeling.py --num-samples 100 --save-every 5 --resume
+```
+
+如果你想在某题之后继续，也可以指定起始题号：
+
+```powershell
+python referee_32b_labeling.py --start-question 100 --resume
+```
+
+如果你想减少每道题后半段的重复 judge 成本，可以在首次错误后停止该题后续 chunk 打标：
+
+```powershell
+python referee_32b_labeling.py --num-samples 100 --save-every 5 --resume --stop-after-first-error
 ```
 
 输出文件：
@@ -72,6 +96,16 @@ python referee_32b_labeling.py
 - `judge_reason`
 - `judge_raw_response`
 - `judge_parse_status`
+
+当前脚本支持以下实用参数：
+
+- `--num-samples`：只先打前 N 道题
+- `--resume`：从已有输出文件继续跑
+- `--start-question`：从指定题号开始
+- `--save-every`：每处理若干题自动保存一次 checkpoint
+- `--model-path`：切换裁判模型路径
+- `--stop-after-first-error`：某题首次判错后停止该题后续 chunk
+- `--include-reference-answer`：是否把标准答案也给 judge
 
 ### 3. 分析标注后的数据分布
 
