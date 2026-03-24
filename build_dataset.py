@@ -1,110 +1,213 @@
+import os
+import re
+
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 from tqdm import tqdm
-import os
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# ================= 配置区 =================
-model_path = os.path.join(os.getcwd(), "models", "Qwen2.5-1.5B")
-save_path = "gsm8k_15b_hidden_states.pt"
-num_samples = 1000  # 跑前 1000 道题
+# ================= Configuration =================
+MODEL_PATH = os.path.join(os.getcwd(), "models", "Qwen2.5-1.5B")
+SAVE_PATH = "gsm8k_15b_hidden_states.pt"
+NUM_SAMPLES = 1000
+MAX_NEW_TOKENS = 256
+MIN_TOKENS = 5
+MAX_TOKENS = 30
+PUNCTUATIONS = [".", ",", "!", "?", "\n"]
+# =================================================
 
-# 混合切分策略 (Hybrid Chunking) 的核心超参数
-punctuations = [".", ",", "!", "?", "\n"]
-min_tokens = 5   # 低于 5 个 token 不切，防噪声
-max_tokens = 30  # 高于 30 个 token 强切，防漂移
-# ==========================================
 
-print("🚀 初始化 Qwen-1.5B 模型与分词器...")
-tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
+def extract_last_number(text):
+    matches = re.findall(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
+    return matches[-1] if matches else None
+
+
+def decode_tokens(tokenizer, token_ids):
+    if not token_ids:
+        return ""
+    return tokenizer.decode(token_ids, skip_special_tokens=True)
+
+
+def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
+    prompt_inputs = tokenizer(prompt_text, return_tensors="pt").to(model.device)
+    input_ids = prompt_inputs.input_ids
+    past_key_values = None
+
+    generated_token_ids = []
+    generated_hidden_states = []
+
+    for step in range(max_new_tokens):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=input_ids,
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+
+        # When we feed a previously generated token, the last hidden state
+        # aligns with that token and can be stored as a chunk feature source.
+        if generated_token_ids:
+            generated_hidden_states.append(
+                outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu()
+            )
+
+        logits = outputs.logits[0, -1, :]
+        past_key_values = outputs.past_key_values
+        next_id = torch.argmax(logits).item()
+        generated_token_ids.append(next_id)
+
+        if next_id == tokenizer.eos_token_id:
+            break
+
+        input_ids = torch.tensor([[next_id]], device=model.device)
+
+    non_eos_token_ids = [token_id for token_id in generated_token_ids if token_id != tokenizer.eos_token_id]
+
+    if non_eos_token_ids and len(generated_hidden_states) < len(non_eos_token_ids):
+        last_token_id = non_eos_token_ids[-1]
+        with torch.no_grad():
+            final_outputs = model(
+                input_ids=torch.tensor([[last_token_id]], device=model.device),
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+        generated_hidden_states.append(
+            final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu()
+        )
+
+    valid_length = min(len(non_eos_token_ids), len(generated_hidden_states))
+    return non_eos_token_ids[:valid_length], generated_hidden_states[:valid_length]
+
+
+def build_chunks(tokenizer, token_ids, hidden_states):
+    chunks = []
+    current_chunk_token_ids = []
+    current_chunk_hidden_states = []
+    chunk_start_idx = 0
+
+    for token_idx, token_id in enumerate(token_ids):
+        token_text = tokenizer.decode([token_id], skip_special_tokens=False)
+        current_chunk_token_ids.append(token_id)
+        current_chunk_hidden_states.append(hidden_states[token_idx])
+
+        chunk_len = len(current_chunk_token_ids)
+        hit_punctuation = any(p in token_text for p in PUNCTUATIONS)
+
+        cut_reason = None
+        if hit_punctuation and chunk_len >= MIN_TOKENS:
+            cut_reason = "punctuation"
+        elif chunk_len >= MAX_TOKENS:
+            cut_reason = "max_tokens"
+
+        if cut_reason is None:
+            continue
+
+        chunk_token_ids = list(current_chunk_token_ids)
+        chunk_hidden_states = list(current_chunk_hidden_states)
+        chunks.append(
+            {
+                "chunk_id": len(chunks),
+                "start_token_idx": chunk_start_idx,
+                "end_token_idx": token_idx,
+                "token_ids": chunk_token_ids,
+                "token_count": len(chunk_token_ids),
+                "chunk_text": decode_tokens(tokenizer, chunk_token_ids).strip(),
+                "boundary_hidden_state": chunk_hidden_states[-1].clone(),
+                "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
+                "cut_reason": cut_reason,
+            }
+        )
+
+        current_chunk_token_ids = []
+        current_chunk_hidden_states = []
+        chunk_start_idx = token_idx + 1
+
+    if current_chunk_token_ids:
+        chunk_token_ids = list(current_chunk_token_ids)
+        chunk_hidden_states = list(current_chunk_hidden_states)
+        chunks.append(
+            {
+                "chunk_id": len(chunks),
+                "start_token_idx": chunk_start_idx,
+                "end_token_idx": len(token_ids) - 1,
+                "token_ids": chunk_token_ids,
+                "token_count": len(chunk_token_ids),
+                "chunk_text": decode_tokens(tokenizer, chunk_token_ids).strip(),
+                "boundary_hidden_state": chunk_hidden_states[-1].clone(),
+                "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
+                "cut_reason": "tail",
+            }
+        )
+
+    return chunks
+
+
+print(f"Loading base model from: {MODEL_PATH}")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
 model = AutoModelForCausalLM.from_pretrained(
-    model_path,
+    MODEL_PATH,
     torch_dtype=torch.bfloat16,
     device_map="auto",
-    local_files_only=True
+    local_files_only=True,
 )
 model.eval()
 
-print("📚 正在加载 GSM8K 训练集...")
-dataset = load_dataset("gsm8k", "main", split=f"train[:{num_samples}]")
+print(f"Loading GSM8K train split[:{NUM_SAMPLES}]")
+dataset = load_dataset("gsm8k", "main", split=f"train[:{NUM_SAMPLES}]")
 
-all_extracted_data = [] # 用于存放这 1000 道题的所有切块数据
+all_extracted_data = []
 
-print(f"🔥 开始全自动批量提取 (共 {num_samples} 题)...")
-for idx, data in enumerate(tqdm(dataset, desc="Processing GSM8K")):
-    question = data["question"]
-    true_answer = data["answer"]
-    
+for idx, row in enumerate(tqdm(dataset, desc="Building heuristic chunks")):
+    question = row["question"]
+    ground_truth_answer = row["answer"]
+
     messages = [
         {"role": "system", "content": "You are a helpful math assistant. Please reason step by step."},
-        {"role": "user", "content": question}
+        {"role": "user", "content": question},
     ]
-    text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer([text], return_tensors="pt").to(model.device)
-    
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=256, # 限制单题生成长度，提升收集效率
-            return_dict_in_generate=True,
-            output_hidden_states=True,
-            pad_token_id=tokenizer.eos_token_id
-        )
-        
-    generated_token_ids = outputs.sequences[0][inputs.input_ids.shape[1]:]
-    gen_hidden_states = outputs.hidden_states[1:] 
-    
-    # 💡 防弹补丁：强制对齐文本和隐状态的长度，取两者最小值，截断越界部分
-    valid_length = min(len(generated_token_ids), len(gen_hidden_states))
-    generated_token_ids = generated_token_ids[:valid_length]
-    
-    current_chunk_text = ""
-    current_chunk_tokens = []
-    question_chunks = []
-    
-    for i, token_id in enumerate(generated_token_ids):
-        token_str = tokenizer.decode([token_id])
-        current_chunk_text += token_str
-        current_chunk_tokens.append(token_id)
-        
-        chunk_len = len(current_chunk_tokens)
-        hit_punctuation = any(p in token_str for p in punctuations)
-        
-        # 💡 核心逻辑：触发混合切分条件
-        # 条件 1：遇到了标点，且长度已经达标 (>= min_tokens)
-        # 条件 2：一直没遇到标点，但长度已经触碰红线 (>= max_tokens)
-        if (hit_punctuation and chunk_len >= min_tokens) or (chunk_len >= max_tokens):
-            
-            # 提取当前步、最后一层的隐状态，并立刻转移到 CPU 防止 GPU OOM
-            boundary_hs = gen_hidden_states[i][-1][0, -1, :].clone().cpu()
-            
-            question_chunks.append({
-                "chunk_text": current_chunk_text.strip(),
-                "token_count": chunk_len,
-                "hidden_state": boundary_hs  # Tensor shape: [1536]
-            })
-            
-            # 清空缓存，准备切下一块
-            current_chunk_text = ""
-            current_chunk_tokens = []
-            
-    # 收尾：处理最后一段没被切分的残余文本
-    if current_chunk_tokens:
-        boundary_hs = gen_hidden_states[-1][-1][0, -1, :].clone().cpu()
-        question_chunks.append({
-            "chunk_text": current_chunk_text.strip(),
-            "token_count": len(current_chunk_tokens),
-            "hidden_state": boundary_hs
-        })
-        
-    all_extracted_data.append({
-        "question_id": idx,
-        "question": question,
-        "true_answer": true_answer,
-        "chunks": question_chunks
-    })
+    prompt_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-# 把心血保存到硬盘！
-print(f"\n💾 正在将 {len(all_extracted_data)} 道题的隐状态特征持久化至磁盘...")
-torch.save(all_extracted_data, save_path)
-print(f"🎉 提取大业完成！数据集已安全保存至: {save_path}")
+    generated_token_ids, generated_hidden_states = generate_with_hidden_states(
+        model=model,
+        tokenizer=tokenizer,
+        prompt_text=prompt_text,
+        max_new_tokens=MAX_NEW_TOKENS,
+    )
+
+    generated_text = decode_tokens(tokenizer, generated_token_ids).strip()
+    model_final_answer = extract_last_number(generated_text)
+    ground_truth_final_answer = extract_last_number(ground_truth_answer)
+    chunks = build_chunks(tokenizer, generated_token_ids, generated_hidden_states)
+
+    prefix_token_ids = []
+    for chunk in chunks:
+        prefix_token_ids.extend(chunk["token_ids"])
+        chunk["prefix_text"] = decode_tokens(tokenizer, prefix_token_ids).strip()
+
+    all_extracted_data.append(
+        {
+            "question_id": idx,
+            "question": question,
+            "prompt_text": prompt_text,
+            "ground_truth_answer_text": ground_truth_answer,
+            "ground_truth_final_answer": ground_truth_final_answer,
+            "generated_text": generated_text,
+            "generated_token_ids": generated_token_ids,
+            "model_final_answer": model_final_answer,
+            "is_final_correct": model_final_answer == ground_truth_final_answer,
+            "chunking_method": "heuristic_punctuation_minmax",
+            "chunking_config": {
+                "min_tokens": MIN_TOKENS,
+                "max_tokens": MAX_TOKENS,
+                "punctuations": PUNCTUATIONS,
+                "max_new_tokens": MAX_NEW_TOKENS,
+            },
+            "chunks": chunks,
+        }
+    )
+
+print(f"Saving {len(all_extracted_data)} trajectories to: {SAVE_PATH}")
+torch.save(all_extracted_data, SAVE_PATH)
+print("Done.")
