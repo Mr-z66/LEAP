@@ -87,12 +87,23 @@ def build_judge_prompt(question, prefix_text, ground_truth_answer_text, include_
     return f"""You are a strict math reasoning judge.
 Evaluate whether the student's reasoning prefix is still logically correct so far.
 Focus on the reasoning prefix itself instead of guessing from the final answer.
+Be sensitive to early logical drift: if the prefix already introduces an incorrect intermediate result,
+wrong equation, wrong variable relationship, wrong unit conversion, or a reasoning step that would
+send the solution down an incorrect path, mark it as incorrect immediately.
+Do not mark it incorrect only because the solution is unfinished, abbreviated, or ends mid-step.
 
 Question:
 {question}
 {reference_section}
 Student reasoning prefix:
 {prefix_text}
+
+Judging rules:
+1. Return "is_prefix_correct": 1 only if all reasoning written so far is consistent with the problem and remains on a valid path.
+2. Return "is_prefix_correct": 0 if the prefix already contains a mathematical, logical, or semantic mistake, even if the final answer has not appeared yet.
+3. Treat an incorrect intermediate value, incorrect sub-conclusion, incorrect symbolic setup, or incorrect interpretation of the problem as an error.
+4. Do not penalize a prefix merely because it is incomplete, ends at a chunk boundary, or has not yet finished the derivation.
+5. When uncertain, prefer the stricter option only if there is already evidence of logical drift in the written prefix.
 
 Return JSON only with the following schema:
 {{
