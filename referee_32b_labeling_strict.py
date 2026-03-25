@@ -9,7 +9,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ================= Default Configuration =================
 DEFAULT_INPUT_DATA_PATH = "gsm8k_15b_hidden_states.pt"
-DEFAULT_OUTPUT_DATA_PATH = "gsm8k_labeled_training_data.pt"
+DEFAULT_OUTPUT_DATA_PATH = "gsm8k_labeled_training_data_strict.pt"
 DEFAULT_MODEL_PATH_32B = os.path.join(os.getcwd(), "models", "Qwen2.5-32B")
 DEFAULT_MAX_JUDGE_TOKENS = 128
 DEFAULT_SAVE_EVERY = 10
@@ -17,7 +17,7 @@ DEFAULT_SAVE_EVERY = 10
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Label heuristic chunks with a judge LLM.")
+    parser = argparse.ArgumentParser(description="Label heuristic chunks with a strict judge LLM.")
     parser.add_argument("--input-path", default=DEFAULT_INPUT_DATA_PATH, help="Path to chunked trajectory data.")
     parser.add_argument("--output-path", default=DEFAULT_OUTPUT_DATA_PATH, help="Path to save labeled chunk data.")
     parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH_32B, help="Local path to the judge model.")
@@ -158,7 +158,7 @@ newly_processed_questions = 0
 
 questions_to_process = [sample for sample in dataset if int(sample["question_id"]) >= args.start_question]
 
-for sample in tqdm(questions_to_process, desc="Labeling heuristic chunks with judge"):
+for sample in tqdm(questions_to_process, desc="Labeling heuristic chunks with strict judge"):
     question_id = int(sample["question_id"])
 
     if question_id in processed_questions:
@@ -211,7 +211,7 @@ for sample in tqdm(questions_to_process, desc="Labeling heuristic chunks with ju
                 "model_final_answer": sample["model_final_answer"],
                 "is_final_correct": sample["is_final_correct"],
                 "judge_model_path": args.model_path,
-                "judge_mode": "prefix_plus_reference" if args.include_reference_answer else "prefix_only",
+                "judge_mode": "strict_prefix_plus_reference" if args.include_reference_answer else "strict_prefix_only",
                 "judge_prompt": prompt,
                 "judge_raw_response": raw_response,
                 "judge_parse_status": judge_result["parse_status"],
