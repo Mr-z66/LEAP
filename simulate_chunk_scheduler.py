@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import re
 import statistics
@@ -31,6 +32,7 @@ DEFAULT_MAX_NEW_TOKENS = 256
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 DEFAULT_CACHE_PATH = os.path.join(PROJECT_ROOT, "chunk_scheduler_cache.pt")
 DEFAULT_SAVE_CACHE_EVERY = 5
+DEFAULT_CASE_EXPORT_DIR = os.path.join(PROJECT_ROOT, "scheduler_case_exports")
 # ========================================================
 
 
@@ -61,6 +63,11 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS, help="Max generation tokens.")
     parser.add_argument("--cache-path", default=DEFAULT_CACHE_PATH, help="Path to cached large-model outputs.")
     parser.add_argument("--save-cache-every", type=int, default=DEFAULT_SAVE_CACHE_EVERY, help="Save cache every N new generations.")
+    parser.add_argument(
+        "--case-export-dir",
+        default=DEFAULT_CASE_EXPORT_DIR,
+        help="Directory for exported per-threshold case breakdown CSV files.",
+    )
     parser.add_argument(
         "--skip-large-baseline",
         action="store_true",
@@ -319,6 +326,63 @@ def find_trigger_chunk(record, chunk_scores, threshold):
     return None
 
 
+def classify_outcome_row(row):
+    if not row["small_is_correct"] and row["scheduled_is_correct"]:
+        return "small_wrong_to_scheduled_correct"
+    if not row["small_is_correct"] and not row["scheduled_is_correct"]:
+        return "small_wrong_to_scheduled_wrong"
+    if row["small_is_correct"] and not row["scheduled_is_correct"]:
+        return "small_correct_to_scheduled_wrong"
+    return "small_correct_to_scheduled_correct"
+
+
+def export_case_rows(summary, export_dir):
+    os.makedirs(export_dir, exist_ok=True)
+    threshold_tag = str(summary["threshold"]).replace(".", "p")
+    base_name = f"threshold_{threshold_tag}"
+    all_rows = summary["per_question_rows"]
+    if not all_rows:
+        return
+
+    fieldnames = [
+        "question_id",
+        "outcome_type",
+        "small_is_correct",
+        "large_baseline_is_correct",
+        "scheduled_is_correct",
+        "triggered",
+        "trigger_chunk_id",
+        "takeover_start_chunk_id",
+        "first_error_chunk_id",
+        "trigger_error_score",
+        "ground_truth_final_answer",
+        "small_final_answer",
+        "scheduled_final_answer",
+        "large_baseline_final_answer",
+        "takeover_generated_token_count",
+        "question",
+    ]
+
+    categorized_rows = {}
+    prepared_rows = []
+    for row in all_rows:
+        prepared_row = dict(row)
+        prepared_row["outcome_type"] = classify_outcome_row(prepared_row)
+        prepared_rows.append(prepared_row)
+        categorized_rows.setdefault(prepared_row["outcome_type"], []).append(prepared_row)
+
+    def write_rows(rows, filename):
+        path = os.path.join(export_dir, filename)
+        with open(path, "w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    write_rows(prepared_rows, f"{base_name}_all.csv")
+    for outcome_type, rows in categorized_rows.items():
+        write_rows(rows, f"{base_name}_{outcome_type}.csv")
+
+
 def simulate_threshold(
     threshold,
     test_records,
@@ -333,6 +397,10 @@ def simulate_threshold(
     scheduled_correct = 0
     large_only_correct = 0
     small_only_correct = 0
+    small_wrong_to_scheduled_correct = 0
+    small_wrong_to_scheduled_wrong = 0
+    small_correct_to_scheduled_wrong = 0
+    small_correct_to_scheduled_correct = 0
     triggered_questions = 0
     triggered_wrong_questions = 0
     false_alarm_correct_questions = 0
@@ -438,9 +506,18 @@ def simulate_threshold(
                     near_error_questions_covered += 1
 
         scheduled_correct += int(scheduled_is_correct)
+        if not small_is_correct and scheduled_is_correct:
+            small_wrong_to_scheduled_correct += 1
+        elif not small_is_correct and not scheduled_is_correct:
+            small_wrong_to_scheduled_wrong += 1
+        elif small_is_correct and not scheduled_is_correct:
+            small_correct_to_scheduled_wrong += 1
+        else:
+            small_correct_to_scheduled_correct += 1
         per_question_rows.append(
             {
                 "question_id": question_id,
+                "question": question,
                 "small_is_correct": small_is_correct,
                 "large_baseline_is_correct": large_baseline_is_correct,
                 "scheduled_is_correct": scheduled_is_correct,
@@ -449,6 +526,7 @@ def simulate_threshold(
                 "takeover_start_chunk_id": None if trigger is None else trigger["takeover_start_chunk_id"],
                 "first_error_chunk_id": first_error_chunk_id,
                 "trigger_error_score": None if trigger is None else trigger["error_score"],
+                "ground_truth_final_answer": ground_truth_final_answer,
                 "scheduled_final_answer": scheduled_final_answer,
                 "small_final_answer": record["small_final_answer"],
                 "large_baseline_final_answer": None if large_baseline_result is None else large_baseline_result["final_answer"],
@@ -494,6 +572,14 @@ def simulate_threshold(
         "false_alarm_correct_question_rate": (
             false_alarm_correct_questions / correct_questions if correct_questions else float("nan")
         ),
+        "small_wrong_to_scheduled_correct_count": small_wrong_to_scheduled_correct,
+        "small_wrong_to_scheduled_wrong_count": small_wrong_to_scheduled_wrong,
+        "small_correct_to_scheduled_wrong_count": small_correct_to_scheduled_wrong,
+        "small_correct_to_scheduled_correct_count": small_correct_to_scheduled_correct,
+        "small_wrong_to_scheduled_correct_rate": small_wrong_to_scheduled_correct / total_questions,
+        "small_wrong_to_scheduled_wrong_rate": small_wrong_to_scheduled_wrong / total_questions,
+        "small_correct_to_scheduled_wrong_rate": small_correct_to_scheduled_wrong / total_questions,
+        "small_correct_to_scheduled_correct_rate": small_correct_to_scheduled_correct / total_questions,
         "scheduled_gain_over_small": (scheduled_correct - small_only_correct) / total_questions,
         "per_question_rows": per_question_rows,
     }
@@ -522,6 +608,27 @@ def print_threshold_summary(summary):
     print(f"Near-error coverage rate: {summary['near_error_coverage_rate']:.4f}")
     print(f"Potential rescue upper bound: {summary['rescue_upper_bound_rate']:.4f}")
     print(f"False-alarm correct-question rate: {summary['false_alarm_correct_question_rate']:.4f}")
+    print("Outcome breakdown:")
+    print(
+        "  small wrong -> scheduled correct: "
+        f"{summary['small_wrong_to_scheduled_correct_count']}/{summary['questions_total']} "
+        f"({summary['small_wrong_to_scheduled_correct_rate']:.4f})"
+    )
+    print(
+        "  small wrong -> scheduled wrong: "
+        f"{summary['small_wrong_to_scheduled_wrong_count']}/{summary['questions_total']} "
+        f"({summary['small_wrong_to_scheduled_wrong_rate']:.4f})"
+    )
+    print(
+        "  small correct -> scheduled wrong: "
+        f"{summary['small_correct_to_scheduled_wrong_count']}/{summary['questions_total']} "
+        f"({summary['small_correct_to_scheduled_wrong_rate']:.4f})"
+    )
+    print(
+        "  small correct -> scheduled correct: "
+        f"{summary['small_correct_to_scheduled_correct_count']}/{summary['questions_total']} "
+        f"({summary['small_correct_to_scheduled_correct_rate']:.4f})"
+    )
 
 
 def main():
@@ -575,6 +682,7 @@ def main():
             large_baseline_cache=large_baseline_cache,
         )
         simulation_summaries.append(summary)
+        export_case_rows(summary, args.case_export_dir)
         print_threshold_summary(summary)
 
     best_summary = max(simulation_summaries, key=lambda item: item["scheduled_gain_over_small"])
