@@ -290,19 +290,30 @@ def fit_probe_and_score(question_records, args):
 
 
 def find_trigger_chunk(record, chunk_scores, threshold):
-    for chunk in record["chunks"]:
+    chunks = record["chunks"]
+    for index, chunk in enumerate(chunks):
         chunk_id = int(chunk["chunk_id"])
         error_score = float(chunk_scores.get(chunk_id, 0.0))
         if error_score >= threshold:
+            if index > 0:
+                safe_chunk = chunks[index - 1]
+                takeover_start_chunk_id = int(safe_chunk["chunk_id"])
+                safe_prefix_text = safe_chunk["prefix_text"]
+                prefix_token_count = int(safe_chunk["end_token_idx"]) + 1
+            else:
+                takeover_start_chunk_id = -1
+                safe_prefix_text = None
+                prefix_token_count = 0
             return {
-                "chunk_id": chunk_id,
+                "trigger_chunk_id": chunk_id,
+                "takeover_start_chunk_id": takeover_start_chunk_id,
                 "error_score": error_score,
-                "prefix_text": chunk["prefix_text"],
-                "prefix_token_count": int(chunk["end_token_idx"]) + 1,
+                "safe_prefix_text": safe_prefix_text,
+                "prefix_token_count": prefix_token_count,
                 "remaining_token_count": sum(
                     int(later_chunk["token_count"])
-                    for later_chunk in record["chunks"]
-                    if int(later_chunk["chunk_id"]) >= chunk_id
+                    for later_chunk in chunks
+                    if int(later_chunk["chunk_id"]) > takeover_start_chunk_id
                 ),
             }
     return None
@@ -331,6 +342,7 @@ def simulate_threshold(
     rescue_upper_bound = 0
     trigger_chunk_ids = []
     trigger_positions = []
+    takeover_start_chunk_ids = []
     prefix_tokens_consumed = []
     remaining_tokens_consumed = []
     large_takeover_tokens = []
@@ -385,8 +397,9 @@ def simulate_threshold(
 
         if trigger is not None:
             triggered_questions += 1
-            trigger_chunk_ids.append(trigger["chunk_id"])
-            trigger_positions.append(trigger["chunk_id"] / len(record["chunks"]))
+            trigger_chunk_ids.append(trigger["trigger_chunk_id"])
+            trigger_positions.append(trigger["trigger_chunk_id"] / len(record["chunks"]))
+            takeover_start_chunk_ids.append(trigger["takeover_start_chunk_id"])
             prefix_tokens_consumed.append(trigger["prefix_token_count"])
             remaining_tokens_consumed.append(trigger["remaining_token_count"])
             if not small_is_correct:
@@ -394,13 +407,13 @@ def simulate_threshold(
             else:
                 false_alarm_correct_questions += 1
 
-            cache_key = (question_id, trigger["chunk_id"])
+            cache_key = (question_id, trigger["takeover_start_chunk_id"])
             if cache_key not in takeover_cache:
                 takeover_cache[cache_key] = generate_answer(
                     large_model,
                     large_tokenizer,
                     question=question,
-                    assistant_prefix=trigger["prefix_text"],
+                    assistant_prefix=trigger["safe_prefix_text"],
                     max_new_tokens=args.max_new_tokens,
                 )
                 new_cache_entries += 1
@@ -418,10 +431,10 @@ def simulate_threshold(
             scheduled_is_correct = scheduled_final_answer == ground_truth_final_answer
 
             if first_error_chunk_id is not None:
-                if trigger["chunk_id"] <= first_error_chunk_id:
+                if trigger["trigger_chunk_id"] <= first_error_chunk_id:
                     error_questions_covered += 1
                     rescue_upper_bound += 1
-                if trigger["chunk_id"] <= first_error_chunk_id + 1:
+                if trigger["trigger_chunk_id"] <= first_error_chunk_id + 1:
                     near_error_questions_covered += 1
 
         scheduled_correct += int(scheduled_is_correct)
@@ -432,7 +445,8 @@ def simulate_threshold(
                 "large_baseline_is_correct": large_baseline_is_correct,
                 "scheduled_is_correct": scheduled_is_correct,
                 "triggered": trigger is not None,
-                "trigger_chunk_id": None if trigger is None else trigger["chunk_id"],
+                "trigger_chunk_id": None if trigger is None else trigger["trigger_chunk_id"],
+                "takeover_start_chunk_id": None if trigger is None else trigger["takeover_start_chunk_id"],
                 "first_error_chunk_id": first_error_chunk_id,
                 "trigger_error_score": None if trigger is None else trigger["error_score"],
                 "scheduled_final_answer": scheduled_final_answer,
@@ -468,6 +482,7 @@ def simulate_threshold(
         "questions_triggered": triggered_questions,
         "avg_trigger_chunk_id": safe_mean(trigger_chunk_ids),
         "avg_trigger_relative_position": safe_mean(trigger_positions),
+        "avg_takeover_start_chunk_id": safe_mean(takeover_start_chunk_ids),
         "avg_prefix_tokens_before_trigger": safe_mean(prefix_tokens_consumed),
         "avg_remaining_tokens_at_trigger": safe_mean(remaining_tokens_consumed),
         "avg_large_takeover_tokens": safe_mean(large_takeover_tokens),
@@ -497,6 +512,7 @@ def print_threshold_summary(summary):
     print(f"Trigger rate: {summary['trigger_rate']:.4f} ({summary['questions_triggered']}/{summary['questions_total']})")
     print(f"Avg trigger chunk id: {summary['avg_trigger_chunk_id']:.2f}")
     print(f"Avg trigger relative position: {summary['avg_trigger_relative_position']:.4f}")
+    print(f"Avg rollback takeover start chunk id: {summary['avg_takeover_start_chunk_id']:.2f}")
     print(f"Avg prefix tokens before trigger: {summary['avg_prefix_tokens_before_trigger']:.2f}")
     print(f"Avg remaining tokens at trigger: {summary['avg_remaining_tokens_at_trigger']:.2f}")
     print(f"Avg large takeover tokens: {summary['avg_large_takeover_tokens']:.2f}")
