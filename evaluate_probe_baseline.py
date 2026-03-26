@@ -14,6 +14,7 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.model_selection import GroupShuffleSplit
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
 # ================= Default Configuration =================
@@ -25,6 +26,11 @@ DEFAULT_FEATURE_KEYS = [
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_NUM_SPLITS = 20
 DEFAULT_BASE_RANDOM_STATE = 42
+DEFAULT_PROBE_TYPE = "logistic"
+DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
+DEFAULT_MLP_MAX_ITER = 300
+DEFAULT_MLP_ALPHA = 1e-4
+DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 # ========================================================
 
 
@@ -40,6 +46,25 @@ def parse_args():
     parser.add_argument("--test-size", type=float, default=DEFAULT_TEST_SIZE, help="GroupShuffleSplit test ratio.")
     parser.add_argument("--num-splits", type=int, default=DEFAULT_NUM_SPLITS, help="Number of grouped random splits.")
     parser.add_argument("--base-random-state", type=int, default=DEFAULT_BASE_RANDOM_STATE, help="Base random seed.")
+    parser.add_argument(
+        "--probe-type",
+        choices=["logistic", "mlp"],
+        default=DEFAULT_PROBE_TYPE,
+        help="Probe model to train. Use logistic for the linear baseline or mlp for a multi-layer probe.",
+    )
+    parser.add_argument(
+        "--mlp-hidden-layers",
+        default=DEFAULT_MLP_HIDDEN_LAYERS,
+        help="Comma-separated hidden layer sizes for MLP, for example 512,128,32.",
+    )
+    parser.add_argument("--mlp-max-iter", type=int, default=DEFAULT_MLP_MAX_ITER, help="Max training iterations for MLP.")
+    parser.add_argument("--mlp-alpha", type=float, default=DEFAULT_MLP_ALPHA, help="L2 regularization strength for MLP.")
+    parser.add_argument(
+        "--mlp-learning-rate-init",
+        type=float,
+        default=DEFAULT_MLP_LEARNING_RATE_INIT,
+        help="Initial learning rate for MLP.",
+    )
     return parser.parse_args()
 
 
@@ -63,7 +88,58 @@ def safe_stdev(values):
     return statistics.stdev(values)
 
 
-def run_single_split(X, y, groups, random_state, test_size):
+def parse_hidden_layer_sizes(hidden_layers_text):
+    layer_sizes = []
+    for part in hidden_layers_text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        layer_sizes.append(int(part))
+    if not layer_sizes:
+        raise ValueError("MLP hidden layers cannot be empty.")
+    return tuple(layer_sizes)
+
+
+def upsample_minority_class(X, y, random_state):
+    unique_labels, counts = np.unique(y, return_counts=True)
+    if len(unique_labels) < 2 or counts[0] == counts[1]:
+        return X, y
+
+    majority_label = unique_labels[np.argmax(counts)]
+    minority_label = unique_labels[np.argmin(counts)]
+    majority_indices = np.flatnonzero(y == majority_label)
+    minority_indices = np.flatnonzero(y == minority_label)
+
+    rng = np.random.default_rng(random_state)
+    sampled_minority_indices = rng.choice(minority_indices, size=len(majority_indices), replace=True)
+    balanced_indices = np.concatenate([majority_indices, sampled_minority_indices])
+    rng.shuffle(balanced_indices)
+    return X[balanced_indices], y[balanced_indices]
+
+
+def build_probe(args, random_state):
+    if args.probe_type == "logistic":
+        return LogisticRegression(
+            max_iter=1000,
+            class_weight="balanced",
+            random_state=random_state,
+        )
+
+    return MLPClassifier(
+        hidden_layer_sizes=parse_hidden_layer_sizes(args.mlp_hidden_layers),
+        activation="relu",
+        solver="adam",
+        alpha=args.mlp_alpha,
+        batch_size="auto",
+        learning_rate_init=args.mlp_learning_rate_init,
+        max_iter=args.mlp_max_iter,
+        early_stopping=True,
+        n_iter_no_change=15,
+        random_state=random_state,
+    )
+
+
+def run_single_split(X, y, groups, random_state, test_size, args):
     splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
     train_indices, test_indices = next(splitter.split(X, y, groups))
 
@@ -81,12 +157,12 @@ def run_single_split(X, y, groups, random_state, test_size):
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    probe = LogisticRegression(
-        max_iter=1000,
-        class_weight="balanced",
-        random_state=random_state,
-    )
-    probe.fit(X_train_scaled, y_train)
+    probe = build_probe(args, random_state)
+    if args.probe_type == "mlp":
+        X_train_fit, y_train_fit = upsample_minority_class(X_train_scaled, y_train, random_state)
+        probe.fit(X_train_fit, y_train_fit)
+    else:
+        probe.fit(X_train_scaled, y_train)
 
     y_score = probe.predict_proba(X_test_scaled)[:, 1]
     y_pred = probe.predict(X_test_scaled)
@@ -110,6 +186,7 @@ def run_single_split(X, y, groups, random_state, test_size):
         "test_chunks": len(test_indices),
         "train_positive_ratio": float(y_train.mean()),
         "test_positive_ratio": float(y_test.mean()),
+        "probe_type": args.probe_type,
         "prefix_correct_auroc": roc_auc_score(y_test, y_score),
         "prefix_correct_auprc": average_precision_score(y_test, y_score),
         "error_auprc": average_precision_score(y_true_error, error_score),
@@ -122,7 +199,7 @@ def run_single_split(X, y, groups, random_state, test_size):
     }
 
 
-def evaluate_feature(samples, feature_key, num_splits, base_random_state, test_size):
+def evaluate_feature(samples, feature_key, num_splits, base_random_state, test_size, args):
     X = np.stack([tensor_to_numpy(sample[feature_key]) for sample in samples])
     y = np.array([int(sample["label"]) for sample in samples], dtype=np.int64)
     groups = np.array([int(sample["question_id"]) for sample in samples], dtype=np.int64)
@@ -130,7 +207,7 @@ def evaluate_feature(samples, feature_key, num_splits, base_random_state, test_s
     split_results = []
     for offset in range(num_splits):
         random_state = base_random_state + offset
-        split_result = run_single_split(X, y, groups, random_state, test_size)
+        split_result = run_single_split(X, y, groups, random_state, test_size, args)
         if split_result is not None:
             split_results.append(split_result)
 
@@ -149,6 +226,15 @@ args = parse_args()
 print(f"Loading labeled chunk dataset from: {args.data_path}")
 dataset = torch.load(args.data_path)
 
+if args.probe_type == "mlp":
+    print(
+        f"Using MLP probe with hidden layers {parse_hidden_layer_sizes(args.mlp_hidden_layers)}, "
+        f"max_iter={args.mlp_max_iter}, alpha={args.mlp_alpha}, "
+        f"learning_rate_init={args.mlp_learning_rate_init}"
+    )
+else:
+    print("Using logistic probe with class-balanced training.")
+
 all_results = []
 for feature_key in args.features:
     samples = load_filtered_samples(dataset, feature_key)
@@ -162,12 +248,13 @@ for feature_key in args.features:
         num_splits=args.num_splits,
         base_random_state=args.base_random_state,
         test_size=args.test_size,
+        args=args,
     )
     all_results.append(result)
 
     print("\nLeakage-free strict baseline")
     print("=" * 50)
-    print(f"Feature: {result['feature_key']}")
+    print(f"Feature: {result['feature_key']} | Probe: {args.probe_type}")
     print(
         f"Chunks: {result['num_chunks']} | Questions: {result['num_questions']} "
         f"| Positive ratio: {result['positive_ratio']:.4f} | Negative ratio: {result['negative_ratio']:.4f}"
@@ -253,6 +340,7 @@ if all_results:
         print("=" * 50)
         print(
             f"{best_feature['feature_key']} | "
+            f"probe={args.probe_type} | "
             f"mean error_F1={best_error_f1:.4f} | "
             f"dataset={os.path.basename(args.data_path)}"
         )
