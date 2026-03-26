@@ -171,6 +171,36 @@ def extract_last_number(text):
     return matches[-1] if matches else None
 
 
+def normalize_numeric_text(text):
+    return text.replace(",", "").strip().rstrip(".")
+
+
+def extract_final_answer(text):
+    if not text:
+        return None
+
+    boxed_matches = re.findall(r"\\boxed\{([^}]*)\}", text)
+    if boxed_matches:
+        boxed_value = extract_last_number(boxed_matches[-1])
+        if boxed_value is not None:
+            return boxed_value
+
+    explicit_patterns = [
+        r"(?i)final answer\s*[:：]\s*([^\n]+)",
+        r"(?i)the answer is\s*([^\n]+)",
+        r"(?i)answer\s*[:：]\s*([^\n]+)",
+        r"####\s*([^\n]+)",
+    ]
+    for pattern in explicit_patterns:
+        matches = re.findall(pattern, text)
+        if matches:
+            explicit_value = extract_last_number(matches[-1])
+            if explicit_value is not None:
+                return explicit_value
+
+    return extract_last_number(normalize_numeric_text(text))
+
+
 def build_generation_messages(question, assistant_prefix=None):
     messages = [
         {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
@@ -195,11 +225,11 @@ def generate_answer(model, tokenizer, question, assistant_prefix, max_new_tokens
             max_new_tokens=max_new_tokens,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
-        )
+    )
     new_token_ids = outputs[0][inputs.input_ids.shape[1]:]
     generated_text = tokenizer.decode(new_token_ids, skip_special_tokens=True).strip()
     full_reasoning = assistant_prefix + generated_text if assistant_prefix else generated_text
-    final_answer = extract_last_number(full_reasoning)
+    final_answer = extract_final_answer(full_reasoning)
     return {
         "generated_text": generated_text,
         "full_reasoning": full_reasoning,
@@ -360,6 +390,8 @@ def export_case_rows(summary, export_dir):
         "scheduled_final_answer",
         "large_baseline_final_answer",
         "takeover_generated_token_count",
+        "takeover_full_reasoning",
+        "large_baseline_full_reasoning",
         "question",
     ]
 
@@ -531,6 +563,8 @@ def simulate_threshold(
                 "small_final_answer": record["small_final_answer"],
                 "large_baseline_final_answer": None if large_baseline_result is None else large_baseline_result["final_answer"],
                 "takeover_generated_token_count": None if takeover_result is None else takeover_result["generated_token_count"],
+                "takeover_full_reasoning": None if takeover_result is None else takeover_result["full_reasoning"],
+                "large_baseline_full_reasoning": None if large_baseline_result is None else large_baseline_result["full_reasoning"],
             }
         )
         progress.set_postfix(

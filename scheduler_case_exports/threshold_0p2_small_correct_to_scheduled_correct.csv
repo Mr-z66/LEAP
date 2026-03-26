@@ -1,19 +1,41 @@
-﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,question
-4,small_correct_to_scheduled_correct,True,,True,False,,,,,624,624,624,,,James writes a 3-page letter to 2 different friends twice a week.  How many pages does he write a year?
-33,small_correct_to_scheduled_correct,True,,True,False,,,,,34,34,34,,,"To make pizza, together with other ingredients, Kimber needs 10 cups of water, 16 cups of flour, and 1/2 times as many teaspoons of salt as the number of cups of flour. Calculate the combined total number of cups of water, flour, and teaspoons of salt that she needs to make the pizza."
-70,small_correct_to_scheduled_correct,True,,True,False,,,,,19,19,19,,,"Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
-79,small_correct_to_scheduled_correct,True,,True,False,,,,,70,70,70,,,James spends 40 years teaching.  His partner has been teaching for 10 years less.  How long is their combined experience?
-110,small_correct_to_scheduled_correct,True,,True,False,,,,,140,140,140,,,Marvin and Tina were selling candy bars to help fund their class trip.  The candy bars cost $2 each.  Marvin sold 35 candy bars total.  Tina sold three times the number of candy bars as Marvin.  How much more money did Tina make for the class trip selling candy bars compared to Marvin?
-113,small_correct_to_scheduled_correct,True,,True,False,,,,,60,60,60,,,Baez has 25 marbles. She loses 20% of them one day. Then a friend sees her and gives her double the amount that Baez has after she lost them. How many marbles does Baez end up with?
-119,small_correct_to_scheduled_correct,True,,True,False,,,,,140,140,140,,,Jessa needs to make cupcakes for 3 fourth-grade classes that each have 30 students and a P.E. class with 50 students. How many cupcakes does she need to make?
-126,small_correct_to_scheduled_correct,True,,True,False,,,,,25,25,25,,,"John has five more roommates than twice as many as Bob. If Bob has 10 roommates, how many roommates does John have?"
-137,small_correct_to_scheduled_correct,True,,True,True,5,4,3,0.7601335048675537,6,6,6,,237,3 families of 4 people shared a vacation rental for 7 days.  Everyone uses 1 oversized beach towel a day before getting a new one.  The washing machine can hold 14 oversized beach towels per load.  How many loads of laundry will it take to wash all the oversized beach towels?
-151,small_correct_to_scheduled_correct,True,,True,False,,,,,283,283,283,,,Keiko sent 111 text messages last week. This week she sent 50 less than double what she sent last week. How many text messages did Keiko send last week and this week combined?
-152,small_correct_to_scheduled_correct,True,,True,False,,,,,44,44,44,,,A one-year subscription to a newspaper is offered with a 45% discount. How much does the discounted subscription cost if a subscription normally costs $80?
-156,small_correct_to_scheduled_correct,True,,True,False,,,,,21,21,21,,,"George bought some food for his trip: a bottle of juice, a sandwich, and a bottle of milk. The sandwich was for $4, and the juice was two times more expensive. The bottle of milk cost was 75% of the total cost of the sandwich and juice. How much did George pay for his food?"
-164,small_correct_to_scheduled_correct,True,,True,False,,,,,32,32,32,,,On Monday Buddy has 30 baseball cards. On Tuesday Buddy loses half of them. On Wednesday Buddy buys 12 baseball cards. On Thursday he buys a third of what he had on Tuesday. How many baseball cards does he have on Thursday?
-223,small_correct_to_scheduled_correct,True,,True,False,,,12,,2,2,2,,,Andy and Bob went to the canteen to buy snacks. They spent the same amount. Andy bought a can of soda at $1 and two hamburgers at $2 each.  Bob ordered two sandwiches for $3 and a can of fruit drink.  How much did Bob's fruit drink cost?
-236,small_correct_to_scheduled_correct,True,,True,False,,,,,825,825,825,,,"Jake has $5000. He spends $2800 on a new motorcycle, and then spends half of what's left on a concert ticket. Jake then loses a fourth of what he has left. How much money does he have left?"
-250,small_correct_to_scheduled_correct,True,,True,False,,,,,360,360,360,,,Tom uses 10 weight plates each weighing 30 pounds on an exercise machine.  This exercise machine uses special technology to make the weights 20% heavier on the lowering portion.  How heavy did the weights feel when being lowered?
-277,small_correct_to_scheduled_correct,True,,True,False,,,,,175,175,175,,,Arven bought five puppies for a total cost of $800. Three puppies are on sale for $150 each. How much does each of those two other puppies cost if they cost the same?
-285,small_correct_to_scheduled_correct,True,,True,False,,,,,2,2,2,,,John wants to finish a show in 5 days.  There are 20 episodes and they are each 30 minutes long.  How many hours does he have to watch a day?
+﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
+4,small_correct_to_scheduled_correct,True,,True,False,,,,,624,624,624,,,,,James writes a 3-page letter to 2 different friends twice a week.  How many pages does he write a year?
+33,small_correct_to_scheduled_correct,True,,True,False,,,,,34,34,34,,,,,"To make pizza, together with other ingredients, Kimber needs 10 cups of water, 16 cups of flour, and 1/2 times as many teaspoons of salt as the number of cups of flour. Calculate the combined total number of cups of water, flour, and teaspoons of salt that she needs to make the pizza."
+70,small_correct_to_scheduled_correct,True,,True,False,,,,,19,19,19,,,,,"Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
+79,small_correct_to_scheduled_correct,True,,True,False,,,,,70,70,70,,,,,James spends 40 years teaching.  His partner has been teaching for 10 years less.  How long is their combined experience?
+110,small_correct_to_scheduled_correct,True,,True,False,,,,,140,140,140,,,,,Marvin and Tina were selling candy bars to help fund their class trip.  The candy bars cost $2 each.  Marvin sold 35 candy bars total.  Tina sold three times the number of candy bars as Marvin.  How much more money did Tina make for the class trip selling candy bars compared to Marvin?
+113,small_correct_to_scheduled_correct,True,,True,False,,,,,60,60,60,,,,,Baez has 25 marbles. She loses 20% of them one day. Then a friend sees her and gives her double the amount that Baez has after she lost them. How many marbles does Baez end up with?
+119,small_correct_to_scheduled_correct,True,,True,False,,,,,140,140,140,,,,,Jessa needs to make cupcakes for 3 fourth-grade classes that each have 30 students and a P.E. class with 50 students. How many cupcakes does she need to make?
+126,small_correct_to_scheduled_correct,True,,True,False,,,,,25,25,25,,,,,"John has five more roommates than twice as many as Bob. If Bob has 10 roommates, how many roommates does John have?"
+137,small_correct_to_scheduled_correct,True,,True,True,5,4,3,0.7601335048675537,6,6,6,,237,"To determine how many loads of laundry it will take to wash all the oversized beach towels, we need to follow these steps:
+
+1. **Calculate the total number of people:**
+   - There are 3 families.
+   - Each family has 4 people.assistantuserensexassistant-Semiticolon detected in the middle of the calculation. Let's continue from where we left off:
+
+2. **Calculate the total number of people:**
+   - There are 3 families.
+   - Each family has 4 people.
+   - Total number of people = \(3 \times 4 = 12\).
+
+3. **Determine the total number of beach towels used per day:**
+   - Each person uses 1 oversized beach towel per day.
+   - Total number of beach towels used per day = 12.
+
+4. **Calculate the total number of beach towels used over 7 days:**
+   - Total number of beach towels used over 7 days = \(12 \times 7 = 84\).
+
+5. **Determine the number of loads needed to wash all the beach towels:**
+   - The washing machine can hold 14 oversized beach towels per load.
+   - Number of loads required = \(\frac{84}{14} = 6\).
+
+Therefore, it will take 6 loads of laundry to wash all the oversized beach towels.",,3 families of 4 people shared a vacation rental for 7 days.  Everyone uses 1 oversized beach towel a day before getting a new one.  The washing machine can hold 14 oversized beach towels per load.  How many loads of laundry will it take to wash all the oversized beach towels?
+151,small_correct_to_scheduled_correct,True,,True,False,,,,,283,283,283,,,,,Keiko sent 111 text messages last week. This week she sent 50 less than double what she sent last week. How many text messages did Keiko send last week and this week combined?
+152,small_correct_to_scheduled_correct,True,,True,False,,,,,44,44,44,,,,,A one-year subscription to a newspaper is offered with a 45% discount. How much does the discounted subscription cost if a subscription normally costs $80?
+156,small_correct_to_scheduled_correct,True,,True,False,,,,,21,21,21,,,,,"George bought some food for his trip: a bottle of juice, a sandwich, and a bottle of milk. The sandwich was for $4, and the juice was two times more expensive. The bottle of milk cost was 75% of the total cost of the sandwich and juice. How much did George pay for his food?"
+164,small_correct_to_scheduled_correct,True,,True,False,,,,,32,32,32,,,,,On Monday Buddy has 30 baseball cards. On Tuesday Buddy loses half of them. On Wednesday Buddy buys 12 baseball cards. On Thursday he buys a third of what he had on Tuesday. How many baseball cards does he have on Thursday?
+223,small_correct_to_scheduled_correct,True,,True,False,,,12,,2,2,2,,,,,Andy and Bob went to the canteen to buy snacks. They spent the same amount. Andy bought a can of soda at $1 and two hamburgers at $2 each.  Bob ordered two sandwiches for $3 and a can of fruit drink.  How much did Bob's fruit drink cost?
+236,small_correct_to_scheduled_correct,True,,True,False,,,,,825,825,825,,,,,"Jake has $5000. He spends $2800 on a new motorcycle, and then spends half of what's left on a concert ticket. Jake then loses a fourth of what he has left. How much money does he have left?"
+250,small_correct_to_scheduled_correct,True,,True,False,,,,,360,360,360,,,,,Tom uses 10 weight plates each weighing 30 pounds on an exercise machine.  This exercise machine uses special technology to make the weights 20% heavier on the lowering portion.  How heavy did the weights feel when being lowered?
+277,small_correct_to_scheduled_correct,True,,True,False,,,,,175,175,175,,,,,Arven bought five puppies for a total cost of $800. Three puppies are on sale for $150 each. How much does each of those two other puppies cost if they cost the same?
+285,small_correct_to_scheduled_correct,True,,True,False,,,,,2,2,2,,,,,John wants to finish a show in 5 days.  There are 20 episodes and they are each 30 minutes long.  How many hours does he have to watch a day?
