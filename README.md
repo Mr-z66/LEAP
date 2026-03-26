@@ -163,6 +163,34 @@ python sample_judge_audit.py
 - 抓到了合理的早期逻辑错误
 - 没有把“只是没写完”的 chunk 大量误判为 0
 
+### 3.6 运行 chunk 级离线调度模拟
+
+第一版调度系统采用 `small -> large` 的 chunk 级接管：
+
+- 小模型：使用已有 `Qwen2.5-1.5B` 轨迹作为默认生成路径
+- 风险分数：用 probe 对每个 chunk 边界打分
+- 大模型：当风险超过阈值时，由 `Qwen2.5-32B` 从当前 `prefix_text` 接管并完成后续生成
+
+运行命令：
+
+```powershell
+python simulate_chunk_scheduler.py --probe-type mlp --mlp-hidden-layers 512,128,32 --thresholds 0.15,0.20,0.25
+```
+
+该脚本会输出：
+
+- 小模型单跑准确率
+- 大模型整题单跑准确率
+- 调度系统准确率
+- 触发率
+- 首次触发位置
+- 首次错误覆盖率
+- 近错误覆盖率
+- 潜在可挽救错误比例
+- 近似大模型接管成本
+
+建议先用单个 split 做调度原型验证，再根据最有潜力的阈值继续补更完整的系统实验。
+
 ## 4. 当前 probe 评估指标
 
 当前主评估已经不只看整体 AUROC / AUPRC，而是重点关注错误类表现。
