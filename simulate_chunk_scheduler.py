@@ -10,6 +10,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ================= Default Configuration =================
@@ -28,6 +29,8 @@ DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 DEFAULT_THRESHOLDS = "0.15,0.20,0.25"
 DEFAULT_MAX_NEW_TOKENS = 256
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
+DEFAULT_CACHE_PATH = os.path.join(PROJECT_ROOT, "chunk_scheduler_cache.pt")
+DEFAULT_SAVE_CACHE_EVERY = 5
 # ========================================================
 
 
@@ -56,6 +59,8 @@ def parse_args():
     )
     parser.add_argument("--thresholds", default=DEFAULT_THRESHOLDS, help="Comma-separated risk thresholds to simulate.")
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS, help="Max generation tokens.")
+    parser.add_argument("--cache-path", default=DEFAULT_CACHE_PATH, help="Path to cached large-model outputs.")
+    parser.add_argument("--save-cache-every", type=int, default=DEFAULT_SAVE_CACHE_EVERY, help="Save cache every N new generations.")
     parser.add_argument(
         "--skip-large-baseline",
         action="store_true",
@@ -84,6 +89,23 @@ def parse_csv_floats(text):
     if not values:
         raise ValueError("Expected at least one numeric value.")
     return values
+
+
+def load_cache(cache_path):
+    if not os.path.exists(cache_path):
+        return {
+            "large_baseline": {},
+            "takeover": {},
+        }
+    cache = torch.load(cache_path)
+    cache.setdefault("large_baseline", {})
+    cache.setdefault("takeover", {})
+    return cache
+
+
+def save_cache(cache, cache_path):
+    torch.save(cache, cache_path)
+    print(f"Cache saved to: {cache_path}")
 
 
 def parse_hidden_layer_sizes(hidden_layers_text):
@@ -313,8 +335,14 @@ def simulate_threshold(
     remaining_tokens_consumed = []
     large_takeover_tokens = []
     per_question_rows = []
+    new_cache_entries = 0
 
-    for record in test_records:
+    progress = tqdm(
+        test_records,
+        desc=f"Threshold {threshold:.2f}",
+        leave=False,
+    )
+    for record in progress:
         question_id = record["question_id"]
         question = record["question"]
         ground_truth_final_answer = record["ground_truth_final_answer"]
@@ -339,6 +367,15 @@ def simulate_threshold(
                     assistant_prefix=None,
                     max_new_tokens=args.max_new_tokens,
                 )
+                new_cache_entries += 1
+                if args.save_cache_every > 0 and new_cache_entries % args.save_cache_every == 0:
+                    save_cache(
+                        {
+                            "large_baseline": large_baseline_cache,
+                            "takeover": takeover_cache,
+                        },
+                        args.cache_path,
+                    )
             large_baseline_result = large_baseline_cache[question_id]
             large_baseline_is_correct = large_baseline_result["final_answer"] == ground_truth_final_answer
             large_only_correct += int(large_baseline_is_correct)
@@ -366,6 +403,15 @@ def simulate_threshold(
                     assistant_prefix=trigger["prefix_text"],
                     max_new_tokens=args.max_new_tokens,
                 )
+                new_cache_entries += 1
+                if args.save_cache_every > 0 and new_cache_entries % args.save_cache_every == 0:
+                    save_cache(
+                        {
+                            "large_baseline": large_baseline_cache,
+                            "takeover": takeover_cache,
+                        },
+                        args.cache_path,
+                    )
             takeover_result = takeover_cache[cache_key]
             large_takeover_tokens.append(takeover_result["generated_token_count"])
             scheduled_final_answer = takeover_result["final_answer"]
@@ -394,6 +440,20 @@ def simulate_threshold(
                 "large_baseline_final_answer": None if large_baseline_result is None else large_baseline_result["final_answer"],
                 "takeover_generated_token_count": None if takeover_result is None else takeover_result["generated_token_count"],
             }
+        )
+        progress.set_postfix(
+            triggered=triggered_questions,
+            cached_large=len(large_baseline_cache),
+            cached_takeover=len(takeover_cache),
+        )
+
+    if new_cache_entries > 0:
+        save_cache(
+            {
+                "large_baseline": large_baseline_cache,
+                "takeover": takeover_cache,
+            },
+            args.cache_path,
         )
 
     total_questions = len(test_records)
@@ -475,10 +535,17 @@ def main():
     )
     large_model.eval()
 
+    print(f"Loading generation cache from: {args.cache_path}")
+    cache = load_cache(args.cache_path)
+    large_baseline_cache = cache["large_baseline"]
+    takeover_cache = cache["takeover"]
+    print(
+        f"Cached entries | large_baseline: {len(large_baseline_cache)} | "
+        f"takeover: {len(takeover_cache)}"
+    )
+
     print(f"Simulating thresholds: {thresholds}")
     simulation_summaries = []
-    takeover_cache = {}
-    large_baseline_cache = {}
     for threshold in thresholds:
         summary = simulate_threshold(
             threshold=threshold,
