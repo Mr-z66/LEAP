@@ -211,24 +211,47 @@ def build_generation_messages(question, assistant_prefix=None):
     return messages
 
 
-def generate_answer(model, tokenizer, question, assistant_prefix, max_new_tokens):
-    messages = build_generation_messages(question, assistant_prefix=assistant_prefix)
-    chat_text = tokenizer.apply_chat_template(
+def build_generation_inputs(tokenizer, question, assistant_prefix):
+    normalized_prefix = None
+    if assistant_prefix is not None:
+        normalized_prefix = assistant_prefix.rstrip()
+        if not normalized_prefix:
+            normalized_prefix = None
+
+    messages = build_generation_messages(question, assistant_prefix=normalized_prefix)
+    if normalized_prefix is None:
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+            add_generation_prompt=True,
+        ), normalized_prefix
+
+    # Use prefill-style continuation so the model extends the assistant message
+    # instead of starting a fresh turn that can leak role markers like "user".
+    return tokenizer.apply_chat_template(
         messages,
-        tokenize=False,
-        add_generation_prompt=assistant_prefix is None,
-    )
-    inputs = tokenizer([chat_text], return_tensors="pt").to(model.device)
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt",
+        continue_final_message=True,
+    ), normalized_prefix
+
+
+def generate_answer(model, tokenizer, question, assistant_prefix, max_new_tokens):
+    inputs, normalized_prefix = build_generation_inputs(tokenizer, question, assistant_prefix)
+    inputs = inputs.to(model.device)
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
-    )
+        )
     new_token_ids = outputs[0][inputs.input_ids.shape[1]:]
     generated_text = tokenizer.decode(new_token_ids, skip_special_tokens=True).strip()
-    full_reasoning = assistant_prefix + generated_text if assistant_prefix else generated_text
+    full_reasoning = normalized_prefix + generated_text if normalized_prefix else generated_text
     final_answer = extract_final_answer(full_reasoning)
     return {
         "generated_text": generated_text,
