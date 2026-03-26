@@ -31,6 +31,7 @@ DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
 DEFAULT_MLP_MAX_ITER = 300
 DEFAULT_MLP_ALPHA = 1e-4
 DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
+DEFAULT_THRESHOLD_GRID = "0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
 # ========================================================
 
 
@@ -65,6 +66,11 @@ def parse_args():
         default=DEFAULT_MLP_LEARNING_RATE_INIT,
         help="Initial learning rate for MLP.",
     )
+    parser.add_argument(
+        "--threshold-grid",
+        default=DEFAULT_THRESHOLD_GRID,
+        help="Comma-separated thresholds for scanning error-score decision points.",
+    )
     return parser.parse_args()
 
 
@@ -86,6 +92,21 @@ def safe_stdev(values):
     if len(values) <= 1:
         return 0.0
     return statistics.stdev(values)
+
+
+def parse_threshold_grid(threshold_text):
+    thresholds = []
+    for part in threshold_text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        value = float(part)
+        if not 0.0 < value < 1.0:
+            raise ValueError("Thresholds must be between 0 and 1.")
+        thresholds.append(value)
+    if not thresholds:
+        raise ValueError("Threshold grid cannot be empty.")
+    return sorted(set(thresholds))
 
 
 def parse_hidden_layer_sizes(hidden_layers_text):
@@ -139,6 +160,43 @@ def build_probe(args, random_state):
     )
 
 
+def compute_error_metrics_from_predictions(y_test, y_pred):
+    y_true_error = 1 - y_test
+    y_pred_error = 1 - y_pred
+    error_precision, error_recall, error_f1, _ = precision_recall_fscore_support(
+        y_true_error,
+        y_pred_error,
+        average="binary",
+        zero_division=0,
+    )
+    return {
+        "error_precision": error_precision,
+        "error_recall": error_recall,
+        "error_f1": error_f1,
+        "balanced_accuracy": balanced_accuracy_score(y_test, y_pred),
+        "confusion_matrix": confusion_matrix(y_test, y_pred, labels=[0, 1]).tolist(),
+        "classification_report": classification_report(y_test, y_pred, digits=4, zero_division=0),
+    }
+
+
+def scan_thresholds(y_test, error_score, thresholds):
+    threshold_results = []
+    for threshold in thresholds:
+        y_pred_error = (error_score >= threshold).astype(np.int64)
+        y_pred = 1 - y_pred_error
+        metrics = compute_error_metrics_from_predictions(y_test, y_pred)
+        threshold_results.append(
+            {
+                "threshold": threshold,
+                "error_precision": metrics["error_precision"],
+                "error_recall": metrics["error_recall"],
+                "error_f1": metrics["error_f1"],
+                "balanced_accuracy": metrics["balanced_accuracy"],
+            }
+        )
+    return threshold_results
+
+
 def run_single_split(X, y, groups, random_state, test_size, args):
     splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
     train_indices, test_indices = next(splitter.split(X, y, groups))
@@ -168,15 +226,9 @@ def run_single_split(X, y, groups, random_state, test_size, args):
     y_pred = probe.predict(X_test_scaled)
     error_score = 1.0 - y_score
     y_true_error = 1 - y_test
-    y_pred_error = 1 - y_pred
-
-    error_precision, error_recall, error_f1, _ = precision_recall_fscore_support(
-        y_true_error,
-        y_pred_error,
-        average="binary",
-        zero_division=0,
-    )
-    cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
+    default_metrics = compute_error_metrics_from_predictions(y_test, y_pred)
+    threshold_results = scan_thresholds(y_test, error_score, args.thresholds)
+    best_threshold_result = max(threshold_results, key=lambda item: item["error_f1"])
 
     return {
         "random_state": random_state,
@@ -190,12 +242,14 @@ def run_single_split(X, y, groups, random_state, test_size, args):
         "prefix_correct_auroc": roc_auc_score(y_test, y_score),
         "prefix_correct_auprc": average_precision_score(y_test, y_score),
         "error_auprc": average_precision_score(y_true_error, error_score),
-        "balanced_accuracy": balanced_accuracy_score(y_test, y_pred),
-        "error_precision": error_precision,
-        "error_recall": error_recall,
-        "error_f1": error_f1,
-        "confusion_matrix": cm.tolist(),
-        "classification_report": classification_report(y_test, y_pred, digits=4, zero_division=0),
+        "balanced_accuracy": default_metrics["balanced_accuracy"],
+        "error_precision": default_metrics["error_precision"],
+        "error_recall": default_metrics["error_recall"],
+        "error_f1": default_metrics["error_f1"],
+        "confusion_matrix": default_metrics["confusion_matrix"],
+        "classification_report": default_metrics["classification_report"],
+        "threshold_results": threshold_results,
+        "best_threshold_result": best_threshold_result,
     }
 
 
@@ -222,6 +276,7 @@ def evaluate_feature(samples, feature_key, num_splits, base_random_state, test_s
 
 
 args = parse_args()
+args.thresholds = parse_threshold_grid(args.threshold_grid)
 
 print(f"Loading labeled chunk dataset from: {args.data_path}")
 dataset = torch.load(args.data_path)
@@ -234,6 +289,7 @@ if args.probe_type == "mlp":
     )
 else:
     print("Using logistic probe with class-balanced training.")
+print(f"Threshold scan grid: {args.thresholds}")
 
 all_results = []
 for feature_key in args.features:
@@ -273,6 +329,9 @@ for feature_key in args.features:
     error_precisions = [item["error_precision"] for item in result["valid_splits"]]
     error_recalls = [item["error_recall"] for item in result["valid_splits"]]
     error_f1s = [item["error_f1"] for item in result["valid_splits"]]
+    best_threshold_precisions = [item["best_threshold_result"]["error_precision"] for item in result["valid_splits"]]
+    best_threshold_recalls = [item["best_threshold_result"]["error_recall"] for item in result["valid_splits"]]
+    best_threshold_f1s = [item["best_threshold_result"]["error_f1"] for item in result["valid_splits"]]
 
     print(f"Prefix-correct AUROC mean/std: {safe_mean(prefix_correct_aurocs):.4f} / {safe_stdev(prefix_correct_aurocs):.4f}")
     print(f"Prefix-correct AUPRC mean/std: {safe_mean(prefix_correct_auprcs):.4f} / {safe_stdev(prefix_correct_auprcs):.4f}")
@@ -281,6 +340,9 @@ for feature_key in args.features:
     print(f"Error precision mean/std: {safe_mean(error_precisions):.4f} / {safe_stdev(error_precisions):.4f}")
     print(f"Error recall mean/std: {safe_mean(error_recalls):.4f} / {safe_stdev(error_recalls):.4f}")
     print(f"Error F1 mean/std: {safe_mean(error_f1s):.4f} / {safe_stdev(error_f1s):.4f}")
+    print(f"Best-threshold error precision mean/std: {safe_mean(best_threshold_precisions):.4f} / {safe_stdev(best_threshold_precisions):.4f}")
+    print(f"Best-threshold error recall mean/std: {safe_mean(best_threshold_recalls):.4f} / {safe_stdev(best_threshold_recalls):.4f}")
+    print(f"Best-threshold error F1 mean/std: {safe_mean(best_threshold_f1s):.4f} / {safe_stdev(best_threshold_f1s):.4f}")
 
     best_split = max(result["valid_splits"], key=lambda item: item["error_f1"])
     print("\nBest valid split snapshot (by error F1)")
@@ -303,6 +365,23 @@ for feature_key in args.features:
     print(f"Error F1: {best_split['error_f1']:.4f}")
     print(f"Confusion matrix [true 0/1 x pred 0/1]: {best_split['confusion_matrix']}")
     print(best_split["classification_report"])
+    print("\nThreshold scan on best split")
+    print("-" * 50)
+    for item in best_split["threshold_results"]:
+        print(
+            f"threshold={item['threshold']:.2f} | "
+            f"error_precision={item['error_precision']:.4f} | "
+            f"error_recall={item['error_recall']:.4f} | "
+            f"error_F1={item['error_f1']:.4f} | "
+            f"balanced_accuracy={item['balanced_accuracy']:.4f}"
+        )
+    print(
+        "Best threshold by error F1: "
+        f"{best_split['best_threshold_result']['threshold']:.2f} | "
+        f"error_precision={best_split['best_threshold_result']['error_precision']:.4f} | "
+        f"error_recall={best_split['best_threshold_result']['error_recall']:.4f} | "
+        f"error_F1={best_split['best_threshold_result']['error_f1']:.4f}"
+    )
 
     print("\nFeature comparison summary")
 print("=" * 50)
