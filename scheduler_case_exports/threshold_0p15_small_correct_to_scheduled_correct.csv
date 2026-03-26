@@ -1,9 +1,84 @@
 ﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
-4,small_correct_to_scheduled_correct,True,,True,False,,,,,624,624,624,,,,,James writes a 3-page letter to 2 different friends twice a week.  How many pages does he write a year?
-33,small_correct_to_scheduled_correct,True,,True,False,,,,,34,34,34,,,,,"To make pizza, together with other ingredients, Kimber needs 10 cups of water, 16 cups of flour, and 1/2 times as many teaspoons of salt as the number of cups of flour. Calculate the combined total number of cups of water, flour, and teaspoons of salt that she needs to make the pizza."
-70,small_correct_to_scheduled_correct,True,,True,False,,,,,19,19,19,,,,,"Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
-79,small_correct_to_scheduled_correct,True,,True,False,,,,,70,70,70,,,,,James spends 40 years teaching.  His partner has been teaching for 10 years less.  How long is their combined experience?
-86,small_correct_to_scheduled_correct,True,,True,True,3,2,3,0.999999463558197,6,6,6,,150,"To determine how many ounces of soda Peter bought, we need to follow these steps:
+4,small_correct_to_scheduled_correct,True,False,True,False,,,,,624,624,624,52,,,"To solve this problem, we need to break it down into smaller steps and calculate accordingly.
+
+1. **Determine the number of pages James writes per session:**
+   - James writes a 3-page letter to each friend.
+   - He has 2 different friends.
+   - Therefore, in one session, he writes \(3 \text{ pages} \times 2 \text{ friends} = 6 \text{ pages}\).
+
+2. **Determine the number of sessions per week:**
+   - James writes these letters twice a week.
+   - So, he writes \(2 \text{ sessions/week}\).
+
+3. **Calculate the total number of pages written per week:**
+   - In one session, he writes 6 pages.
+   - Since he writes twice a week, he writes \(6 \text{ pages/session} \times 2 \text{ sessions/week} = 12 \text{ pages/week}\).
+
+4. **Calculate the total number of weeks in a year:**
+   - There are 52 weeks in a year.
+
+5. **Calculate the total number of pages written in a year:**
+   - He writes 12 pages per week.
+   - Over 52 weeks",James writes a 3-page letter to 2 different friends twice a week.  How many pages does he write a year?
+33,small_correct_to_scheduled_correct,True,True,True,False,,,,,34,34,34,34,,,"Let's break down the problem step by step:
+
+1. **Water:**
+   - Kimber needs 10 cups of water.
+
+2. **Flour:**
+   - Kimber needs 16 cups of flour.
+
+3. **Salt:**
+   - The amount of salt needed is \( \frac{1}{2} \) times the number of cups of flour.
+   - Since she needs 16 cups of flour, the amount of salt required is:
+     \[
+     \frac{1}{2} \times 16 = 8 \text{ teaspoons of salt}
+     \]
+
+4. **Combined Total:**
+   - We need to add the quantities of water, flour, and salt.
+   - Water: 10 cups
+   - Flour: 16 cups
+   - Salt: 8 teaspoons
+
+Since we are asked for the combined total number of cups of water, flour, and teaspoons of salt, we sum these values:
+
+\[
+10 \text{ (cups of water)} + 16 \text{ (cups of flour)} + 8 \text{ (teaspoons of salt)} = 34
+\]
+
+Therefore, the combined total number of cups of water","To make pizza, together with other ingredients, Kimber needs 10 cups of water, 16 cups of flour, and 1/2 times as many teaspoons of salt as the number of cups of flour. Calculate the combined total number of cups of water, flour, and teaspoons of salt that she needs to make the pizza."
+70,small_correct_to_scheduled_correct,True,True,True,False,,,,,19,19,19,19,,,"Let's break down the problem step by step:
+
+1. **Identify the number of apples Martha has:**
+   - Martha has 68 apples.
+
+2. **Determine the number of apples Tim has:**
+   - Tim has 30 less apples than Martha.
+   - Therefore, Tim's apples = Martha's apples - 30
+   - Tim's apples = 68 - 30 = 38
+
+3. **Calculate the number of apples Harry has:**
+   - Harry has half as many apples as Tim.
+   - Therefore, Harry's apples = Tim's apples / 2
+   - Harry's apples = 38 / 2 = 19
+
+So, Harry has 19 apples.","Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
+79,small_correct_to_scheduled_correct,True,True,True,False,,,,,70,70,70,70,,,"To find the combined teaching experience of James and his partner, we need to follow these steps:
+
+1. **Determine James's teaching experience:**
+   - James has been teaching for 40 years.
+
+2. **Calculate his partner's teaching experience:**
+   - His partner has been teaching for 10 years less than James.
+   - Therefore, his partner's teaching experience = 40 years (James's experience) - 10 years = 30 years.
+
+3. **Add both experiences together:**
+   - Combined teaching experience = James's experience + Partner's experience
+   - Combined teaching experience = 40 years + 30 years = 70 years.
+
+So, the combined teaching experience of James and his partner is 70 years.",James spends 40 years teaching.  His partner has been teaching for 10 years less.  How long is their combined experience?
+86,small_correct_to_scheduled_correct,True,True,True,True,3,2,3,0.999999463558197,6,6,6,6,150,"To determine how many ounces of soda Peter bought, we need to follow these steps:
 
 1. **Calculate the total amount of money Peter spent on soda:**Peter started with $2 and left with $0.50. Therefore, the amount he spent is:
    \[
@@ -19,8 +94,25 @@
    \frac{1.50}{0.25} = 6 \text{ ounces}
    \]
 
-Therefore, Peter bought 6 ounces of soda.",,Peter goes to the store to buy a soda. The soda costs $.25 an ounce. He brought $2 with him and leaves with $.50. How many ounces of soda did he buy?
-99,small_correct_to_scheduled_correct,True,,True,True,6,5,6,0.6253343820571899,3,3,3,,256,"To determine how many more fish Gail would have in the first tank than the second tank, we need to follow these steps:
+Therefore, Peter bought 6 ounces of soda.","Let's break down the problem step by step:
+
+1. **Determine how much money Peter spent:**
+   - Peter started with $2.
+   - He left the store with $0.50.
+   - Therefore, the amount of money he spent is:
+     \[
+     2.00 - 0.50 = 1.50
+     \]
+
+2. **Calculate the number of ounces of soda he bought:**
+   - The cost of soda is $0.25 per ounce.
+   - To find out how many ounces he bought, we divide the total amount he spent by the cost per ounce:
+     \[
+     \frac{1.50}{0.25} = 6
+     \]
+
+So, Peter bought 6 ounces of soda.",Peter goes to the store to buy a soda. The soda costs $.25 an ounce. He brought $2 with him and leaves with $.50. How many ounces of soda did he buy?
+99,small_correct_to_scheduled_correct,True,False,True,True,6,5,6,0.6253343820571899,3,3,3,1,256,"To determine how many more fish Gail would have in the first tank than the second tank, we need to follow these steps:
 
 1. **Calculate the size of the second tank:**
    The first tank is twice the size of the second tank. Given that the first tank has 48 gallons of water, we can find the size of the second tank by dividing the volume of the first tank by 2:\[
@@ -40,12 +132,119 @@ Therefore, Peter bought 6 ounces of soda.",,Peter goes to the store to buy a sod
      \]
 
 3. **Account for the fish eaten in the first tank:**
-   One of the fish in the first tank eats another, reducing the number of fish in the first",,"Gail has two fish tanks. The first tank is twice the size of the second tank. There are 48 gallons of water in the first tank. She follows the rule of one gallon of water per inch of fish. If she keeps two-inch fish in the second tank and three-inch fish in the first tank, how many more fish would Gail have in the first tank than the second tank if one of the first tank fish eats another?"
-110,small_correct_to_scheduled_correct,True,,True,False,,,,,140,140,140,,,,,Marvin and Tina were selling candy bars to help fund their class trip.  The candy bars cost $2 each.  Marvin sold 35 candy bars total.  Tina sold three times the number of candy bars as Marvin.  How much more money did Tina make for the class trip selling candy bars compared to Marvin?
-113,small_correct_to_scheduled_correct,True,,True,False,,,,,60,60,60,,,,,Baez has 25 marbles. She loses 20% of them one day. Then a friend sees her and gives her double the amount that Baez has after she lost them. How many marbles does Baez end up with?
-119,small_correct_to_scheduled_correct,True,,True,False,,,,,140,140,140,,,,,Jessa needs to make cupcakes for 3 fourth-grade classes that each have 30 students and a P.E. class with 50 students. How many cupcakes does she need to make?
-126,small_correct_to_scheduled_correct,True,,True,False,,,,,25,25,25,,,,,"John has five more roommates than twice as many as Bob. If Bob has 10 roommates, how many roommates does John have?"
-137,small_correct_to_scheduled_correct,True,,True,True,5,4,3,0.7601335048675537,6,6,6,,229,"To determine how many loads of laundry it will take to wash all the oversized beach towels, we need to follow these steps:
+   One of the fish in the first tank eats another, reducing the number of fish in the first","Let's break down the problem step by step.
+
+1. **Determine the sizes of the tanks:**
+   - The first tank has 48 gallons.
+   - The first tank is twice the size of the second tank.
+   - Therefore, the second tank has \( \frac{48}{2} = 24 \) gallons.
+
+2. **Calculate the number of fish in each tank:**
+   - For the second tank:
+     - Each fish requires 2 gallons (since they are 2 inches long).
+     - Number of fish in the second tank = \( \frac{24 \text{ gallons}}{2 \text{ gallons per fish}} = 12 \) fish.
+   
+   - For the first tank:
+     - Each fish requires 3 gallons (since they are 3 inches long).
+     - Number of fish in the first tank before any fish is eaten = \( \frac{48 \text{ gallons}}{3 \text{ gallons per fish}} = 16 \) fish.
+
+3. **Account for the fish that gets eaten in the first tank:**
+   - One fish in the first tank eats another fish, reducing the number of fish in the first tank by 1.","Gail has two fish tanks. The first tank is twice the size of the second tank. There are 48 gallons of water in the first tank. She follows the rule of one gallon of water per inch of fish. If she keeps two-inch fish in the second tank and three-inch fish in the first tank, how many more fish would Gail have in the first tank than the second tank if one of the first tank fish eats another?"
+110,small_correct_to_scheduled_correct,True,False,True,False,,,,,140,140,140,70,,,"To solve this problem, we need to follow these steps:
+
+1. **Determine how many candy bars Tina sold:**
+   - We know that Marvin sold 35 candy bars.
+   - Tina sold three times the number of candy bars as Marvin.
+   - Therefore, the number of candy bars Tina sold is:
+     \[
+     3 \times 35 = 105
+     \]
+
+2. **Calculate the amount of money Marvin made:**
+   - Each candy bar costs $2.
+   - Marvin sold 35 candy bars.
+   - Therefore, the total amount of money Marvin made is:
+     \[
+     35 \times 2 = 70 \text{ dollars}
+     \]
+
+3. **Calculate the amount of money Tina made:**
+   - Each candy bar costs $2.
+   - Tina sold 105 candy bars.
+   - Therefore, the total amount of money Tina made is:
+     \[
+     105 \times 2 = 210 \text{ dollars}
+     \]
+
+4. **Find out how much more money Tina made compared to Marvin:**
+   - Tina made $210.
+   - Marvin made $70.",Marvin and Tina were selling candy bars to help fund their class trip.  The candy bars cost $2 each.  Marvin sold 35 candy bars total.  Tina sold three times the number of candy bars as Marvin.  How much more money did Tina make for the class trip selling candy bars compared to Marvin?
+113,small_correct_to_scheduled_correct,True,False,True,False,,,,,60,60,60,5,,,"Let's break down the problem step by step:
+
+1. **Initial number of marbles:**
+   Baez starts with 25 marbles.
+
+2. **Losing 20% of the marbles:**
+   To find out how many marbles she loses, we calculate 20% of 25:
+   \[
+   20\% \text{ of } 25 = 0.20 \times 25 = 5 \text{ marbles}
+   \]
+   So, Baez loses 5 marbles.
+
+3. **Number of marbles left after losing some:**
+   Subtract the lost marbles from the initial amount:
+   \[
+   25 - 5 = 20 \text{ marbles}
+   \]
+
+4. **Friend gives double the remaining amount:**
+   The friend gives Baez double the amount she has left (which is 20 marbles):
+   \[
+   2 \times 20 = 40 \text{ marbles}
+   \]
+
+5. **Total number of marbles Baez ends up with:**
+   Add the marbles given by the friend to the remaining marbles:",Baez has 25 marbles. She loses 20% of them one day. Then a friend sees her and gives her double the amount that Baez has after she lost them. How many marbles does Baez end up with?
+119,small_correct_to_scheduled_correct,True,True,True,False,,,,,140,140,140,140,,,"To determine the total number of cupcakes Jessa needs to make, we can break down the problem into smaller steps:
+
+1. **Calculate the number of cupcakes needed for the fourth-grade classes:**
+   - There are 3 fourth-grade classes.
+   - Each class has 30 students.
+   - Therefore, the total number of students in the fourth-grade classes is:
+     \[
+     3 \text{ classes} \times 30 \text{ students per class} = 90 \text{ students}
+     \]
+
+2. **Calculate the number of cupcakes needed for the P.E. class:**
+   - The P.E. class has 50 students.
+
+3. **Add the number of cupcakes needed for all the classes together:**
+   - Total number of cupcakes for the fourth-grade classes: 90
+   - Total number of cupcakes for the P.E. class: 50
+   - Therefore, the total number of cupcakes needed is:
+     \[
+     90 + 50 = 140
+     \]
+
+So, Jessa needs to make a total of 140 cupcakes.",Jessa needs to make cupcakes for 3 fourth-grade classes that each have 30 students and a P.E. class with 50 students. How many cupcakes does she need to make?
+126,small_correct_to_scheduled_correct,True,True,True,False,,,,,25,25,25,25,,,"To solve this problem, let's break it down step by step:
+
+1. First, we need to understand the relationship between the number of roommates John and Bob have.
+   - The problem states that John has ""five more roommates than twice as many as Bob.""
+
+2. We know that Bob has 10 roommates.
+
+3. Let's calculate ""twice as many as Bob"":
+   - Twice as many as Bob = 2 × (number of Bob's roommates)
+   - Twice as many as Bob = 2 × 10 = 20
+
+4. Now, we need to find out how many roommates John has:
+   - John has five more roommates than this amount.
+   - Number of John's roommates = (twice as many as Bob) + 5
+   - Number of John's roommates = 20 + 5 = 25
+
+Therefore, John has 25 roommates.","John has five more roommates than twice as many as Bob. If Bob has 10 roommates, how many roommates does John have?"
+137,small_correct_to_scheduled_correct,True,False,True,True,5,4,3,0.7601335048675537,6,6,6,14,229,"To determine how many loads of laundry it will take to wash all the oversized beach towels, we need to follow these steps:
 
 1. **Calculate the total number of people:**
    - There are 3 families.
@@ -66,12 +265,125 @@ Therefore, Peter bought 6 ounces of soda.",,Peter goes to the store to buy a sod
      \text{Number of loads} = \frac{84}{14} = 6
      \]
 
-Therefore, it will take 6 loads of laundry to wash all the oversized beach towels.",,3 families of 4 people shared a vacation rental for 7 days.  Everyone uses 1 oversized beach towel a day before getting a new one.  The washing machine can hold 14 oversized beach towels per load.  How many loads of laundry will it take to wash all the oversized beach towels?
-151,small_correct_to_scheduled_correct,True,,True,False,,,,,283,283,283,,,,,Keiko sent 111 text messages last week. This week she sent 50 less than double what she sent last week. How many text messages did Keiko send last week and this week combined?
-152,small_correct_to_scheduled_correct,True,,True,False,,,,,44,44,44,,,,,A one-year subscription to a newspaper is offered with a 45% discount. How much does the discounted subscription cost if a subscription normally costs $80?
-156,small_correct_to_scheduled_correct,True,,True,False,,,,,21,21,21,,,,,"George bought some food for his trip: a bottle of juice, a sandwich, and a bottle of milk. The sandwich was for $4, and the juice was two times more expensive. The bottle of milk cost was 75% of the total cost of the sandwich and juice. How much did George pay for his food?"
-164,small_correct_to_scheduled_correct,True,,True,False,,,,,32,32,32,,,,,On Monday Buddy has 30 baseball cards. On Tuesday Buddy loses half of them. On Wednesday Buddy buys 12 baseball cards. On Thursday he buys a third of what he had on Tuesday. How many baseball cards does he have on Thursday?
-180,small_correct_to_scheduled_correct,True,,True,True,3,2,3,0.999986469745636,360,360,360,,174,"Let's break down the problem step by step:
+Therefore, it will take 6 loads of laundry to wash all the oversized beach towels.","To solve this problem, we need to follow these steps:
+
+1. **Calculate the total number of people:**
+   - There are 3 families.
+   - Each family has 4 people.
+   \[
+   3 \text{ families} \times 4 \text{ people per family} = 12 \text{ people}
+   \]
+
+2. **Determine the total number of beach towels used per day:**
+   - Each person uses 1 oversized beach towel per day.
+   \[
+   12 \text{ people} \times 1 \text{ towel per person per day} = 12 \text{ towels per day}
+   \]
+
+3. **Calculate the total number of beach towels used over 7 days:**
+   - They stay for 7 days.
+   \[
+   12 \text{ towels per day} \times 7 \text{ days} = 84 \text{ towels}
+   \]
+
+4. **Determine how many loads of laundry are needed:**
+   - The washing machine can hold 14 towels per load.
+   \[
+   \frac{84 \text{ towels}}{14 \text{ towels per load}} =",3 families of 4 people shared a vacation rental for 7 days.  Everyone uses 1 oversized beach towel a day before getting a new one.  The washing machine can hold 14 oversized beach towels per load.  How many loads of laundry will it take to wash all the oversized beach towels?
+151,small_correct_to_scheduled_correct,True,True,True,False,,,,,283,283,283,283,,,"To solve this problem, we need to follow these steps:
+
+1. **Identify the number of text messages sent last week:**
+   - Last week, Keiko sent 111 text messages.
+
+2. **Calculate the number of text messages sent this week:**
+   - This week, she sent 50 less than double what she sent last week.
+   - First, find double the number of messages from last week:
+     \[
+     2 \times 111 = 222
+     \]
+   - Then subtract 50 from this amount:
+     \[
+     222 - 50 = 172
+     \]
+
+3. **Add the number of messages from both weeks together:**
+   - Last week's messages: 111
+   - This week's messages: 172
+   - Total messages:
+     \[
+     111 + 172 = 283
+     \]
+
+Therefore, Keiko sent a total of 283 text messages last week and this week combined.",Keiko sent 111 text messages last week. This week she sent 50 less than double what she sent last week. How many text messages did Keiko send last week and this week combined?
+152,small_correct_to_scheduled_correct,True,True,True,False,,,,,44,44,44,44,,,"To find the cost of the discounted subscription, we can follow these steps:
+
+1. **Determine the discount amount:**
+   - The original price of the subscription is $80.
+   - The discount rate is 45%.
+
+   To calculate the discount amount:
+   \[
+   \text{Discount Amount} = \text{Original Price} \times \text{Discount Rate}
+   \]
+   \[
+   \text{Discount Amount} = 80 \times 0.45 = 36
+   \]
+
+2. **Calculate the discounted price:**
+   - Subtract the discount amount from the original price to get the discounted price.
+   
+   \[
+   \text{Discounted Price} = \text{Original Price} - \text{Discount Amount}
+   \]
+   \[
+   \text{Discounted Price} = 80 - 36 = 44
+   \]
+
+Therefore, the cost of the discounted subscription is $44.",A one-year subscription to a newspaper is offered with a 45% discount. How much does the discounted subscription cost if a subscription normally costs $80?
+156,small_correct_to_scheduled_correct,True,True,True,False,,,,,21,21,21,21,,,"Let's break down the problem step by step to find out how much George paid for his food.
+
+1. **Cost of the Sandwich:**
+   - The sandwich costs $4.
+
+2. **Cost of the Juice:**
+   - The juice is two times more expensive than the sandwich.
+   - Therefore, the cost of the juice = \(2 \times 4 = \$8\).
+
+3. **Total Cost of Sandwich and Juice:**
+   - Total cost of the sandwich and juice = \(4 + 8 = \$12\).
+
+4. **Cost of the Milk:**
+   - The bottle of milk costs 75% of the total cost of the sandwich and juice.
+   - Therefore, the cost of the milk = \(0.75 \times 12 = \$9\).
+
+5. **Total Cost of All Items:**
+   - Total cost = cost of the sandwich + cost of the juice + cost of the milk.
+   - Total cost = \(4 + 8 + 9 = \$21\).
+
+Thus, George paid a total of $21 for his food.","George bought some food for his trip: a bottle of juice, a sandwich, and a bottle of milk. The sandwich was for $4, and the juice was two times more expensive. The bottle of milk cost was 75% of the total cost of the sandwich and juice. How much did George pay for his food?"
+164,small_correct_to_scheduled_correct,True,True,True,False,,,,,32,32,32,32,,,"Let's break down the problem step by step to find out how many baseball cards Buddy has on Thursday.
+
+1. **Monday:**
+   - Buddy starts with 30 baseball cards.
+
+2. **Tuesday:**
+   - Buddy loses half of his baseball cards.
+   - Half of 30 is \( \frac{30}{2} = 15 \).
+   - So, after losing half, he has \( 30 - 15 = 15 \) baseball cards left.
+
+3. **Wednesday:**
+   - Buddy buys 12 more baseball cards.
+   - He now has \( 15 + 12 = 27 \) baseball cards.
+
+4. **Thursday:**
+   - Buddy buys a third of what he had on Tuesday.
+   - On Tuesday, he had 15 baseball cards.
+   - A third of 15 is \( \frac{15}{3} = 5 \).
+   - So, he buys 5 more baseball cards on Thursday.
+   - Adding these to his current total, he now has \( 27 + 5 = 32 \) baseball cards.
+
+Therefore, on Thursday, Buddy has 32 baseball cards.",On Monday Buddy has 30 baseball cards. On Tuesday Buddy loses half of them. On Wednesday Buddy buys 12 baseball cards. On Thursday he buys a third of what he had on Tuesday. How many baseball cards does he have on Thursday?
+180,small_correct_to_scheduled_correct,True,True,True,True,3,2,3,0.999986469745636,360,360,360,360,174,"Let's break down the problem step by step:
 
 1. Derek starts with $960.
 
@@ -96,11 +408,108 @@ Therefore, it will take 6 loads of laundry to wash all the oversized beach towel
    480 - 120 = 360
    \]
 
-Therefore, Derek has $360 left.",,"Derek has $960 to buy his books for the semester. He spends half of that on his textbooks, and he spends a quarter of what is left on his school supplies. What is the amount of money Derek has left?"
-223,small_correct_to_scheduled_correct,True,,True,False,,,12,,2,2,2,,,,,Andy and Bob went to the canteen to buy snacks. They spent the same amount. Andy bought a can of soda at $1 and two hamburgers at $2 each.  Bob ordered two sandwiches for $3 and a can of fruit drink.  How much did Bob's fruit drink cost?
-236,small_correct_to_scheduled_correct,True,,True,False,,,,,825,825,825,,,,,"Jake has $5000. He spends $2800 on a new motorcycle, and then spends half of what's left on a concert ticket. Jake then loses a fourth of what he has left. How much money does he have left?"
-250,small_correct_to_scheduled_correct,True,,True,False,,,,,360,360,360,,,,,Tom uses 10 weight plates each weighing 30 pounds on an exercise machine.  This exercise machine uses special technology to make the weights 20% heavier on the lowering portion.  How heavy did the weights feel when being lowered?
-259,small_correct_to_scheduled_correct,True,,True,True,7,6,7,0.93871009349823,37,37,37,,207,"To determine the number of students in class C, we need to follow these steps:
+Therefore, Derek has $360 left.","Let's break down the problem step by step.
+
+1. **Initial Amount**: Derek starts with $960.
+
+2. **Spending on Textbooks**:
+   - He spends half of $960 on textbooks.
+   - Half of $960 is calculated as \( \frac{960}{2} = 480 \).
+   - So, he spends $480 on textbooks.
+
+3. **Amount Left After Buying Textbooks**:
+   - Subtract the amount spent on textbooks from the initial amount.
+   - \( 960 - 480 = 480 \).
+
+4. **Spending on School Supplies**:
+   - He spends a quarter of the remaining amount on school supplies.
+   - A quarter of $480 is calculated as \( \frac{480}{4} = 120 \).
+   - So, he spends $120 on school supplies.
+
+5. **Final Amount Left**:
+   - Subtract the amount spent on school supplies from the remaining amount after buying textbooks.
+   - \( 480 - 120 = 360 \).
+
+Therefore, the amount of money Derek has left is $360","Derek has $960 to buy his books for the semester. He spends half of that on his textbooks, and he spends a quarter of what is left on his school supplies. What is the amount of money Derek has left?"
+223,small_correct_to_scheduled_correct,True,False,True,False,,,12,,2,2,2,-1,,,"To solve this problem, let's break it down step by step.
+
+First, we need to calculate how much Andy spent:
+- Andy bought a can of soda for $1.
+- He also bought two hamburgers at $2 each.
+
+So, the total cost for Andy is:
+\[ \text{Cost of soda} + \text{Cost of two hamburgers} = 1 + (2 \times 2) = 1 + 4 = 5 \]
+
+Therefore, Andy spent a total of $5.
+
+Since Andy and Bob spent the same amount, Bob must have also spent $5.
+
+Next, we need to determine how much Bob's fruit drink cost:
+- Bob ordered two sandwiches for $3 each.
+- Let \( x \) be the cost of the fruit drink.
+
+The total cost for Bob is:
+\[ \text{Cost of two sandwiches} + \text{Cost of fruit drink} = 3 + 3 + x = 6 + x \]
+
+We know that Bob's total spending is $5, so we set up the equation:
+\[ 6 + x = 5 \]
+
+Solving for \( x \):
+\[ x = 5 - 6 = -1 \]
+
+This result doesn't make sense",Andy and Bob went to the canteen to buy snacks. They spent the same amount. Andy bought a can of soda at $1 and two hamburgers at $2 each.  Bob ordered two sandwiches for $3 and a can of fruit drink.  How much did Bob's fruit drink cost?
+236,small_correct_to_scheduled_correct,True,False,True,False,,,,,825,825,825,275,,,"Let's break down the problem step by step to find out how much money Jake has left.
+
+1. **Initial Amount:**
+   Jake starts with $5000.
+
+2. **Spending on Motorcycle:**
+   Jake spends $2800 on a new motorcycle.
+   \[
+   5000 - 2800 = 2200
+   \]
+   After buying the motorcycle, Jake has $2200 left.
+
+3. **Spending on Concert Ticket:**
+   Jake spends half of what's left on a concert ticket.
+   \[
+   \frac{2200}{2} = 1100
+   \]
+   So, Jake spends $1100 on the concert ticket.
+   \[
+   2200 - 1100 = 1100
+   \]
+   After buying the concert ticket, Jake has $1100 left.
+
+4. **Losing Money:**
+   Jake loses a fourth of what he has left.
+   \[
+   \frac{1100}{4} = 275
+   \]
+   So, Jake loses $275.
+   \[","Jake has $5000. He spends $2800 on a new motorcycle, and then spends half of what's left on a concert ticket. Jake then loses a fourth of what he has left. How much money does he have left?"
+250,small_correct_to_scheduled_correct,True,True,True,False,,,,,360,360,360,360,,,"To determine how heavy the weights felt when being lowered, we need to follow these steps:
+
+1. **Calculate the total weight of the plates:**
+   Tom uses 10 weight plates, each weighing 30 pounds.
+   \[
+   \text{Total weight} = 10 \times 30 = 300 \text{ pounds}
+   \]
+
+2. **Determine the additional weight due to the special technology:**
+   The exercise machine makes the weights 20% heavier during the lowering portion.
+   \[
+   \text{Additional weight} = 300 \times 0.20 = 60 \text{ pounds}
+   \]
+
+3. **Calculate the perceived weight during the lowering portion:**
+   Add the additional weight to the original total weight.
+   \[
+   \text{Perceived weight} = 300 + 60 = 360 \text{ pounds}
+   \]
+
+Thus, the weights felt like they were \(\boxed{360}\) pounds when being lowered.",Tom uses 10 weight plates each weighing 30 pounds on an exercise machine.  This exercise machine uses special technology to make the weights 20% heavier on the lowering portion.  How heavy did the weights feel when being lowered?
+259,small_correct_to_scheduled_correct,True,False,True,True,7,6,7,0.93871009349823,37,37,37,80,207,"To determine the number of students in class C, we need to follow these steps:
 
 1. Calculate the number of students in class A.
 2. Determine the number of students in class B.
@@ -124,8 +533,20 @@ Now, we can find the number of students in class C by subtracting the number of 
 Thus, the number of students in class C is:
 \[
 \boxed{37}
-\]",,"Adam goes to a small school, which teaches 80 students in three classes. 40% of the students are in class A, and class B has 21 students fewer than class A. The rest are in class C. How many students are in this class?"
-263,small_correct_to_scheduled_correct,True,,True,True,11,10,11,0.999992847442627,30,30,30,,55,"To determine how much money John makes from selling the apples, we need to follow these steps:
+\]","To find out how many students are in class C, we need to follow these steps:
+
+Step 1: Calculate the number of students in class A.
+Since 40% of the students are in class A, we can calculate the number of students in class A as follows:
+\[ \text{Number of students in class A} = 40\% \times 80 = 0.40 \times 80 = 32 \]
+
+Step 2: Calculate the number of students in class B.
+We know that class B has 21 students fewer than class A. Therefore:
+\[ \text{Number of students in class B} = 32 - 21 = 11 \]
+
+Step 3: Calculate the number of students in class C.
+The total number of students is 80. We already know the number of students in class A and class B. So, the number of students in class C can be found by subtracting the number of students in class A and class B from the total number of students:
+\[ \text{Number of students in class C} = 80 - (\text{Number of students in class A} + \text{Number of students in class B","Adam goes to a small school, which teaches 80 students in three classes. 40% of the students are in class A, and class B has 21 students fewer than class A. The rest are in class C. How many students are in this class?"
+263,small_correct_to_scheduled_correct,True,True,True,True,11,10,11,0.999992847442627,30,30,30,30,55,"To determine how much money John makes from selling the apples, we need to follow these steps:
 
 1. **Calculate the total number of trees:**
    John plants a plot of 3 trees by 4 trees.
@@ -144,9 +565,49 @@ Thus, the number of students in class C is:
    \text{Total revenue} = 60 \times 0.5 = 30
    \]
 
-Therefore, John makes \(\boxed{30}\) dollars.",,"John plants a plot of 3 trees by 4 trees.  Each tree gives 5 apples.  He sells each apple for $.5.  How much money does he make, in dollars?"
-277,small_correct_to_scheduled_correct,True,,True,False,,,,,175,175,175,,,,,Arven bought five puppies for a total cost of $800. Three puppies are on sale for $150 each. How much does each of those two other puppies cost if they cost the same?
-281,small_correct_to_scheduled_correct,True,,True,True,5,4,,0.8766481876373291,1728,1728,1728,,220,"To find the combined balance of both Gina's accounts, we need to follow these steps:
+Therefore, John makes \(\boxed{30}\) dollars.","To solve this problem, we need to follow these steps:
+
+1. Calculate the total number of trees.
+2. Determine the total number of apples produced.
+3. Calculate the total revenue from selling the apples.
+
+Step 1: Calculate the total number of trees.
+- John has a plot that is 3 trees by 4 trees.
+- Total number of trees = 3 * 4 = 12 trees
+
+Step 2: Determine the total number of apples produced.
+- Each tree gives 5 apples.
+- Total number of apples = 12 trees * 5 apples/tree = 60 apples
+
+Step 3: Calculate the total revenue from selling the apples.
+- Each apple is sold for $0.5.
+- Total revenue = 60 apples * $0.5/apple = $30
+
+Therefore, John makes $30 from selling the apples.","John plants a plot of 3 trees by 4 trees.  Each tree gives 5 apples.  He sells each apple for $.5.  How much money does he make, in dollars?"
+277,small_correct_to_scheduled_correct,True,True,True,False,,,,,175,175,175,175,,,"To solve this problem, let's break it down into steps:
+
+### Step 1: Calculate the total cost of the three puppies on sale.
+- Each of the three puppies costs $150.
+- Therefore, the total cost for these three puppies is:
+  \[
+  3 \times 150 = 450
+  \]
+
+### Step 2: Determine the remaining amount spent on the other two puppies.
+- The total cost for all five puppies is $800.
+- Subtract the cost of the three puppies from the total cost to find out how much was spent on the other two puppies:
+  \[
+  800 - 450 = 350
+  \]
+
+### Step 3: Calculate the cost per puppy for the remaining two puppies.
+- Since the remaining two puppies cost the same amount and together they cost $350, we divide $350 by 2:
+  \[
+  \frac{350}{2} = 175
+  \]
+
+Therefore, each of the two other puppies costs $175.",Arven bought five puppies for a total cost of $800. Three puppies are on sale for $150 each. How much does each of those two other puppies cost if they cost the same?
+281,small_correct_to_scheduled_correct,True,True,True,True,5,4,,0.8766481876373291,1728,1728,1728,1728,220,"To find the combined balance of both Gina's accounts, we need to follow these steps:
 
 1. Determine the balance in one of Gina's accounts.
 2. Calculate the combined balance of both Gina's accounts.
@@ -178,5 +639,56 @@ Perform the addition:
 Therefore, the combined balance of both Gina's accounts is:
 \[
 \boxed{1728}
-\]",,"Gina has two bank accounts. Each account has a quarter of the balance in Betty's account. If Betty's account balance is $3,456, what is the combined balance of both Gina's accounts?"
-285,small_correct_to_scheduled_correct,True,,True,False,,,,,2,2,2,,,,,John wants to finish a show in 5 days.  There are 20 episodes and they are each 30 minutes long.  How many hours does he have to watch a day?
+\]","To find the combined balance of both of Gina's accounts, we can follow these steps:
+
+1. **Determine the balance in each of Gina's accounts:**
+   - We know that each of Gina's accounts has a quarter (1/4) of the balance in Betty's account.
+   - Betty's account balance is $3,456.
+
+2. **Calculate the balance in one of Gina's accounts:**
+   \[
+   \text{Balance in one of Gina's accounts} = \frac{1}{4} \times 3456
+   \]
+   \[
+   \text{Balance in one of Gina's accounts} = \frac{3456}{4}
+   \]
+   \[
+   \text{Balance in one of Gina's accounts} = 864
+   \]
+
+3. **Calculate the combined balance of both of Gina's accounts:**
+   - Since Gina has two accounts, and each account has a balance of $864:
+   \[
+   \text{Combined balance} = 864 + 864
+   \]
+   \[
+   \text{Combined balance} = 1728
+   \]
+
+Therefore, the","Gina has two bank accounts. Each account has a quarter of the balance in Betty's account. If Betty's account balance is $3,456, what is the combined balance of both Gina's accounts?"
+285,small_correct_to_scheduled_correct,True,False,True,False,,,,,2,2,2,5,,,"To determine how many hours John has to watch per day, we can follow these steps:
+
+1. **Calculate the total viewing time required:**
+   - Each episode is 30 minutes long.
+   - There are 20 episodes.
+   - Total viewing time = Number of episodes × Length of each episode
+   \[
+   \text{Total viewing time} = 20 \times 30 \text{ minutes}
+   \]
+   \[
+   \text{Total viewing time} = 600 \text{ minutes}
+   \]
+
+2. **Convert the total viewing time from minutes to hours:**
+   - There are 60 minutes in an hour.
+   \[
+   \text{Total viewing time in hours} = \frac{600 \text{ minutes}}{60 \text{ minutes/hour}}
+   \]
+   \[
+   \text{Total viewing time in hours} = 10 \text{ hours}
+   \]
+
+3. **Determine the daily viewing time:**
+   - John wants to finish watching all episodes in 5 days.
+   \[
+   \text{Daily viewing time} = \frac{\text{Total viewing time in hours}}{\text{",John wants to finish a show in 5 days.  There are 20 episodes and they are each 30 minutes long.  How many hours does he have to watch a day?

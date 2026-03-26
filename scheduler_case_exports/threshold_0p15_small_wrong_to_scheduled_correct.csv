@@ -1,5 +1,5 @@
 ﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
-116,small_wrong_to_scheduled_correct,False,,True,True,10,9,12,0.9525418877601624,21,20,21,,256,"Let's break down the problem step by step:
+116,small_wrong_to_scheduled_correct,False,False,True,True,10,9,12,0.9525418877601624,21,20,21,2,256,"Let's break down the problem step by step:
 
 1. **Thank you cards**: Valerie has 3 thank you cards.
 2. **Bills**: She has 2 bills (water and electric).
@@ -15,8 +15,36 @@ Now, let's calculate the total number of stamps needed:- Each thank you card req
 Adding all these together:
 \[ 3 \text{ (thank you cards)} + 1 \text{ (water bill)} + 2 \text{ (electric bill)} + 5 \text{ (rebates)} + 10 \text{ (job applications)} = 21 \text{ stamps} \]
 
-So, Valerie needs a total",,"Valerie needs to put stamps on the envelopes she is about to mail. She has thank you cards for each of her grandmother, uncle and aunt for the birthday presents they sent. She also has to pay the water bill and the electric bill separately. She wants to send three more mail-in rebates than she does bills and she has twice as many job applications as rebates to mail. How many stamps does she need if everything needs 1 stamp except the electric bill, which needs 2?"
-143,small_wrong_to_scheduled_correct,False,,True,True,10,9,,0.2804427146911621,45,0.75,45,,193,"To determine how many goldfish are below the surface, we can follow these steps:
+So, Valerie needs a total","Let's break down the problem step by step:
+
+1. **Thank You Cards:**
+   - Valerie has thank you cards for her grandmother, uncle, and aunt.
+   - Number of thank you cards = 3
+
+2. **Bills:**
+   - Valerie has to pay the water bill and the electric bill.
+   - Number of bills = 2 (water bill + electric bill)
+
+3. **Mail-in Rebates:**
+   - Valerie sends three more mail-in rebates than she does bills.
+   - Number of bills = 2
+   - Number of rebates = 2 + 3 = 5
+
+4. **Job Applications:**
+   - Valerie has twice as many job applications as rebates.
+   - Number of rebates = 5
+   - Number of job applications = 2 * 5 = 10
+
+Now, let's calculate the total number of stamps needed:
+
+- Each thank you card requires 1 stamp:
+  - Stamps for thank you cards = 3
+
+- Each bill requires 1 stamp, except the electric bill which requires 2 stamps:
+  - Stamps for water bill = 1
+  - Stamps for electric bill = 2
+  - Total stamps for","Valerie needs to put stamps on the envelopes she is about to mail. She has thank you cards for each of her grandmother, uncle and aunt for the birthday presents they sent. She also has to pay the water bill and the electric bill separately. She wants to send three more mail-in rebates than she does bills and she has twice as many job applications as rebates to mail. How many stamps does she need if everything needs 1 stamp except the electric bill, which needs 2?"
+143,small_wrong_to_scheduled_correct,False,False,True,True,10,9,,0.2804427146911621,45,0.75,45,75,193,"To determine how many goldfish are below the surface, we can follow these steps:
 
 1. **Understand the given information:**
    - 25% of the goldfish are at the surface.
@@ -42,8 +70,29 @@ So, Valerie needs a total",,"Valerie needs to put stamps on the envelopes she is
    0.75 \times 60 = 45
    \]
 
-So, the number of goldfish below the surface is \( \boxed{45} \).",,"Toby is counting goldfish in the local pond. He knows that only 25% of goldfish are at the surface and the rest are too deep below the surface to be able to see. If he counts 15 goldfish, how many are below the surface?"
-194,small_wrong_to_scheduled_correct,False,,True,True,11,10,,0.9251712560653687,322,32,322,,152,"To find the total cost of the gifts after the rebate, we need to follow these steps:
+So, the number of goldfish below the surface is \( \boxed{45} \).","To solve this problem, we need to determine the total number of goldfish in the pond and then find out how many are below the surface.
+
+Step 1: Understand the given information.
+- Toby counts 15 goldfish at the surface.
+- Only 25% of the goldfish are at the surface.
+- The remaining 75% of the goldfish are below the surface.
+
+Step 2: Calculate the total number of goldfish.
+Since 25% of the goldfish are at the surface, and Toby counted 15 goldfish at the surface, we can set up the following equation:
+\[ 0.25 \times \text{Total number of goldfish} = 15 \]
+
+Let \( T \) represent the total number of goldfish. Then:
+\[ 0.25T = 15 \]
+
+Solve for \( T \):
+\[ T = \frac{15}{0.25} \]
+\[ T = 60 \]
+
+So, the total number of goldfish in the pond is 60.
+
+Step 3: Determine the number of goldfish below the surface.
+Since 75% of the goldfish are below the surface, we calculate:","Toby is counting goldfish in the local pond. He knows that only 25% of goldfish are at the surface and the rest are too deep below the surface to be able to see. If he counts 15 goldfish, how many are below the surface?"
+194,small_wrong_to_scheduled_correct,False,False,True,True,11,10,,0.9251712560653687,322,32,322,2,152,"To find the total cost of the gifts after the rebate, we need to follow these steps:
 
 1. Calculate the total cost of the polo shirts.
 2. Calculate the total cost of the necklaces.
@@ -78,8 +127,40 @@ Let's go through each step:
    334 - 12 = 322
    \]
 
-Therefore, the total cost of the gifts after the rebate is \( \boxed{322} \).",,"Mr. Grey is purchasing gifts for his family. So far he has purchased 3 polo shirts for $26 each; 2 necklaces for $83 each; and 1 computer game for $90. Since Mr. Grey purchased all those using his credit card, he received a $12 rebate. What is the total cost of the gifts after the rebate?"
-199,small_wrong_to_scheduled_correct,False,,True,True,3,2,3,0.9501243233680725,150,15,150,,256,"To determine how much more Gary is spending per month to pay off the loan in 2 years instead of 5, we need to follow these steps:
+Therefore, the total cost of the gifts after the rebate is \( \boxed{322} \).","To find the total cost of the gifts after the rebate, we need to follow these steps:
+
+1. Calculate the total cost of the polo shirts.
+2. Calculate the total cost of the necklaces.
+3. Add the cost of the computer game.
+4. Sum up all these costs to get the total before the rebate.
+5. Subtract the rebate from the total cost.
+
+Let's go through each step in detail:
+
+### Step 1: Cost of Polo Shirts
+- Number of polo shirts: 3
+- Cost per polo shirt: $26
+
+Total cost of polo shirts:
+\[ 3 \times 26 = 78 \]
+
+### Step 2: Cost of Necklaces
+- Number of necklaces: 2
+- Cost per necklace: $83
+
+Total cost of necklaces:
+\[ 2 \times 83 = 166 \]
+
+### Step 3: Cost of Computer Game
+- Number of computer games: 1
+- Cost per computer game: $90
+
+Total cost of computer game:
+\[ 1 \times 90 = 90 \]
+
+### Step 4: Total Cost Before Rebate
+Sum up the costs calculated in steps 1, 2","Mr. Grey is purchasing gifts for his family. So far he has purchased 3 polo shirts for $26 each; 2 necklaces for $83 each; and 1 computer game for $90. Since Mr. Grey purchased all those using his credit card, he received a $12 rebate. What is the total cost of the gifts after the rebate?"
+199,small_wrong_to_scheduled_correct,False,False,True,True,3,2,3,0.9501243233680725,150,15,150,24,256,"To determine how much more Gary is spending per month to pay off the loan in 2 years instead of 5, we need to follow these steps:
 
 1. **Calculate the monthly payment for 5 years:**- Total loan amount: $6,000
    - Duration: 5 years (which is 60 months)
@@ -104,8 +185,34 @@ Therefore, the total cost of the gifts after the rebate is \( \boxed{322} \).",,
    \text{Difference} = 250 - 100 = 150
    \]
 
-Therefore, Gary is spending $150 more per month to pay off",,"Gary bought his first used car for $6,000.  Gary borrowed the money from his dad who said he could pay him back the full amount over 5 years.  Gary decided he would pay his dad back the full amount in 2 years.  How much more is Gary spending per month to pay the loan off in 2 years instead of 5?"
-211,small_wrong_to_scheduled_correct,False,,True,True,8,7,4,0.19662708044052124,7200,300,7200,,256,"To determine how much more Jessica pays for her expenses over the whole year compared to last year, we need to calculate her total expenses for both years and then find the difference.
+Therefore, Gary is spending $150 more per month to pay off","To determine how much more Gary is spending per month to pay off the loan in 2 years instead of 5, we need to calculate the monthly payments for both scenarios and then find the difference.
+
+### Step-by-Step Calculation:
+
+1. **Total Loan Amount:**
+   \[
+   \text{Loan Amount} = \$6,000
+   \]
+
+2. **Monthly Payment for 5 Years:**
+   - Total number of months in 5 years:
+     \[
+     5 \text{ years} \times 12 \text{ months/year} = 60 \text{ months}
+     \]
+   - Monthly payment:
+     \[
+     \frac{\$6,000}{60 \text{ months}} = \$100 \text{ per month}
+     \]
+
+3. **Monthly Payment for 2 Years:**
+   - Total number of months in 2 years:
+     \[
+     2 \text{ years} \times 12 \text{ months/year} = 24 \text{ months}
+     \]
+   - Monthly payment:
+     \[
+     \frac{\$6,000}{24 \text{ months}} = \$","Gary bought his first used car for $6,000.  Gary borrowed the money from his dad who said he could pay him back the full amount over 5 years.  Gary decided he would pay his dad back the full amount in 2 years.  How much more is Gary spending per month to pay the loan off in 2 years instead of 5?"
+211,small_wrong_to_scheduled_correct,False,False,True,True,8,7,4,0.19662708044052124,7200,300,7200,50,256,"To determine how much more Jessica pays for her expenses over the whole year compared to last year, we need to calculate her total expenses for both years and then find the difference.
 
 ### Last Year's Expenses:
 1. **Rent**: $1000 per month
@@ -137,8 +244,28 @@ Total annual expenses this year:
 ### Difference in Annual Expenses:
 \[ 22800 - 15600 = 7200 \] dollars
 
-Thus, Jessica pays \(\boxed{7200}\) dollars more for her expenses over the whole year compared to",,"Last year Jessica paid $1000 for rent, $200 for food, and $100 for car insurance each month. This year her rent goes up by 30%, food costs increase by 50%, and the cost of her car insurance triples because she was at fault in an accident. How much more does Jessica pay for her expenses over the whole year compared to last year?"
-234,small_wrong_to_scheduled_correct,False,,True,True,7,6,3,0.9917727708816528,8,0.05,8,,256,"To determine how many nickels Mark gets in his change, we need to follow these steps:
+Thus, Jessica pays \(\boxed{7200}\) dollars more for her expenses over the whole year compared to","To determine how much more Jessica pays for her expenses this year compared to last year, we need to calculate her total monthly expenses for both years and then find the difference over the course of a year.
+
+### Step-by-Step Calculation:
+
+#### Last Year's Monthly Expenses:
+1. **Rent**: $1000 per month
+2. **Food**: $200 per month
+3. **Car Insurance**: $100 per month
+
+Total monthly expenses last year:
+\[ \text{Total Monthly Expenses (Last Year)} = 1000 + 200 + 100 = 1300 \]
+
+Total annual expenses last year:
+\[ \text{Total Annual Expenses (Last Year)} = 1300 \times 12 = 15600 \]
+
+#### This Year's Monthly Expenses:
+1. **Rent**: Increased by 30%
+   \[ \text{New Rent} = 1000 + (0.30 \times 1000) = 1000 + 300 = 1300 \]
+
+2. **Food**: Increased by 50%
+   \[ \text{New Food Cost","Last year Jessica paid $1000 for rent, $200 for food, and $100 for car insurance each month. This year her rent goes up by 30%, food costs increase by 50%, and the cost of her car insurance triples because she was at fault in an accident. How much more does Jessica pay for her expenses over the whole year compared to last year?"
+234,small_wrong_to_scheduled_correct,False,False,True,True,7,6,3,0.9917727708816528,8,0.05,8,5,256,"To determine how many nickels Mark gets in his change, we need to follow these steps:
 
 1. **Calculate the total cost of the items Mark buys:**
    - Bread: $4.20
@@ -162,8 +289,33 @@ Thus, Jessica pays \(\boxed{7200}\) dollars more for her expenses over the whole
 
 6. **Calculate the remaining change using nickels:**
    - Each nickel is worth $0.05.
-   - Number of nickels needed: $0.40 / $0.05 = 8 nickels",,"Mark buys a loaf of bread for $4.20 and some cheese for $2.05. He gives the cashier $7.00. If the cashier only has 1 quarter and 1 dime in his till, plus a bunch of nickels, how many nickels does Mark get in his change?"
-242,small_wrong_to_scheduled_correct,False,,True,True,11,10,,0.999999463558197,36,30,36,,174,"To determine how many cookies Ann keeps, we need to follow these steps:
+   - Number of nickels needed: $0.40 / $0.05 = 8 nickels","To determine how many nickels Mark gets in his change, we need to follow these steps:
+
+1. **Calculate the total cost of the items:**
+   - Cost of the loaf of bread: \( \$4.20 \)
+   - Cost of the cheese: \( \$2.05 \)
+
+   Total cost:
+   \[
+   4.20 + 2.05 = 6.25
+   \]
+
+2. **Determine the amount of money Mark gave to the cashier:**
+   - Amount given: \( \$7.00 \)
+
+3. **Calculate the change Mark should receive:**
+   \[
+   7.00 - 6.25 = 0.75
+   \]
+   So, Mark should receive \( \$0.75 \) in change.
+
+4. **Identify the denominations available for change:**
+   - The cashier has 1 quarter (\( \$0.25 \))
+   - The cashier has 1 dime (\( \$0.10 \))
+   - The cashier has a bunch of nickels (\( \$0.05 \))
+
+5. **Use the largest denominations first to make up the change:**","Mark buys a loaf of bread for $4.20 and some cheese for $2.05. He gives the cashier $7.00. If the cashier only has 1 quarter and 1 dime in his till, plus a bunch of nickels, how many nickels does Mark get in his change?"
+242,small_wrong_to_scheduled_correct,False,False,True,True,11,10,,0.999999463558197,36,30,36,3,174,"To determine how many cookies Ann keeps, we need to follow these steps:
 
 1. Calculate the total number of each type of cookie Ann initially baked.
 2. Subtract the number of each type of cookie Ann gave away.
@@ -189,8 +341,20 @@ Finally, we sum the remaining cookies:
 
 Total cookies kept = 12 (oatmeal raisin) + 6 (sugar) + 18 (chocolate chip) = 36 cookies
 
-So, the total number of cookies Ann keeps is \(\boxed{36}\).",,"Ann is baking cookies. She bakes three dozen oatmeal raisin cookies, two dozen sugar cookies, and four dozen chocolate chip cookies. Ann gives away two dozen oatmeal raisin cookies, 1.5 dozen sugar cookies, and 2.5 dozen chocolate chip cookies. How many total cookies does she keep?"
-256,small_wrong_to_scheduled_correct,False,,True,True,5,4,,0.8365083932876587,108,1,108,,256,"To determine the actual distance between Pence and Hillcrest, we need to use the scale provided on the map. The scale tells us that 1/4 inch on the map represents 8 miles in reality. We can use this information to find out how many miles correspond to 3 3/8 inches on the map.
+So, the total number of cookies Ann keeps is \(\boxed{36}\).","To solve this problem, we need to follow these steps:
+
+### Step 1: Calculate the initial number of each type of cookie.
+- Oatmeal raisin cookies: \(3 \text{ dozen} = 3 \times 12 = 36 \text{ cookies}\)
+- Sugar cookies: \(2 \text{ dozen} = 2 \times 12 = 24 \text{ cookies}\)
+- Chocolate chip cookies: \(4 \text{ dozen} = 4 \times 12 = 48 \text{ cookies}\)
+
+### Step 2: Calculate the number of each type of cookie given away.
+- Oatmeal raisin cookies given away: \(2 \text{ dozen} = 2 \times 12 = 24 \text{ cookies}\)
+- Sugar cookies given away: \(1.5 \text{ dozen} = 1.5 \times 12 = 18 \text{ cookies}\)
+- Chocolate chip cookies given away: \(2.5 \text{ dozen} = 2.5 \times 12 = 30 \text{ cookies}\)
+
+### Step 3: Calculate the number of each type of cookie Ann keeps","Ann is baking cookies. She bakes three dozen oatmeal raisin cookies, two dozen sugar cookies, and four dozen chocolate chip cookies. Ann gives away two dozen oatmeal raisin cookies, 1.5 dozen sugar cookies, and 2.5 dozen chocolate chip cookies. How many total cookies does she keep?"
+256,small_wrong_to_scheduled_correct,False,False,True,True,5,4,,0.8365083932876587,108,1,108,8,256,"To determine the actual distance between Pence and Hillcrest, we need to use the scale provided on the map. The scale tells us that 1/4 inch on the map represents 8 miles in reality. We can use this information to find out how many miles correspond to 3 3/8 inches on the map.
 
 First, let's convert 3 3/8 inches to an improper fraction:\[ 3 \frac{3}{8} = \frac{27}{8} \text{ inches} \]
 
@@ -204,8 +368,22 @@ This means there are 13.5 segments of 1/4 inch in 27/8 inches. Since each 1/4 in
 \[ 13.5 \times 8 = 108 \text{ miles} \]
 
 Therefore, the actual distance between Pence and Hillcrest is:
-\[ \boxed{108",,"On a road map, 1/4 inch represents 8 miles of actual road distance. The towns of Pence and Hillcrest are represented by points 3 3/8 inches apart on the map. What is the actual distance, in miles, between the towns?"
-271,small_wrong_to_scheduled_correct,False,,True,True,22,21,,0.38778460025787354,250,150,250,,63,"To calculate the total amount of money Nadia used to buy the flowers, we need to follow these steps:
+\[ \boxed{108","To solve this problem, we need to convert the map distance into actual road distance using the given scale. Let's break it down step by step.
+
+1. **Understand the Scale:**
+   - On the map, \( \frac{1}{4} \) inch represents 8 miles in reality.
+
+2. **Convert Map Distance to Inches:**
+   - The distance between Pence and Hillcrest on the map is \( 3 \frac{3}{8} \) inches.
+   - Convert the mixed number to an improper fraction:
+     \[
+     3 \frac{3}{8} = 3 + \frac{3}{8} = \frac{24}{8} + \frac{3}{8} = \frac{27}{8} \text{ inches}
+     \]
+
+3. **Determine the Scale Factor:**
+   - Since \( \frac{1}{4} \) inch on the map corresponds to 8 miles, we can find out how many \( \frac{1}{4} \) inch segments fit into \( \frac{27}{8} \) inches.
+   - To do this, divide \( \frac{27}{8} \) by \( \","On a road map, 1/4 inch represents 8 miles of actual road distance. The towns of Pence and Hillcrest are represented by points 3 3/8 inches apart on the map. What is the actual distance, in miles, between the towns?"
+271,small_wrong_to_scheduled_correct,False,False,True,True,22,21,,0.38778460025787354,250,150,250,4,63,"To calculate the total amount of money Nadia used to buy the flowers, we need to follow these steps:
 
 1. Calculate the number of lilies Nadia bought.
 2. Calculate the cost of the roses.
@@ -225,8 +403,40 @@ Lilies cost twice as much as roses, so each lily costs $5 * 2 = $10. Nadia bough
 Cost of lilies = 15 * $10 = $150Step 4: Add the costs together to get the total amount.
 Total cost = Cost of roses + Cost of lilies = $100 + $150 = $250
 
-Therefore, the total amount of money Nadia used to buy the flowers is $250.",,"Nadia was sent to the flower shop to buy 20 roses and 3/4 times as many Lillies as roses. If roses cost $5 each and lilies cost twice as much each, calculate the total amount of money Nadia used to buy the flowers."
-287,small_wrong_to_scheduled_correct,False,,True,True,10,9,10,0.9877570867538452,18,4,18,,237,"To determine how much Bran still needs to pay for his tuition fee, we need to follow these steps:
+Therefore, the total amount of money Nadia used to buy the flowers is $250.","To solve this problem, we'll break it down into steps:
+
+### Step 1: Calculate the number of Lilies
+Nadia needs to buy \( \frac{3}{4} \) times as many Lilies as roses. She is buying 20 roses.
+
+\[
+\text{Number of Lilies} = \frac{3}{4} \times 20 = 15
+\]
+
+So, Nadia needs to buy 15 Lilies.
+
+### Step 2: Calculate the cost of the Roses
+Each rose costs $5.
+
+\[
+\text{Total cost of roses} = 20 \times 5 = \$100
+\]
+
+### Step 3: Calculate the cost of the Lilies
+Each Lily costs twice as much as a rose. Since each rose costs $5, each Lily costs:
+
+\[
+2 \times 5 = \$10
+\]
+
+Now, calculate the total cost for 15 Lilies:
+
+\[
+\text{Total cost of Lilies} = 15 \times 10 = \$150
+\]
+
+### Step 4: Calculate the total amount spent
+Add the total cost of the roses and the total cost of the","Nadia was sent to the flower shop to buy 20 roses and 3/4 times as many Lillies as roses. If roses cost $5 each and lilies cost twice as much each, calculate the total amount of money Nadia used to buy the flowers."
+287,small_wrong_to_scheduled_correct,False,True,True,True,10,9,10,0.9877570867538452,18,4,18,18,237,"To determine how much Bran still needs to pay for his tuition fee, we need to follow these steps:
 
 1. Calculate the amount covered by the scholarship.
 2. Determine the remaining tuition fee after the scholarship.
@@ -260,4 +470,33 @@ Let's go through each step in detail:
    \text{Amount Bran still needs to pay} = 63 - 45 = 18
    \]
 
-Therefore, the amount Bran still needs to pay is \(\boxed{18}\).",,"Bran's tuition fee is $90. He does a part-time job that pays him $15 per month and he has a scholarship that takes care of 30% of his tuition fee. If he needs to pay his tuition fee within 3 months, how much does Bran still need to pay?"
+Therefore, the amount Bran still needs to pay is \(\boxed{18}\).","To determine how much Bran still needs to pay for his tuition fee, we can break down the problem into several steps:
+
+1. **Calculate the total tuition fee:**
+   \[
+   \text{Total tuition fee} = \$90
+   \]
+
+2. **Determine the amount covered by the scholarship:**
+   The scholarship covers 30% of the tuition fee.
+   \[
+   \text{Scholarship amount} = 0.30 \times 90 = \$27
+   \]
+
+3. **Calculate the remaining tuition fee after the scholarship:**
+   \[
+   \text{Remaining tuition fee} = 90 - 27 = \$63
+   \]
+
+4. **Calculate the amount Bran earns from his part-time job over 3 months:**
+   Bran earns $15 per month.
+   \[
+   \text{Earnings from part-time job} = 15 \times 3 = \$45
+   \]
+
+5. **Determine the remaining amount Bran needs to pay after using his earnings:**
+   \[
+   \text{Amount still needed} = 63 - 45 = \$18
+   \]
+
+Therefore, Bran","Bran's tuition fee is $90. He does a part-time job that pays him $15 per month and he has a scholarship that takes care of 30% of his tuition fee. If he needs to pay his tuition fee within 3 months, how much does Bran still need to pay?"
