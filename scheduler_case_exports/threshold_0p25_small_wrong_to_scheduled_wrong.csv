@@ -1,5 +1,5 @@
 ﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
-8,small_wrong_to_scheduled_wrong,False,False,False,False,,,6,,41,200,200,3,,,"To find out how much Alexis paid for the shoes, we need to follow these steps:
+8,small_wrong_to_scheduled_wrong,False,True,False,False,,,6,,41,200,200,41,,,"To find out how much Alexis paid for the shoes, we need to follow these steps:
 
 1. **Determine the total amount spent**: We know Alexis had a budget of $200 and has $16 left. Therefore, the total amount she spent can be calculated as:
    \[
@@ -24,8 +24,13 @@
    125 + 18 = 143
    \]
 
-3. **Calculate the cost of the shoes**: The total amount spent","Alexis is applying for a new job and bought a new set of business clothes to wear to the interview. She went to a department store with a budget of $200 and spent $30 on a button-up shirt, $46 on suit pants, $38 on a suit coat, $11 on socks, and $18 on a belt. She also purchased a pair of shoes, but lost the receipt for them. She has $16 left from her budget. How much did Alexis pay for the shoes?"
-22,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,7,10,10,3,,,"To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
+3. **Calculate the cost of the shoes**: The total amount spent is $184, and the sum of the known expenses is $143. Therefore, the cost of the shoes can be found by subtracting the sum of the known expenses from the total amount spent:
+   \[
+   184 - 143 = 41
+   \]
+
+Thus, Alexis paid \(\boxed{41}\) dollars for the shoes.","Alexis is applying for a new job and bought a new set of business clothes to wear to the interview. She went to a department store with a budget of $200 and spent $30 on a button-up shirt, $46 on suit pants, $38 on a suit coat, $11 on socks, and $18 on a belt. She also purchased a pair of shoes, but lost the receipt for them. She has $16 left from her budget. How much did Alexis pay for the shoes?"
+22,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,7,10,10,7,,,"To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
 
 1. **Identify the number of letters in Jamie's last name:**
    - Jamie's full name is Jamie Grey.
@@ -46,8 +51,15 @@
 
 3. **Determine the relationship between Samantha's and Bobbie's last names:**
    - Samantha’s last name has three fewer letters than Bobbie’s last name.
-   - Let \( S \) represent the number of","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
-30,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,6,3,3,75,,,"To solve this problem, let's break it down step by step:
+   - Let \( S \) represent the number of letters in Samantha's last name.
+   - According to the problem, \( S = B - 3 \).
+   - Substitute \( B = 10 \) into the equation:
+     \[
+     S = 10 - 3 = 7
+     \]
+
+Therefore, the number of letters in Samantha’s last name is \(\boxed{7}\).","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
+30,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,6,3,3,6,,,"To solve this problem, let's break it down step by step:
 
 1. **Determine the total number of pizza pieces:**
    - Each person has a personal pan pizza cut into 4 pieces.
@@ -67,8 +79,25 @@
      \[
      75\% \text{ of 4 pieces} = 0.75 \times 4 = 3 \text{ pieces}
      \]
-   - Cate eats 75% of her pizza","Ann, Bill, Cate, and Dale each buy personal pan pizzas cut into 4 pieces. If Bill and Dale eat 50% of their pizzas and Ann and Cate eat 75% of the pizzas, how many pizza pieces are left uneaten?"
-67,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,6,1,1,18,,,"To find the average of their averages for the final three days, we need to follow these steps:
+   - Cate eats 75% of her pizza:
+     \[
+     75\% \text{ of 4 pieces} = 0.75 \times 4 = 3 \text{ pieces}
+     \]
+
+3. **Sum the total number of pieces eaten:**
+   - Pieces eaten by Bill = 2
+   - Pieces eaten by Dale = 2
+   - Pieces eaten by Ann = 3
+   - Pieces eaten by Cate = 3
+   - Total pieces eaten = 2 + 2 + 3 + 3 = 10 pieces
+
+4. **Calculate the number of uneaten pieces:**
+   - Total pieces = 16
+   - Pieces eaten = 10
+   - Uneaten pieces = Total pieces - Pieces eaten = 16 - 10 = 6 pieces
+
+Therefore, the number of pizza pieces that are left uneaten is 6.","Ann, Bill, Cate, and Dale each buy personal pan pizzas cut into 4 pieces. If Bill and Dale eat 50% of their pizzas and Ann and Cate eat 75% of the pizzas, how many pizza pieces are left uneaten?"
+67,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,6,1,1,6,,,"To find the average of their averages for the final three days, we need to follow these steps:
 
 ### Step 1: Calculate the total distance Jesse has run in the first four days.
 - For the first three days, Jesse averages \(\frac{2}{3}\) of a mile per day:
@@ -94,8 +123,46 @@ So, the remaining distance Jesse needs to run is:
 ### Step 3: Calculate the average distance Jesse needs to run per day over the final three days.
 - Jesse needs to run 18 miles over the next three days.
 
-So, the average distance Jesse needs to run per day over the final three days is:",Jesse and Mia are competing in a week long race. They have one week to run 30 miles. On the first three days Jesse averages (2/3) of a mile. On day four she runs 10 miles. Mia averages 3 miles a day over the first 4 days. What is the average of their average that they have to run over the final three days?
-72,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,54,4,4,36,,,"To solve this problem, we need to follow the steps described and calculate the volume of water in the aquarium at each stage.
+So, the average distance Jesse needs to run per day over the final three days is:
+\[
+\frac{18}{3} = 6 \text{ miles/day}
+\]
+
+### Step 4: Calculate the total distance Mia has run in the first four days.
+- Mia averages 3 miles per day over the first four days.
+
+So, the total distance Mia has run in the first four days is:
+\[
+4 \times 3 = 12 \text{ miles}
+\]
+
+### Step 5: Calculate the remaining distance Mia needs to run.
+- The total distance Mia needs to run is 30 miles.
+- She has already run 12 miles.
+
+So, the remaining distance Mia needs to run is:
+\[
+30 - 12 = 18 \text{ miles}
+\]
+
+### Step 6: Calculate the average distance Mia needs to run per day over the final three days.
+- Mia needs to run 18 miles over the next three days.
+
+So, the average distance Mia needs to run per day over the final three days is:
+\[
+\frac{18}{3} = 6 \text{ miles/day}
+\]
+
+### Step 7: Calculate the average of their averages for the final three days.
+- Both Jesse and Mia need to run an average of 6 miles per day over the final three days.
+
+The average of their averages is:
+\[
+\frac{6 + 6}{2} = 6 \text{ miles/day}
+\]
+
+Thus, the average of their averages that they have to run over the final three days is **6 miles per day**.",Jesse and Mia are competing in a week long race. They have one week to run 30 miles. On the first three days Jesse averages (2/3) of a mile. On day four she runs 10 miles. Mia averages 3 miles a day over the first 4 days. What is the average of their average that they have to run over the final three days?
+72,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,54,4,4,54,,,"To solve this problem, we need to follow the steps described and calculate the volume of water in the aquarium at each stage.
 
 1. **Calculate the total volume of the aquarium:**
    The dimensions of the aquarium are:
@@ -121,8 +188,21 @@ So, the average distance Jesse needs to run per day over the final three days is
 3. **The cat knocks the aquarium over and spills half the water:**
    Half of the water that was in the aquarium (36 cubic feet) is spilled:
    \[
-   \frac","Nancy is filling an aquarium for her fish. She fills it halfway and goes to answer the door. While she's gone, her cat knocks the aquarium over and spills half the water in it. Then Nancy comes back and triples the amount of water in the aquarium. If the aquarium is 4 feet long, 6 feet wide, and 3 feet high, how many cubic feet of water are in the aquarium?"
-107,small_wrong_to_scheduled_wrong,False,False,False,False,,,20,,97,107,107,22,,,"To find out how many cars travel down Happy Street from Monday through Sunday, we need to calculate the number of cars for each day and then sum them up.
+   \frac{36}{2} = 18 \text{ cubic feet}
+   \]
+   So, after the spill, there are 18 cubic feet of water left in the aquarium.
+
+4. **Nancy triples the amount of water in the aquarium:**
+   Tripling the remaining water:
+   \[
+   18 \times 3 = 54 \text{ cubic feet}
+   \]
+
+Therefore, the final amount of water in the aquarium is:
+\[
+\boxed{54} \text{ cubic feet}
+\]","Nancy is filling an aquarium for her fish. She fills it halfway and goes to answer the door. While she's gone, her cat knocks the aquarium over and spills half the water in it. Then Nancy comes back and triples the amount of water in the aquarium. If the aquarium is 4 feet long, 6 feet wide, and 3 feet high, how many cubic feet of water are in the aquarium?"
+107,small_wrong_to_scheduled_wrong,False,True,False,False,,,20,,97,107,107,97,,,"To find out how many cars travel down Happy Street from Monday through Sunday, we need to calculate the number of cars for each day and then sum them up.
 
 Let's break it down step by step:
 
@@ -152,8 +232,17 @@ Let's break it down step by step:
 Now, let's sum up the number of cars for all days:
 
 \[
-20 \text{ (Monday)} + 25 \text{ (Tuesday)} + 22 \text{ (Wednesday)}","There is very little car traffic on Happy Street. During the week, most cars pass it on Tuesday - 25. On Monday, 20% less than on Tuesday, and on Wednesday, 2 more cars than on Monday. On Thursday and Friday, it is about 10 cars each day. On the weekend, traffic drops to 5 cars per day. How many cars travel down Happy Street from Monday through Sunday?"
-108,small_wrong_to_scheduled_wrong,False,False,False,True,6,5,6,0.9999978542327881,41,4,574,574.00,256,"To determine how much Henry spent in total on the pills, we need to break down the problem into smaller steps.
+20 \text{ (Monday)} + 25 \text{ (Tuesday)} + 22 \text{ (Wednesday)} + 10 \text{ (Thursday)} + 10 \text{ (Friday)} + 5 \text{ (Saturday)} + 5 \text{ (Sunday)}
+\]
+
+Adding these together:
+
+\[
+20 + 25 + 22 + 10 + 10 + 5 + 5 = 97
+\]
+
+So, the total number of cars that travel down Happy Street from Monday through Sunday is **97**.","There is very little car traffic on Happy Street. During the week, most cars pass it on Tuesday - 25. On Monday, 20% less than on Tuesday, and on Wednesday, 2 more cars than on Monday. On Thursday and Friday, it is about 10 cars each day. On the weekend, traffic drops to 5 cars per day. How many cars travel down Happy Street from Monday through Sunday?"
+108,small_wrong_to_scheduled_wrong,False,False,False,True,6,5,6,0.9999978542327881,41,4,574,574,256,"To determine how much Henry spent in total on the pills, we need to break down the problem into smaller steps.
 
 1. **Calculate the number of each type of pill:**
    - Henry takes 9 pills a day for 14 days.
@@ -187,8 +276,8 @@ Next, we calculate the daily cost of the pills:
 Now, we calculate the total cost over 14 days:
 - The total cost for 14 days is \(41.00 \times 14 = 574.00\) dollars.
 
-So, the total amount Henry","Henry took 9 pills a day for 14 days. Of these 9 pills, 4 pills cost $1.50 each, and the other pills each cost $5.50 more. How much did he spend in total on the pills?"
-121,small_wrong_to_scheduled_wrong,False,False,False,True,13,12,3,0.7139707803726196,6,4,4,8,256,"To determine how long it took Stella and Twinkle to fill the truck, we need to follow these steps:
+So, the total amount Henry spent on the pills is \(\boxed{574}\).","Henry took 9 pills a day for 14 days. Of these 9 pills, 4 pills cost $1.50 each, and the other pills each cost $5.50 more. How much did he spend in total on the pills?"
+121,small_wrong_to_scheduled_wrong,False,True,False,True,13,12,3,0.7139707803726196,6,4,4,6,256,"To determine how long it took Stella and Twinkle to fill the truck, we need to follow these steps:
 
 1. **Calculate the number of blocks filled by Stella and Twinkle in the first 4 hours:**
    - Stella and Twinkle together fill at a rate of 250 blocks per hour.
@@ -229,7 +318,18 @@ So, the total amount Henry","Henry took 9 pills a day for 14 days. Of these 9 pi
 3. **Calculate the new combined rate after 6 more people join:**
    - Initially, there were 2 people working.
    - Now, 6 more people join, making a total of \( 2 + 6 = 8 \) people.
-   -",Stella and Twinkle are filling up a truck with a capacity of 6000 stone blocks at the rate of 250 blocks per hour per person. They work for four hours and are then joined by 6 other people who also work at the same rate. How many hours did filling the truck take?
+   - Each person fills 250 blocks per hour.
+   - Combined rate of 8 people = \( 8 \times 250 = 2000 \) blocks/hour.
+
+4. **Determine the time required to fill the remaining 4000 blocks:**
+   - Remaining blocks = 4000 blocks.
+   - Rate of 8 people = 2000 blocks/hour.
+   - Time required = \( \frac{4000}{2000} = 2 \) hours.
+
+5. **Calculate the total time taken:**
+   - Initial 4 hours + additional 2 hours = \( 4 + 2 = 6 \) hours.
+
+Thus, the total time taken to fill the truck is \(\boxed{6}\) hours.",Stella and Twinkle are filling up a truck with a capacity of 6000 stone blocks at the rate of 250 blocks per hour per person. They work for four hours and are then joined by 6 other people who also work at the same rate. How many hours did filling the truck take?
 139,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,24,1,1,24,,,"To determine how many flights of stairs Janice walks in a single day, we need to break down the problem into smaller steps.
 
 1. **Calculate the total number of trips Janice makes:**
@@ -245,7 +345,7 @@ So, the total amount Henry","Henry took 9 pills a day for 14 days. Of these 9 pi
    - Total flights of stairs = Number of trips × Flights per trip = 8 trips × 3 flights/trip = 24 flights.
 
 Thus, Janice walks a total of 24 flights of stairs in a single day.","Janice's office is on the third floor, and she has to walk up 3 flights of stairs to get to her office.  In a single day, she goes up the three flights of stairs 5 times, down the the three flights of stairs 3 times, and uses the elevator the remainder of the time.  How many flights of stairs does Janice walk (up and down) in a single day?"
-145,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,2,3,3,40,,,"To solve this problem, let's break it down step by step:
+145,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,2,3,3,2,,,"To solve this problem, let's break it down step by step:
 
 1. **Determine the length of each show:**
    - Each episode of Jeopardy is 20 minutes long.
@@ -266,8 +366,17 @@ Thus, Janice walks a total of 24 flights of stairs in a single day.","Janice's o
 
 3. **Add the total times together to find the overall time spent watching TV:**
    \[
-   \text{Total time} = 40 \text{ minutes (Jeopardy)} +",James watched 2 episodes of Jeopardy and 2 episodes of Wheel of Fortune.  Jeopardy is 20 minutes and Wheel of Fortune is twice as long.  How many hours did he watch TV?
-181,small_wrong_to_scheduled_wrong,False,False,False,True,1,0,8,0.40346115827560425,21,121,11,110,256,"To determine how much the tree has grown from the end of 2017 until the end of 2019,we need to calculate its height at the end of each year and then find the difference between its final height in 2019 and its initial height in 2017.
+   \text{Total time} = 40 \text{ minutes (Jeopardy)} + 80 \text{ minutes (Wheel of Fortune)} = 120 \text{ minutes}
+   \]
+
+4. **Convert the total time from minutes to hours:**
+   - There are 60 minutes in an hour, so:
+     \[
+     \text{Total time in hours} = \frac{120 \text{ minutes}}{60 \text{ minutes per hour}} = 2 \text{ hours}
+     \]
+
+Therefore, James watched TV for a total of 2 hours.",James watched 2 episodes of Jeopardy and 2 episodes of Wheel of Fortune.  Jeopardy is 20 minutes and Wheel of Fortune is twice as long.  How many hours did he watch TV?
+181,small_wrong_to_scheduled_wrong,False,False,False,True,1,0,8,0.40346115827560425,21,121,11,2019,256,"To determine how much the tree has grown from the end of 2017 until the end of 2019,we need to calculate its height at the end of each year and then find the difference between its final height in 2019 and its initial height in 2017.
 
 Let's break it down step-by-step:
 
@@ -296,8 +405,16 @@ Let's break it down step-by-step:
 
 3. **Height at the End of 2019:**
    - The tree grows by 10% again.
-   - Growth in 2019 = 10% of 110 meters = \( 0.10 \times 110 =",A certain tree was 100 meters tall at the end of 2017. It will grow 10% more than its previous height each year. How long has the tree grown from 2017 until the end of 2019?
-182,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,230,3,3,10,,,"To solve this problem, we need to calculate the total amount spent by both Lisa and Carly on t-shirts, jeans, and coats. Let's break it down step by step.
+   - Growth in 2019 = 10% of 110 meters = \( 0.10 \times 110 = 11 \) meters.
+   - New height at the end of 2019 = Height at the end of 2018 + Growth = \( 110 + 11 = 121 \) meters.
+
+4. **Total Growth from 2017 to 2019:**
+   - Initial height at the end of 2017 = 100 meters.
+   - Final height at the end of 2019 = 121 meters.
+   - Total growth = Final height - Initial height = \( 121 - 100 = 21 \) meters.
+
+Therefore, the tree has grown 21 meters from the end of 2017 until the end of 2019.",A certain tree was 100 meters tall at the end of 2017. It will grow 10% more than its previous height each year. How long has the tree grown from 2017 until the end of 2019?
+182,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,230,3,3,230,,,"To solve this problem, we need to calculate the total amount spent by both Lisa and Carly on t-shirts, jeans, and coats. Let's break it down step by step.
 
 ### Lisa's Spending:
 1. **T-shirts:**
@@ -317,7 +434,24 @@ Now, let's sum up Lisa's total spending:
 ### Carly's Spending:
 1. **T-shirts:**
    - Carly spends a quarter of what Lisa spent on t-shirts.
-   - Amount spent on t-shirts = \( \frac{1}{4} \times 40 = 10 \) dollars.","Lisa and Carly go shopping together. Lisa spends $40 on t-shirts then spends half of this amount on jeans and twice this amount on coats. Carly spends only a quarter as much as Lisa on t-shirts but spends 3 times as much on jeans and a quarter of the amount Lisa spent on coats. In dollars, how much did Lisa and Carly spend in total?"
+   - Amount spent on t-shirts = \( \frac{1}{4} \times 40 = 10 \) dollars.
+   
+2. **Jeans:**
+   - Carly spends three times what Lisa spent on jeans.
+   - Amount spent on jeans = \( 3 \times 20 = 60 \) dollars.
+   
+3. **Coats:**
+   - Carly spends a quarter of what Lisa spent on coats.
+   - Amount spent on coats = \( \frac{1}{4} \times 80 = 20 \) dollars.
+
+Now, let's sum up Carly's total spending:
+\[ \text{Total spent by Carly} = 10 + 60 + 20 = 90 \text{ dollars} \]
+
+### Total Spending by Both:
+Finally, we add the total amounts spent by Lisa and Carly:
+\[ \text{Total spent by both} = 140 + 90 = 230 \text{ dollars} \]
+
+Thus, the total amount spent by Lisa and Carly is \( \boxed{230} \) dollars.","Lisa and Carly go shopping together. Lisa spends $40 on t-shirts then spends half of this amount on jeans and twice this amount on coats. Carly spends only a quarter as much as Lisa on t-shirts but spends 3 times as much on jeans and a quarter of the amount Lisa spent on coats. In dollars, how much did Lisa and Carly spend in total?"
 186,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,50,16,16,50,,,"To solve this problem, we need to convert all measurements to the same unit (inches) and then add them together.
 
 Step 1: Convert the length of the first snake from feet to inches.
@@ -337,7 +471,7 @@ Step 3: Add up the lengths of all three snakes.
 Total length = 24 inches + 16 inches + 10 inches = 50 inches
 
 Therefore, the total length of all of Christina's snakes combined is 50 inches.",Christina has 3 snakes. 1 snake is 2 feet long. Another snake is 16 inches long. The last snake is 10 inches long. How many inches are all of her snakes combined?
-229,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,15,5,5,6,,,"Let's break down the problem step by step:
+229,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,15,5,5,375,,,"Let's break down the problem step by step:
 
 1. **Total Cable Length**: Jan starts with 1000 feet of cable.
 
@@ -358,8 +492,14 @@ Therefore, the total length of all of Christina's snakes combined is 50 inches."
 
 6. **Sections Kept On Hand**:
    - The number of sections Jan keeps on hand is the remaining sections after putting some in storage.
-   - Sections kept on hand",Jan buys 1000 feet of cable.  She splits it up into 25-foot sections.  She gives 1/4 of that to a friend.  She then puts half of the rest in storage. How much does she keep on hand?
-232,small_wrong_to_scheduled_wrong,False,False,False,True,9,8,7,0.48500025272369385,8,20,12,4,223,"To determine the age of Jolene and Phil's fourth child, we need to follow the sequence of their children's births and calculate the age of each child step by step.
+   - Sections kept on hand: \( 30 - 15 = 15 \) sections.
+
+7. **Converting Sections Back to Feet**:
+   - Each section is 25 feet long.
+   - Total length of cable kept on hand: \( 15 \times 25 = 375 \) feet.
+
+Therefore, Jan keeps 375 feet of cable on hand.",Jan buys 1000 feet of cable.  She splits it up into 25-foot sections.  She gives 1/4 of that to a friend.  She then puts half of the rest in storage. How much does she keep on hand?
+232,small_wrong_to_scheduled_wrong,False,True,False,True,9,8,7,0.48500025272369385,8,20,12,8,223,"To determine the age of Jolene and Phil's fourth child, we need to follow the sequence of their children's births and calculate the age of each child step by step.
 
 1. **First Child:**
    - They gave birth to their first child exactly 15 years ago.
@@ -399,8 +539,11 @@ Thus, the age of their fourth child is \(\boxed{12}\).","To determine the age of
 
 4. **Birth of the Fourth Child:**
    - The fourth child was born two years after the birth of the third child.
-   -","Jolene and Phil have four children, each with the same birthday.  They gave birth to their first child exactly 15 years ago.  They gave birth to their second child exactly one year after the birth of their first child.  They gave birth to their third child on the fourth birthday of their second child. Two years after the birth of their third child, they gave birth to their fourth child.  How old, in years, is their fourth child?"
-241,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,12,1,1,6,,,"To find out how many of the sold computers are desktops, we can follow these steps:
+   - Time since the birth of the fourth child: \( 10 - 2 = 8 \) years.
+   - Current age of the fourth child: \( 8 \) years.
+
+Thus, the age of their fourth child is \(\boxed{8}\) years.","Jolene and Phil have four children, each with the same birthday.  They gave birth to their first child exactly 15 years ago.  They gave birth to their second child exactly one year after the birth of their first child.  They gave birth to their third child on the fourth birthday of their second child. Two years after the birth of their third child, they gave birth to their fourth child.  How old, in years, is their fourth child?"
+241,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,12,1,1,12,,,"To find out how many of the sold computers are desktops, we can follow these steps:
 
 1. **Identify the fractions of each type of computer sold:**
    - Laptops: \( \frac{1}{2} \)
@@ -422,8 +565,17 @@ Thus, the age of their fourth child is \(\boxed{12}\).","To determine the age of
    \]
    Therefore,
    \[
-   \text{Fraction of desktops","Mr. Lu owns a computer store. For last month, half of their sales are laptops, one-third are netbooks, and the rest are desktop computers. If Mr. Lu's store was able to sell a total of 72 computers, how many of them are desktop computers?"
-246,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,52,2,2,3900,,,"To solve this problem, we need to follow these steps:
+   \text{Fraction of desktops} = 1 - \frac{5}{6} = \frac{1}{6}
+   \]
+
+3. **Determine the number of desktop computers sold:**
+   Given that the total number of computers sold is 72, the number of desktop computers is:
+   \[
+   \text{Number of desktops} = \frac{1}{6} \times 72 = 12
+   \]
+
+So, the number of desktop computers sold is \( \boxed{12} \).","Mr. Lu owns a computer store. For last month, half of their sales are laptops, one-third are netbooks, and the rest are desktop computers. If Mr. Lu's store was able to sell a total of 72 computers, how many of them are desktop computers?"
+246,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,52,2,2,52,,,"To solve this problem, we need to follow these steps:
 
 ### Step 1: Determine the number of boys and girls
 Given:
@@ -446,8 +598,18 @@ Now, calculate the number of boys and girls:
 - Number of girls: \(7x = 7 \times 15 = 105\)
 
 ### Step 2: Calculate the amount of money each boy receives
-Given that the boys are given $3900 to share equally among themselves, we need to divide this amount by the number","The ratio of boys to girls in a family is 5:7. The total number of children in the family is 180. If the boys are given $3900 to share, how much money does each boy receive?"
-264,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,21600,3,3,2160,,,"To solve this problem, we need to break down the earnings into weekdays and weekends, then calculate the total for a month.
+Given that the boys are given $3900 to share equally among themselves, we need to divide this amount by the number of boys.
+
+Number of boys = 75
+
+Amount of money each boy receives:
+\[ \text{Money per boy} = \frac{3900}{75} \]
+
+Perform the division:
+\[ \frac{3900}{75} = 52 \]
+
+Therefore, each boy receives **$52**.","The ratio of boys to girls in a family is 5:7. The total number of children in the family is 180. If the boys are given $3900 to share, how much money does each boy receive?"
+264,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,21600,3,3,21600,,,"To solve this problem, we need to break down the earnings into weekdays and weekends, then calculate the total for a month.
 
 ### Step 1: Calculate daily earnings
 - Weekday earnings: $600 per day
@@ -471,8 +633,8 @@ Assuming a month has approximately 4 weeks:
 
 \[ 4 \text{ weeks} \times \$5400/\text{week} = \$21600 \]
 
-Therefore, the restaurant earns **$21,60",An Italian restaurant earns $600 every weekday and twice as much on the weekend. How much money does it earn by the end of the month?
-266,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,4,3,3,1,,,"To determine how many hours John spends at the gym each week, we need to break down his activities and calculate the total time spent.
+Therefore, the restaurant earns **$21,600** by the end of the month.",An Italian restaurant earns $600 every weekday and twice as much on the weekend. How much money does it earn by the end of the month?
+266,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,4,3,3,4,,,"To determine how many hours John spends at the gym each week, we need to break down his activities and calculate the total time spent.
 
 1. **Weightlifting Time:**
    - John goes to the gym 3 times a week.
@@ -490,8 +652,17 @@ Therefore, the restaurant earns **$21,60",An Italian restaurant earns $600 every
      \]
    - Over 3 days a week, the total time spent on warm-up and cardio is:
      \[
-     3 \text{ visits/week} \times \frac{1}{3} \text{ hour/visit} = 1 \","Johns goes to the gym 3 times a week.  He spends 1 hour each day lifting weight. Additionally, he also spends a third of his weightlifting time warming up and doing cardio each day.  How many hours does he spend at the gym a week?"
-267,small_wrong_to_scheduled_wrong,False,False,False,True,3,2,,0.8392788767814636,2,0.5,21,4,256,"To determine how many pizzas Jimmy can make to bring home with the flour left, we need to follow these steps:
+     3 \text{ visits/week} \times \frac{1}{3} \text{ hour/visit} = 1 \text{ hour/week}
+     \]
+
+3. **Total Time at the Gym:**
+   - The total time John spends at the gym each week is the sum of the time spent lifting weights and the time spent on warm-up and cardio:
+     \[
+     3 \text{ hours/week (weightlifting)} + 1 \text{ hour/week (warm-up and cardio)} = 4 \text{ hours/week}
+     \]
+
+Therefore, John spends a total of 4 hours at the gym each week.","Johns goes to the gym 3 times a week.  He spends 1 hour each day lifting weight. Additionally, he also spends a third of his weightlifting time warming up and doing cardio each day.  How many hours does he spend at the gym a week?"
+267,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,,0.8392788767814636,2,0.5,21,2,256,"To determine how many pizzas Jimmy can make to bring home with the flour left, we need to follow these steps:
 
 1. **Calculate the total time Jimmy has to make pizzas:**Jimmy has 7 hours to make pizzas. Since there are 60 minutes in an hour:
    \[
@@ -533,8 +704,13 @@ Therefore, the restaurant earns **$21,60",An Italian restaurant earns $600 every
 
 \[ \text{Flour left} = 22 - 21 = 1 \text{ kg} \]
 
-### Step 4: Calculate how many additional pizzas Jimmy","Jimmy is going to sell pizzas at the carnival to make some money. The carnival only gave him 7 hours to do so. He bought a 22kg sack of flour to make his pizzas and he takes 10 min to make each pizza for the customers. At the end of the 7 hours, he saw some flour was left. Knowing that each pizza needs 0.5kg of flour to make, how many pizzas can he make to bring home with the flour left?"
-280,small_wrong_to_scheduled_wrong,False,False,False,True,3,2,3,0.9998177886009216,18,18.00,7.50,10.50,256,"To determine the total cost of the cards the boy bought, we need to calculate the cost of the cards from each box separately and then sum these costs.
+### Step 4: Calculate how many additional pizzas Jimmy can make with the remaining 1 kg of flour.
+- Each pizza requires 0.5 kg of flour.
+
+\[ \text{Additional pizzas} = \frac{1}{0.5} = 2 \text{ pizzas} \]
+
+Therefore, Jimmy can make **2 more pizzas** to bring home with the flour left.","Jimmy is going to sell pizzas at the carnival to make some money. The carnival only gave him 7 hours to do so. He bought a 22kg sack of flour to make his pizzas and he takes 10 min to make each pizza for the customers. At the end of the 7 hours, he saw some flour was left. Knowing that each pizza needs 0.5kg of flour to make, how many pizzas can he make to bring home with the flour left?"
+280,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,3,0.9998177886009216,18,18.00,7.50,18,256,"To determine the total cost of the cards the boy bought, we need to calculate the cost of the cards from each box separately and then sum these costs.
 
 First, let's calculate the cost of the cards from the first box:- Each card in the first box costs $1.25.
 - The boy buys 6 cards from this box.
@@ -597,8 +773,13 @@ Adding these amounts together:
 3. **Add the costs from both boxes to get the total cost:**
    - The total cost for the cards from the first box is $7.50.
    - The total cost for the cards from the second box is $10.50.
-   - Therefore, the total cost for","The card shop has two boxes of cards. The first box contains cards that cost $1.25 each. The second box contains cards that cost $1.75 each. A boy then comes in and buys 6 cards from each box. What was the total cost, in dollars, of the cards he bought?"
-284,small_wrong_to_scheduled_wrong,False,False,False,False,,,,,768000,2560,2560,2560,,,"To solve this problem, we need to follow these steps:
+   - Therefore, the total cost for all the cards is:
+     \[
+     7.50 + 10.50 = 18.00 \text{ dollars}
+     \]
+
+Thus, the total cost of the cards the boy bought is \(\boxed{18}\) dollars.","The card shop has two boxes of cards. The first box contains cards that cost $1.25 each. The second box contains cards that cost $1.75 each. A boy then comes in and buys 6 cards from each box. What was the total cost, in dollars, of the cards he bought?"
+284,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,768000,2560,2560,768000,,,"To solve this problem, we need to follow these steps:
 
 1. **Determine the vibration rate at the highest setting:**
    - The lowest setting is 1600 vibrations per second.
@@ -625,4 +806,12 @@ Adding these amounts together:
    \]
 
 3. **Calculate the total number of vibrations experienced:**
-   - The vibration rate at the highest setting is 2560 vibrations per second.","Matt buys a massager.  At the lowest setting, it vibrates at 1600 vibrations per second.  At the highest setting, it vibrates 60% faster.  Matt uses it for 5 minutes at the highest setting.  How many vibrations does he experience?"
+   - The vibration rate at the highest setting is 2560 vibrations per second.
+   - The total time is 300 seconds.
+
+   Therefore, the total number of vibrations is:
+   \[
+   2560 \text{ vibrations/second} \times 300 \text{ seconds} = 768,000 \text{ vibrations}
+   \]
+
+Thus, Matt experiences a total of 768,000 vibrations.","Matt buys a massager.  At the lowest setting, it vibrates at 1600 vibrations per second.  At the highest setting, it vibrates 60% faster.  Matt uses it for 5 minutes at the highest setting.  How many vibrations does he experience?"
