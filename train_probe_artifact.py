@@ -1,0 +1,183 @@
+import argparse
+import os
+
+import numpy as np
+import torch
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+
+# ================= Default Configuration =================
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
+DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact.pt")
+DEFAULT_TEST_SIZE = 0.2
+DEFAULT_RANDOM_STATE = 55
+DEFAULT_FEATURE_KEY = "boundary_hidden_state"
+DEFAULT_PROBE_TYPE = "mlp"
+DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
+DEFAULT_MLP_MAX_ITER = 300
+DEFAULT_MLP_ALPHA = 1e-4
+DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
+# ========================================================
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train and save a fixed probe artifact for routing experiments.")
+    parser.add_argument("--label-path", default=DEFAULT_LABEL_PATH, help="Path to strict labeled chunk data.")
+    parser.add_argument("--output-path", default=DEFAULT_OUTPUT_PATH, help="Where to save the probe artifact.")
+    parser.add_argument("--feature-key", default=DEFAULT_FEATURE_KEY, help="Chunk feature used by the probe.")
+    parser.add_argument("--test-size", type=float, default=DEFAULT_TEST_SIZE, help="Held-out question ratio.")
+    parser.add_argument("--random-state", type=int, default=DEFAULT_RANDOM_STATE, help="Random seed for the split.")
+    parser.add_argument(
+        "--probe-type",
+        choices=["logistic", "mlp"],
+        default=DEFAULT_PROBE_TYPE,
+        help="Probe type used for risk scoring.",
+    )
+    parser.add_argument("--mlp-hidden-layers", default=DEFAULT_MLP_HIDDEN_LAYERS, help="Comma-separated MLP hidden sizes.")
+    parser.add_argument("--mlp-max-iter", type=int, default=DEFAULT_MLP_MAX_ITER, help="MLP max iterations.")
+    parser.add_argument("--mlp-alpha", type=float, default=DEFAULT_MLP_ALPHA, help="MLP L2 regularization.")
+    parser.add_argument(
+        "--mlp-learning-rate-init",
+        type=float,
+        default=DEFAULT_MLP_LEARNING_RATE_INIT,
+        help="MLP initial learning rate.",
+    )
+    return parser.parse_args()
+
+
+def tensor_to_numpy(value):
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().to(torch.float32).numpy()
+    return np.asarray(value, dtype=np.float32)
+
+
+def parse_hidden_layer_sizes(hidden_layers_text):
+    layer_sizes = []
+    for part in hidden_layers_text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        layer_sizes.append(int(part))
+    if not layer_sizes:
+        raise ValueError("MLP hidden layers cannot be empty.")
+    return tuple(layer_sizes)
+
+
+def upsample_minority_class(X, y, random_state):
+    unique_labels, counts = np.unique(y, return_counts=True)
+    if len(unique_labels) < 2 or counts[0] == counts[1]:
+        return X, y
+
+    majority_label = unique_labels[np.argmax(counts)]
+    minority_label = unique_labels[np.argmin(counts)]
+    majority_indices = np.flatnonzero(y == majority_label)
+    minority_indices = np.flatnonzero(y == minority_label)
+
+    rng = np.random.default_rng(random_state)
+    sampled_minority_indices = rng.choice(minority_indices, size=len(majority_indices), replace=True)
+    balanced_indices = np.concatenate([majority_indices, sampled_minority_indices])
+    rng.shuffle(balanced_indices)
+    return X[balanced_indices], y[balanced_indices]
+
+
+def build_probe(args):
+    if args.probe_type == "logistic":
+        return LogisticRegression(
+            max_iter=1000,
+            class_weight="balanced",
+            random_state=args.random_state,
+        )
+
+    return MLPClassifier(
+        hidden_layer_sizes=parse_hidden_layer_sizes(args.mlp_hidden_layers),
+        activation="relu",
+        solver="adam",
+        alpha=args.mlp_alpha,
+        batch_size="auto",
+        learning_rate_init=args.mlp_learning_rate_init,
+        max_iter=args.mlp_max_iter,
+        early_stopping=True,
+        n_iter_no_change=15,
+        random_state=args.random_state,
+    )
+
+
+def build_question_records(dataset, feature_key):
+    question_records = {}
+    for item in dataset:
+        if feature_key not in item:
+            continue
+        question_id = int(item["question_id"])
+        record = question_records.setdefault(question_id, {"chunks": []})
+        record["chunks"].append(item)
+
+    for record in question_records.values():
+        record["chunks"] = sorted(record["chunks"], key=lambda chunk: int(chunk["chunk_id"]))
+    return question_records
+
+
+def build_feature_arrays(question_records, feature_key):
+    rows = []
+    labels = []
+    groups = []
+    for question_id, record in question_records.items():
+        for chunk in record["chunks"]:
+            rows.append(tensor_to_numpy(chunk[feature_key]))
+            labels.append(int(chunk["label"]))
+            groups.append(question_id)
+    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64)
+
+
+def main():
+    args = parse_args()
+
+    print(f"Loading labeled chunk dataset from: {args.label_path}")
+    dataset = torch.load(args.label_path)
+    question_records = build_question_records(dataset, args.feature_key)
+    print(f"Loaded questions with {args.feature_key}: {len(question_records)}")
+
+    X, y, groups = build_feature_arrays(question_records, args.feature_key)
+    splitter = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.random_state)
+    train_indices, test_indices = next(splitter.split(X, y, groups))
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X[train_indices])
+    y_train = y[train_indices]
+
+    probe = build_probe(args)
+    if args.probe_type == "mlp":
+        X_fit, y_fit = upsample_minority_class(X_train, y_train, args.random_state)
+        probe.fit(X_fit, y_fit)
+    else:
+        probe.fit(X_train, y_train)
+
+    train_question_ids = sorted(set(int(qid) for qid in groups[train_indices]))
+    test_question_ids = sorted(set(int(qid) for qid in groups[test_indices]))
+
+    artifact = {
+        "probe": probe,
+        "scaler": scaler,
+        "feature_key": args.feature_key,
+        "probe_type": args.probe_type,
+        "random_state": args.random_state,
+        "test_size": args.test_size,
+        "train_question_ids": train_question_ids,
+        "test_question_ids": test_question_ids,
+        "config": {
+            "mlp_hidden_layers": args.mlp_hidden_layers,
+            "mlp_max_iter": args.mlp_max_iter,
+            "mlp_alpha": args.mlp_alpha,
+            "mlp_learning_rate_init": args.mlp_learning_rate_init,
+        },
+    }
+
+    torch.save(artifact, args.output_path)
+    print(f"Saved probe artifact to: {args.output_path}")
+    print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")
+
+
+if __name__ == "__main__":
+    main()

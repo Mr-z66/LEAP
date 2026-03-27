@@ -31,6 +31,7 @@ DEFAULT_THRESHOLDS = "0.15,0.20,0.25"
 DEFAULT_MAX_NEW_TOKENS = 256
 DEFAULT_LARGE_BASELINE_MAX_NEW_TOKENS = 768
 DEFAULT_TAIL_BONUS_WEIGHT = 0.0
+DEFAULT_PROBE_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact.pt")
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 DEFAULT_CACHE_PATH = os.path.join(PROJECT_ROOT, "chunk_scheduler_cache.pt")
 DEFAULT_SAVE_CACHE_EVERY = 5
@@ -44,6 +45,7 @@ def parse_args():
     parser.add_argument("--small-model-path", default=DEFAULT_SMALL_MODEL_PATH, help="Path to the small model.")
     parser.add_argument("--large-model-path", default=DEFAULT_LARGE_MODEL_PATH, help="Path to the large model.")
     parser.add_argument("--feature-key", default=DEFAULT_FEATURE_KEY, help="Chunk feature used by the probe.")
+    parser.add_argument("--probe-artifact-path", default=DEFAULT_PROBE_ARTIFACT_PATH, help="Optional fixed probe artifact to load for fair comparisons.")
     parser.add_argument("--test-size", type=float, default=DEFAULT_TEST_SIZE, help="Held-out question ratio.")
     parser.add_argument("--random-state", type=int, default=DEFAULT_RANDOM_STATE, help="Random seed for the split.")
     parser.add_argument(
@@ -364,6 +366,27 @@ def fit_probe_and_score(question_records, args):
         "scaler": scaler,
         "train_question_ids": train_question_ids,
         "test_question_ids": test_question_ids,
+        "question_to_chunk_scores": question_to_chunk_scores,
+    }
+
+
+def score_with_artifact(question_records, artifact, feature_key):
+    probe = artifact["probe"]
+    scaler = artifact["scaler"]
+    X, _, _, chunk_refs = build_feature_arrays(question_records, feature_key)
+    X_scaled = scaler.transform(X)
+    prefix_correct_scores = probe.predict_proba(X_scaled)[:, 1]
+    error_scores = 1.0 - prefix_correct_scores
+
+    question_to_chunk_scores = {}
+    for (question_id, chunk_id), score in zip(chunk_refs, error_scores):
+        question_to_chunk_scores.setdefault(question_id, {})[chunk_id] = float(score)
+
+    return {
+        "probe": probe,
+        "scaler": scaler,
+        "train_question_ids": list(artifact["train_question_ids"]),
+        "test_question_ids": list(artifact["test_question_ids"]),
         "question_to_chunk_scores": question_to_chunk_scores,
     }
 
@@ -730,7 +753,18 @@ def main():
     question_records = build_question_records(dataset, args.feature_key)
     print(f"Loaded questions with {args.feature_key}: {len(question_records)}")
 
-    probe_bundle = fit_probe_and_score(question_records, args)
+    if args.probe_artifact_path and os.path.exists(args.probe_artifact_path):
+        print(f"Loading fixed probe artifact from: {args.probe_artifact_path}")
+        artifact = torch.load(args.probe_artifact_path)
+        artifact_feature_key = artifact.get("feature_key", args.feature_key)
+        if artifact_feature_key != args.feature_key:
+            raise ValueError(
+                f"Probe artifact feature_key={artifact_feature_key} does not match requested feature_key={args.feature_key}."
+            )
+        probe_bundle = score_with_artifact(question_records, artifact, args.feature_key)
+    else:
+        print("Probe artifact not found; fitting probe inside scheduler.")
+        probe_bundle = fit_probe_and_score(question_records, args)
     train_question_ids = set(probe_bundle["train_question_ids"])
     test_question_ids = set(probe_bundle["test_question_ids"])
     print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")
