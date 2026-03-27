@@ -30,6 +30,7 @@ DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 DEFAULT_THRESHOLDS = "0.15,0.20,0.25"
 DEFAULT_MAX_NEW_TOKENS = 256
 DEFAULT_LARGE_BASELINE_MAX_NEW_TOKENS = 768
+DEFAULT_TAIL_BONUS_WEIGHT = 0.0
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 DEFAULT_CACHE_PATH = os.path.join(PROJECT_ROOT, "chunk_scheduler_cache.pt")
 DEFAULT_SAVE_CACHE_EVERY = 5
@@ -72,6 +73,12 @@ def parse_args():
         type=int,
         default=DEFAULT_LARGE_BASELINE_MAX_NEW_TOKENS,
         help="Max generation tokens for the full large-model baseline.",
+    )
+    parser.add_argument(
+        "--tail-bonus-weight",
+        type=float,
+        default=DEFAULT_TAIL_BONUS_WEIGHT,
+        help="Add alpha * relative_chunk_position to the probe error score before thresholding.",
     )
     parser.add_argument("--cache-path", default=DEFAULT_CACHE_PATH, help="Path to cached large-model outputs.")
     parser.add_argument("--save-cache-every", type=int, default=DEFAULT_SAVE_CACHE_EVERY, help="Save cache every N new generations.")
@@ -363,10 +370,14 @@ def fit_probe_and_score(question_records, args):
 
 def find_trigger_chunk(record, chunk_scores, threshold):
     chunks = record["chunks"]
+    total_chunks = len(chunks)
     for index, chunk in enumerate(chunks):
         chunk_id = int(chunk["chunk_id"])
         error_score = float(chunk_scores.get(chunk_id, 0.0))
-        if error_score >= threshold:
+        relative_position = index / max(total_chunks - 1, 1)
+        tail_bonus = record.get("tail_bonus_weight", 0.0) * relative_position
+        combined_score = error_score + tail_bonus
+        if combined_score >= threshold:
             if index > 0:
                 safe_chunk = chunks[index - 1]
                 takeover_start_chunk_id = int(safe_chunk["chunk_id"])
@@ -380,6 +391,9 @@ def find_trigger_chunk(record, chunk_scores, threshold):
                 "trigger_chunk_id": chunk_id,
                 "takeover_start_chunk_id": takeover_start_chunk_id,
                 "error_score": error_score,
+                "tail_bonus": tail_bonus,
+                "combined_score": combined_score,
+                "chunk_relative_position": relative_position,
                 "safe_prefix_text": safe_prefix_text,
                 "prefix_token_count": prefix_token_count,
                 "remaining_token_count": sum(
@@ -420,6 +434,8 @@ def export_case_rows(summary, export_dir):
         "takeover_start_chunk_id",
         "first_error_chunk_id",
         "trigger_error_score",
+        "trigger_tail_bonus",
+        "trigger_combined_score",
         "ground_truth_final_answer",
         "small_final_answer",
         "scheduled_final_answer",
@@ -490,6 +506,7 @@ def simulate_threshold(
         leave=False,
     )
     for record in progress:
+        record["tail_bonus_weight"] = args.tail_bonus_weight
         question_id = record["question_id"]
         question = record["question"]
         ground_truth_final_answer = record["ground_truth_final_answer"]
@@ -593,6 +610,8 @@ def simulate_threshold(
                 "takeover_start_chunk_id": None if trigger is None else trigger["takeover_start_chunk_id"],
                 "first_error_chunk_id": first_error_chunk_id,
                 "trigger_error_score": None if trigger is None else trigger["error_score"],
+                "trigger_tail_bonus": None if trigger is None else trigger["tail_bonus"],
+                "trigger_combined_score": None if trigger is None else trigger["combined_score"],
                 "ground_truth_final_answer": ground_truth_final_answer,
                 "scheduled_final_answer": scheduled_final_answer,
                 "small_final_answer": record["small_final_answer"],
@@ -621,6 +640,7 @@ def simulate_threshold(
     correct_questions = total_questions - error_questions
     return {
         "threshold": threshold,
+        "tail_bonus_weight": args.tail_bonus_weight,
         "questions_total": total_questions,
         "small_only_accuracy": small_only_correct / total_questions,
         "large_only_accuracy": None if not run_large_baseline else large_only_correct / total_questions,
@@ -658,6 +678,7 @@ def print_threshold_summary(summary):
     print("\nChunk scheduler simulation")
     print("=" * 50)
     print(f"Threshold: {summary['threshold']:.2f}")
+    print(f"Tail bonus weight: {summary['tail_bonus_weight']:.4f}")
     print(f"Questions total: {summary['questions_total']}")
     print(f"Small-only accuracy: {summary['small_only_accuracy']:.4f}")
     if summary["large_only_accuracy"] is not None:

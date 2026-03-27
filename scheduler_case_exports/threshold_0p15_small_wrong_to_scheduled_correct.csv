@@ -1,5 +1,241 @@
-﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
-116,small_wrong_to_scheduled_correct,False,True,True,True,10,9,12,0.9525418877601624,21,20,21,21,256,"Let's break down the problem step by step:
+﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
+8,small_wrong_to_scheduled_correct,False,,True,True,21,20,6,0.0824996829032898,0.15,0.2324996829032898,41,200,41,,146,"To determine how much Alexis paid for the shoes, we need to follow these steps:
+
+1. **Calculate the total amount spent on known items:**
+   - Button-up shirt: $30
+   - Suit pants: $46
+   - Suit coat: $38
+   - Socks: $11
+   - Belt: $18
+
+   Adding these amounts together:
+   \[
+   30 + 46 + 38 + 11 + 18 = 143
+   \]
+
+2. **Determine the total budget:**
+   Alexis had a budget of $200.
+
+3. **Calculate the remaining budget after all purchases:**
+   Alexis has $16 left from her budget.
+
+4. **Calculate the total amount spent on all items:**
+   The total amount spent is the sum of the known items and the shoes:
+   \[
+   143 + \text{Shoes}
+   \]
+
+5. **Set up the equation to find the cost of the shoes:**
+   The total amount spent should equal the budget minus the remaining amount:\[
+   143 + \text{Shoes} = 200 - 16
+   \]
+   Simplifying the right side:
+   \[
+   143 + \text{Shoes} = 184
+   \]
+
+6. **Solve for the cost of the shoes:**
+   Subtract 143 from both sides of the equation:
+   \[
+   \text{Shoes} = 184 - 143
+   \]
+   \[
+   \text{Shoes} = 41
+   \]
+
+Therefore, Alexis paid \(\boxed{41}\) dollars for the shoes.",,"Alexis is applying for a new job and bought a new set of business clothes to wear to the interview. She went to a department store with a budget of $200 and spent $30 on a button-up shirt, $46 on suit pants, $38 on a suit coat, $11 on socks, and $18 on a belt. She also purchased a pair of shoes, but lost the receipt for them. She has $16 left from her budget. How much did Alexis pay for the shoes?"
+22,small_wrong_to_scheduled_correct,False,,True,True,21,20,,1.5497207641601562e-06,0.15,0.15000154972076415,7,10,7,,58,"Let's break down the problem step by step:
+
+1. **Determine the length of Jamie's last name:**
+   Jamie's last name is ""Grey"". The length of ""Grey"" is 4 letters.
+
+2. **Set up the relationship between the lengths of Bobbie's and Jamie's last names:**
+   According to the problem, if Bobbie took two letters off her last name, she would have a last name twice the length of Jamie's last name. Let's denote the length of Bobbie's last name as \( B \).
+
+   So, we have:
+   \[
+   B - 2 = 2 \times 4
+   \]
+   Simplifying this equation:
+   \[
+   B - 2 = 8
+   \]
+   Adding 2 to both sides:
+   \[
+   B = 10
+   \]
+   Therefore, Bobbie's last name has 10 letters.
+
+3. **Determine the length of Samantha's last name:**
+   The problem states that Samantha's last name has three fewer letters than Bobbie's last name. So, if Bobbie's last name has 10 letters, Samantha's last name has:\[
+   S = B - 3
+   \]
+   Substituting \( B = 10 \):
+   \[
+   S = 10 - 3 = 7
+   \]
+
+Therefore, Samantha's last name has 7 letters.",,"Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
+30,small_wrong_to_scheduled_correct,False,,True,True,18,17,,0.0002999305725097656,0.15,0.15029993057250976,6,3,6,,177,"To determine how many pizza pieces are left uneaten, we need to follow these steps:
+
+1. Calculate the total number of pizza pieces.
+2. Determine how many pieces each person eats.
+3. Subtract the eaten pieces from the total to find the uneaten pieces.
+
+First, let's calculate the total number of pizza pieces. Each person buys a personal pan pizza cut into 4 pieces, and there are 4 people:
+\[
+4 \text{ pizzas} \times 4 \text{ pieces per pizza} = 16 \text{ pieces}
+\]
+
+Next, we need to determine how many pieces each person eats. Bill and Dale each eat 50% of their pizzas, and Ann and Cate each eat 75% of their pizzas.
+
+- Bill eats 50% of his 4 pieces:
+\[
+0.5 \times 4 = 2 \text{ pieces}
+\]
+- Dale eats 50% of his 4 pieces:
+\[
+0.5 \times 4 = 2 \text{ pieces}
+\]
+- Ann eats 75% of her 4 pieces:
+\[
+0.75 \times 4 = 3 \text{ pieces}\]
+- Cate eats 75% of her 4 pieces:
+\[
+0.75 \times 4 = 3 \text{ pieces}
+\]
+
+Now, we sum the pieces eaten by all four individuals:
+\[
+2 \text{ (Bill)} + 2 \text{ (Dale)} + 3 \text{ (Ann)} + 3 \text{ (Cate)} = 10 \text{ pieces}
+\]
+
+Finally, we subtract the total number of pieces eaten from the total number of pieces to find the number of uneaten pieces:
+\[
+16 \text{ total pieces} - 10 \text{ eaten pieces} = 6 \text{ uneaten pieces}
+\]
+
+Thus, the number of pizza pieces left uneaten is:
+\[
+\boxed{6}
+\]",,"Ann, Bill, Cate, and Dale each buy personal pan pizzas cut into 4 pieces. If Bill and Dale eat 50% of their pizzas and Ann and Cate eat 75% of the pizzas, how many pizza pieces are left uneaten?"
+67,small_wrong_to_scheduled_correct,False,,True,True,15,14,,0.07916820049285889,0.1323529411764706,0.21152114166932948,6,1,6,,256,"To find the average of their averages for the final three days, we need to calculate the total distance each has run and then determine the average distance they need to run per day over the final three days.
+
+First, let's calculate the total distance Jesse has run in the first four days:
+
+- On the first three days, Jesse averages \(\frac{2}{3}\) of a mile per day. So, for the first three days, she runs:
+  \[
+  3 \times \frac{2}{3} = 2 \text{ miles}
+  \]
+
+- On the fourth day, Jesse runs 10 miles.
+
+So, the total distance Jesse has run in the first four days is:
+\[
+2 + 10 = 12 \text{ miles}
+\]
+
+Next, we need to find out how many miles Jesse has left to run to complete the 30-mile goal:
+\[
+30 - 12 = 18 \text{ miles}
+\]
+
+Jesse has 3 days left to run these 18 miles.Therefore, the average distance Jesse needs to run per day over the final three days is:
+\[
+\frac{18}{3} = 6 \text{ miles/day}
+\]
+
+Now, let's calculate the total distance Mia has run in the first four days:
+
+- Mia averages 3 miles per day over the first four days. So, for the first four days, she runs:
+  \[
+  4 \times 3 = 12 \text{ miles}
+  \]
+
+Mia also has 3 days left to run the remaining distance to complete the 30-mile goal:
+\[
+30 - 12 = 18 \text{ miles}
+\]
+
+The average distance Mia needs to run per day over the final three days is:
+\[
+\frac{18}{3} = 6 \text{ miles/day}
+\]
+
+Both Jesse and Mia need to run an average of 6 miles per day over the final three days. The average of their averages is:
+\[
+\frac{6 + 6}{2} = 6 \text{ miles/day}
+\]
+
+Thus, the average of their averages that they have to run over the final three days is:
+\[
+\boxed{",,Jesse and Mia are competing in a week long race. They have one week to run 30 miles. On the first three days Jesse averages (2/3) of a mile. On day four she runs 10 miles. Mia averages 3 miles a day over the first 4 days. What is the average of their average that they have to run over the final three days?
+72,small_wrong_to_scheduled_correct,False,,True,True,18,17,,2.6226043701171875e-06,0.15,0.1500026226043701,54,4,54,,88,"To determine the amount of water in the aquarium, we need to follow the sequence of events and calculate the volume of water step by step.
+
+1. **Calculate the total volume of the aquarium:**
+   The aquarium is a rectangular prism with dimensions 4 feet long, 6 feet wide, and 3 feet high.
+   \[
+   \text{Volume} = \text{length} \times \text{width} \times \text{height} = 4 \times 6 \times 3 = 72 \text{ cubic feet}
+   \]
+
+2. **Determine the initial amount of water:**
+   Nancy fills the aquarium halfway, so the initial amount of water is:
+   \[
+   \text{Initial water} = \frac{1}{2} \times 72 = 36 \text{ cubic feet}
+   \]
+
+3. **Calculate the amount of water after the cat knocks it over:**
+   The cat spills half of the initial amount of water:
+   \[
+   \text{Water after spill} = \frac{1}{2} \times 36 = 18 \text{ cubic feet}
+   \]4. **Determine the final amount of water after Nancy triples the remaining water:**
+   Nancy triples the remaining amount of water:
+   \[
+   \text{Final water} = 3 \times 18 = 54 \text{ cubic feet}
+   \]
+
+Thus, the final amount of water in the aquarium is:
+\[
+\boxed{54} \text{ cubic feet}
+\]",,"Nancy is filling an aquarium for her fish. She fills it halfway and goes to answer the door. While she's gone, her cat knocks the aquarium over and spills half the water in it. Then Nancy comes back and triples the amount of water in the aquarium. If the aquarium is 4 feet long, 6 feet wide, and 3 feet high, how many cubic feet of water are in the aquarium?"
+107,small_wrong_to_scheduled_correct,False,,True,True,16,15,20,0.04748469591140747,0.10909090909090909,0.15657560500231654,97,107,97,,169,"To calculate the total number of cars that travel down Happy Street from Monday through Sunday, we need to determine the number of cars for each day and then sum them up.
+
+1. **Tuesday:**
+   - Number of cars: 25
+
+2. **Monday:**
+   - Number of cars: 20% less than Tuesday
+   - Calculation: \( 25 - (25 \times 0.20) = 25 - 5 = 20 \)
+
+3. **Wednesday:**
+   - Number of cars: 2 more than Monday
+   - Calculation: \( 20 + 2 = 22 \)
+
+4. **Thursday:**
+   - Number of cars: 10
+
+5. **Friday:**
+   - Number of cars: 10
+
+6. **Saturday:**- Number of cars: 5
+
+7. **Sunday:**
+   - Number of cars: 5
+
+Now, let's sum up the number of cars for each day:
+
+\[
+20 \text{ (Monday)} + 25 \text{ (Tuesday)} + 22 \text{ (Wednesday)} + 10 \text{ (Thursday)} + 10 \text{ (Friday)} + 5 \text{ (Saturday)} + 5 \text{ (Sunday)}
+\]
+
+Adding these together:
+
+\[
+20 + 25 + 22 + 10 + 10 + 5 + 5 = 97
+\]
+
+Therefore, the total number of cars that travel down Happy Street from Monday through Sunday is **97**.",,"There is very little car traffic on Happy Street. During the week, most cars pass it on Tuesday - 25. On Monday, 20% less than on Tuesday, and on Wednesday, 2 more cars than on Monday. On Thursday and Friday, it is about 10 cars each day. On the weekend, traffic drops to 5 cars per day. How many cars travel down Happy Street from Monday through Sunday?"
+116,small_wrong_to_scheduled_correct,False,,True,True,10,9,12,0.9525418877601624,0.09375,1.0462918877601624,21,20,21,,256,"Let's break down the problem step by step:
 
 1. **Thank you cards**: Valerie has 3 thank you cards.
 2. **Bills**: She has 2 bills (water and electric).
@@ -15,54 +251,32 @@ Now, let's calculate the total number of stamps needed:- Each thank you card req
 Adding all these together:
 \[ 3 \text{ (thank you cards)} + 1 \text{ (water bill)} + 2 \text{ (electric bill)} + 5 \text{ (rebates)} + 10 \text{ (job applications)} = 21 \text{ stamps} \]
 
-So, Valerie needs a total","Let's break down the problem step by step:
+So, Valerie needs a total",,"Valerie needs to put stamps on the envelopes she is about to mail. She has thank you cards for each of her grandmother, uncle and aunt for the birthday presents they sent. She also has to pay the water bill and the electric bill separately. She wants to send three more mail-in rebates than she does bills and she has twice as many job applications as rebates to mail. How many stamps does she need if everything needs 1 stamp except the electric bill, which needs 2?"
+139,small_wrong_to_scheduled_correct,False,,True,True,19,18,,7.152557373046875e-07,0.15,0.1500007152557373,24,1,24,,61,"To determine how many flights of stairs Janice walks in a single day, we need to break down her activities and calculate the total number of flights she walks up and down.
 
-1. **Thank You Cards:**
-   - Valerie has thank you cards for her grandmother, uncle, and aunt.
-   - Number of thank you cards = 3
+1. **Flights of stairs Janice walks up:**
+   - Janice goes up the stairs 5 times.
+   - Each time she goes up, she walks 3 flights of stairs.
+   - Therefore, the total number of flights she walks up is:
+     \[
+     5 \text{ times} \times 3 \text{ flights per time} = 15 \text{ flights}
+     \]
 
-2. **Bills:**
-   - Valerie has to pay the water bill and the electric bill.
-   - Number of bills = 2 (water bill + electric bill)
+2. **Flights of stairs Janice walks down:**
+   - Janice goes down the stairs 3 times.
+   - Each time she goes down, she walks 3 flights of stairs.
+   - Therefore, the total number of flights she walks down is:
+     \[
+     3 \text{ times} \times 3 \text{ flights per time} = 9 \text{ flights}
+     \]
 
-3. **Mail-in Rebates:**
-   - Valerie sends three more mail-in rebates than she does bills.
-   - Number of bills = 2
-   - Number of rebates = 2 + 3 = 5
+3. **Total flights of stairs Janice walks:**
+   - To find the total number of flights she walks, we add the flights she walks up and the flights she walks down:\[
+     15 \text{ flights up} + 9 \text{ flights down} = 24 \text{ flights}
+     \]
 
-4. **Job Applications:**
-   - Valerie has twice as many job applications as rebates.
-   - Number of rebates = 5
-   - Number of job applications = 2 * 5 = 10
-
-Now, let's calculate the total number of stamps needed:
-
-- Each thank you card requires 1 stamp:
-  - Stamps for thank you cards = 3
-
-- Each bill requires 1 stamp, except the electric bill which requires 2 stamps:
-  - Stamps for water bill = 1
-  - Stamps for electric bill = 2
-  - Total stamps for bills = 1 + 2 = 3
-
-- Each rebate requires 1 stamp:
-  - Stamps for rebates = 5
-
-- Each job application requires 1 stamp:
-  - Stamps for job applications = 10
-
-Adding all these together:
-
-\[
-\text{Total stamps} = \text{Stamps for thank you cards} + \text{Stamps for bills} + \text{Stamps for rebates} + \text{Stamps for job applications}
-\]
-
-\[
-\text{Total stamps} = 3 + 3 + 5 + 10 = 21
-\]
-
-Therefore, Valerie needs a total of 21 stamps.","Valerie needs to put stamps on the envelopes she is about to mail. She has thank you cards for each of her grandmother, uncle and aunt for the birthday presents they sent. She also has to pay the water bill and the electric bill separately. She wants to send three more mail-in rebates than she does bills and she has twice as many job applications as rebates to mail. How many stamps does she need if everything needs 1 stamp except the electric bill, which needs 2?"
-143,small_wrong_to_scheduled_correct,False,True,True,True,10,9,,0.2804427146911621,45,0.75,45,45,193,"To determine how many goldfish are below the surface, we can follow these steps:
+Thus, the total number of flights of stairs Janice walks in a single day is \(\boxed{24}\).",,"Janice's office is on the third floor, and she has to walk up 3 flights of stairs to get to her office.  In a single day, she goes up the three flights of stairs 5 times, down the the three flights of stairs 3 times, and uses the elevator the remainder of the time.  How many flights of stairs does Janice walk (up and down) in a single day?"
+143,small_wrong_to_scheduled_correct,False,,True,True,10,9,,0.2804427146911621,0.07142857142857142,0.3518712861197335,45,0.75,45,,193,"To determine how many goldfish are below the surface, we can follow these steps:
 
 1. **Understand the given information:**
    - 25% of the goldfish are at the surface.
@@ -88,34 +302,110 @@ Therefore, Valerie needs a total of 21 stamps.","Valerie needs to put stamps on 
    0.75 \times 60 = 45
    \]
 
-So, the number of goldfish below the surface is \( \boxed{45} \).","To solve this problem, we need to determine the total number of goldfish in the pond and then find out how many are below the surface.
+So, the number of goldfish below the surface is \( \boxed{45} \).",,"Toby is counting goldfish in the local pond. He knows that only 25% of goldfish are at the surface and the rest are too deep below the surface to be able to see. If he counts 15 goldfish, how many are below the surface?"
+145,small_wrong_to_scheduled_correct,False,,True,True,19,18,,3.5762786865234375e-07,0.15,0.15000035762786865,2,3,2,,129,"To determine how many hours James watched TV, we need to follow these steps:
 
-Step 1: Understand the given information.
-- Toby counts 15 goldfish at the surface.
-- Only 25% of the goldfish are at the surface.
-- The remaining 75% of the goldfish are below the surface.
+1. Calculate the total time spent watching Jeopardy.
+2. Calculate the total time spent watching Wheel of Fortune.
+3. Add the times from steps 1 and 2 to get the total time spent watching TV.
+4. Convert the total time from minutes to hours.
 
-Step 2: Calculate the total number of goldfish.
-Since 25% of the goldfish are at the surface, and Toby counted 15 goldfish at the surface, we can set up the following equation:
-\[ 0.25 \times \text{Total number of goldfish} = 15 \]
+Let's start with step 1:
+James watched 2 episodes of Jeopardy, and each episode is 20 minutes long.
+\[ 2 \text{ episodes} \times 20 \text{ minutes/episode} = 40 \text{ minutes} \]
 
-Let \( T \) represent the total number of goldfish. Then:
-\[ 0.25T = 15 \]
+Next, step 2:
+James watched 2 episodes of Wheel of Fortune, and each episode is twice as long as a Jeopardy episode. Since each Jeopardy episode is 20 minutes, each Wheel of Fortune episode is:
+\[ 2 \times 20 \text{ minutes} = 40 \text{ minutes} \]
+So, the total time spent watching Wheel of Fortune is:
+\[ 2 \text{ episodes} \times 40 \text{ minutes/episode} = 80 \text{ minutes} \]
 
-Solve for \( T \):
-\[ T = \frac{15}{0.25} \]
-\[ T = 60 \]
+Now, step 3:Add the times from steps 1 and 2 to get the total time spent watching TV.
+\[ 40 \text{ minutes} + 80 \text{ minutes} = 120 \text{ minutes} \]
 
-So, the total number of goldfish in the pond is 60.
+Finally, step 4: Convert the total time from minutes to hours. There are 60 minutes in an hour, so:
+\[ 120 \text{ minutes} \div 60 \text{ minutes/hour} = 2 \text{ hours} \]
 
-Step 3: Determine the number of goldfish below the surface.
-Since 75% of the goldfish are below the surface, we calculate:
-\[ 0.75 \times 60 = 45 \]
+Therefore, the total time James spent watching TV is:
+\[
+\boxed{2}
+\]",,James watched 2 episodes of Jeopardy and 2 episodes of Wheel of Fortune.  Jeopardy is 20 minutes and Wheel of Fortune is twice as long.  How many hours did he watch TV?
+182,small_wrong_to_scheduled_correct,False,,True,True,18,17,,3.933906555175781e-06,0.15,0.15000393390655517,230,3,230,,200,"To determine the total amount spent by Lisa and Carly, we need to break down their spending step by step.
 
-Therefore, there are 45 goldfish below the surface.
+First, let's calculate Lisa's spending:
+1. Lisa spends $40 on t-shirts.
+2. She spends half of this amount on jeans:
+   \[
+   \text{Amount spent on jeans} = \frac{40}{2} = 20 \text{ dollars}
+   \]
+3. She spends twice this amount on coats:
+   \[
+   \text{Amount spent on coats} = 2 \times 40 = 80 \text{ dollars}
+   \]
 
-Final Answer: There are 45 goldfish below the surface.","Toby is counting goldfish in the local pond. He knows that only 25% of goldfish are at the surface and the rest are too deep below the surface to be able to see. If he counts 15 goldfish, how many are below the surface?"
-194,small_wrong_to_scheduled_correct,False,True,True,True,11,10,,0.9251712560653687,322,32,322,322,152,"To find the total cost of the gifts after the rebate, we need to follow these steps:
+Now, let's sum up Lisa's total spending:
+\[
+\text{Total spent by Lisa} = 40 + 20 + 80 = 140 \text{ dollars}
+\]
+
+Next, let's calculate Carly's spending:
+1. Carly spends a quarter as much as Lisa on t-shirts:
+   \[
+   \text{Amount spent on t-shirts by Carly} = \frac{40}{4} = 10 \text{ dollars}
+   \]
+2. She spends 3 times as much on jeans as Lisa:\[
+   \text{Amount spent on jeans by Carly} = 3 \times 20 = 60 \text{ dollars}
+   \]
+3. She spends a quarter of the amount Lisa spent on coats:
+   \[
+   \text{Amount spent on coats by Carly} = \frac{80}{4} = 20 \text{ dollars}
+   \]
+
+Now, let's sum up Carly's total spending:
+\[
+\text{Total spent by Carly} = 10 + 60 + 20 = 90 \text{ dollars}
+\]
+
+Finally, we add Lisa's and Carly's total spending to find the combined total:
+\[
+\text{Total spent by both} = 140 + 90 = 230 \text{ dollars}
+\]
+
+Thus, the total amount spent by Lisa and Carly is:
+\[
+\boxed{230}
+\]",,"Lisa and Carly go shopping together. Lisa spends $40 on t-shirts then spends half of this amount on jeans and twice this amount on coats. Carly spends only a quarter as much as Lisa on t-shirts but spends 3 times as much on jeans and a quarter of the amount Lisa spent on coats. In dollars, how much did Lisa and Carly spend in total?"
+186,small_wrong_to_scheduled_correct,False,,True,True,15,14,,0.10012680292129517,0.09782608695652174,0.1979528898778169,50,16,50,,139,"To find the total length of all of Christina's snakes combined, we need to add the lengths of each snake together. Let's break it down step by step:
+
+1. **Length of the first snake:**
+   - The first snake is 2 feet long.
+   - Since there are 12 inches in a foot, we convert the length to inches:
+     \[
+     2 \text{ feet} \times 12 \text{ inches/foot} = 24 \text{ inches}
+     \]
+
+2. **Length of the second snake:**
+   - The second snake is 16 inches long.
+   - This length is already in inches, so we keep it as is:
+     \[
+     16 \text{ inches}
+     \]
+
+3.**Length of the third snake:**
+   - The third snake is 10 inches long.
+   - This length is also already in inches, so we keep it as is:
+     \[
+     10 \text{ inches}
+     \]
+
+4. **Total length of all snakes combined:**
+   - We add the lengths of all three snakes together:
+     \[
+     24 \text{ inches} + 16 \text{ inches} + 10 \text{ inches} = 50 \text{ inches}
+     \]
+
+Therefore, the total length of all of Christina's snakes combined is \( 50 \) inches.",,Christina has 3 snakes. 1 snake is 2 feet long. Another snake is 16 inches long. The last snake is 10 inches long. How many inches are all of her snakes combined?
+194,small_wrong_to_scheduled_correct,False,,True,True,11,10,,0.9251712560653687,0.07173913043478261,0.9969103865001513,322,32,322,,152,"To find the total cost of the gifts after the rebate, we need to follow these steps:
 
 1. Calculate the total cost of the polo shirts.
 2. Calculate the total cost of the necklaces.
@@ -150,50 +440,8 @@ Let's go through each step:
    334 - 12 = 322
    \]
 
-Therefore, the total cost of the gifts after the rebate is \( \boxed{322} \).","To find the total cost of the gifts after the rebate, we need to follow these steps:
-
-1. Calculate the total cost of the polo shirts.
-2. Calculate the total cost of the necklaces.
-3. Add the cost of the computer game.
-4. Sum up all these costs to get the total before the rebate.
-5. Subtract the rebate from the total cost.
-
-Let's go through each step in detail:
-
-### Step 1: Cost of Polo Shirts
-- Number of polo shirts: 3
-- Cost per polo shirt: $26
-
-Total cost of polo shirts:
-\[ 3 \times 26 = 78 \]
-
-### Step 2: Cost of Necklaces
-- Number of necklaces: 2
-- Cost per necklace: $83
-
-Total cost of necklaces:
-\[ 2 \times 83 = 166 \]
-
-### Step 3: Cost of Computer Game
-- Number of computer games: 1
-- Cost per computer game: $90
-
-Total cost of computer game:
-\[ 1 \times 90 = 90 \]
-
-### Step 4: Total Cost Before Rebate
-Sum up the costs calculated in steps 1, 2, and 3:
-\[ 78 + 166 + 90 = 334 \]
-
-### Step 5: Apply the Rebate
-Rebate amount: $12
-
-Subtract the rebate from the total cost:
-\[ 334 - 12 = 322 \]
-
-Therefore, the total cost of the gifts after the rebate is:
-\[ \boxed{322} \]","Mr. Grey is purchasing gifts for his family. So far he has purchased 3 polo shirts for $26 each; 2 necklaces for $83 each; and 1 computer game for $90. Since Mr. Grey purchased all those using his credit card, he received a $12 rebate. What is the total cost of the gifts after the rebate?"
-199,small_wrong_to_scheduled_correct,False,False,True,True,3,2,3,0.9501243233680725,150,15,150,5,256,"To determine how much more Gary is spending per month to pay off the loan in 2 years instead of 5, we need to follow these steps:
+Therefore, the total cost of the gifts after the rebate is \( \boxed{322} \).",,"Mr. Grey is purchasing gifts for his family. So far he has purchased 3 polo shirts for $26 each; 2 necklaces for $83 each; and 1 computer game for $90. Since Mr. Grey purchased all those using his credit card, he received a $12 rebate. What is the total cost of the gifts after the rebate?"
+199,small_wrong_to_scheduled_correct,False,,True,True,3,2,3,0.9501243233680725,0.023684210526315787,0.9738085338943883,150,15,150,,256,"To determine how much more Gary is spending per month to pay off the loan in 2 years instead of 5, we need to follow these steps:
 
 1. **Calculate the monthly payment for 5 years:**- Total loan amount: $6,000
    - Duration: 5 years (which is 60 months)
@@ -218,111 +466,40 @@ Therefore, the total cost of the gifts after the rebate is:
    \text{Difference} = 250 - 100 = 150
    \]
 
-Therefore, Gary is spending $150 more per month to pay off","To determine how much more Gary is spending per month to pay off the loan in 2 years instead of 5, we need to calculate the monthly payments for both scenarios and then find the difference.
-
-### Step-by-Step Calculation:
-
-1. **Total Loan Amount:**
-   \[
-   \text{Loan Amount} = \$6,000
-   \]
-
-2. **Monthly Payment for 5 Years:**
-   - Total number of months in 5 years:
-     \[
-     5 \text{ years} \times 12 \text{ months/year} = 60 \text{ months}
-     \]
-   - Monthly payment:
-     \[
-     \frac{\$6,000}{60 \text{ months}} = \$100 \text{ per month}
-     \]
-
-3. **Monthly Payment for 2 Years:**
-   - Total number of months in 2 years:
-     \[
-     2 \text{ years} \times 12 \text{ months/year} = 24 \text{ months}
-     \]
-   - Monthly payment:
-     \[
-     \frac{\$6,000}{24 \text{ months}} = \$250 \text{ per month}
-     \]
-
-4. **Difference in Monthly Payments:**
-   - Difference between the two monthly payments:
-     \[
-     \$250 \text{ per month} - \$100 \text{ per month} = \$150 \text{ per month}
-     \]
-
-Therefore, Gary is spending an additional \$150 per month to pay off the loan in 2 years instead of 5 years.","Gary bought his first used car for $6,000.  Gary borrowed the money from his dad who said he could pay him back the full amount over 5 years.  Gary decided he would pay his dad back the full amount in 2 years.  How much more is Gary spending per month to pay the loan off in 2 years instead of 5?"
-211,small_wrong_to_scheduled_correct,False,True,True,True,8,7,4,0.19662708044052124,7200,300,7200,7200,256,"To determine how much more Jessica pays for her expenses over the whole year compared to last year, we need to calculate her total expenses for both years and then find the difference.
+Therefore, Gary is spending $150 more per month to pay off",,"Gary bought his first used car for $6,000.  Gary borrowed the money from his dad who said he could pay him back the full amount over 5 years.  Gary decided he would pay his dad back the full amount in 2 years.  How much more is Gary spending per month to pay the loan off in 2 years instead of 5?"
+211,small_wrong_to_scheduled_correct,False,,True,True,7,6,4,0.1381136178970337,0.0525,0.19061361789703368,7200,300,7200,,256,"To determine how much more Jessica pays for her expenses over the whole year compared to last year, we need to calculate her total expenses for both years and then find the difference.
 
 ### Last Year's Expenses:
 1. **Rent**: $1000 per month
 2. **Food**: $200 per month
 3. **Car Insurance**: $100 per month
 
-Total monthly expenses last year:
-\[ 1000 + 200 + 100 = 1300 \]dollars
+Total monthly expenses last year:\[ 1000 + 200 + 100 = 1300 \]
 
 Total annual expenses last year:
-\[ 1300 \times 12 = 15600 \] dollars
+\[ 1300 \times 12 = 15600 \]
 
 ### This Year's Expenses:
 1. **Rent**: Increased by 30%
-   \[ 1000 \times 1.30 = 1300 \] dollars per month
+   \[ 1000 \times 1.30 = 1300 \]
 
 2. **Food**: Increased by 50%
-   \[ 200 \times 1.50 = 300 \] dollars per month
+   \[ 200 \times 1.50 = 300 \]
 
 3. **Car Insurance**: Tripled
-   \[ 100 \times 3 = 300 \] dollars per month
+   \[ 100 \times 3 = 300 \]
 
 Total monthly expenses this year:
-\[ 1300 + 300 + 300 = 1900 \] dollars
+\[ 1300 + 300 + 300 = 1900 \]
 
 Total annual expenses this year:
-\[ 1900 \times 12 = 22800 \] dollars
+\[ 1900 \times 12 = 22800 \]
 
 ### Difference in Annual Expenses:
-\[ 22800 - 15600 = 7200 \] dollars
+\[ 22800 - 15600 = 7200 \]
 
-Thus, Jessica pays \(\boxed{7200}\) dollars more for her expenses over the whole year compared to","To determine how much more Jessica pays for her expenses this year compared to last year, we need to calculate her total monthly expenses for both years and then find the difference over the course of a year.
-
-### Step-by-Step Calculation:
-
-#### Last Year's Monthly Expenses:
-1. **Rent**: $1000 per month
-2. **Food**: $200 per month
-3. **Car Insurance**: $100 per month
-
-Total monthly expenses last year:
-\[ \text{Total Monthly Expenses (Last Year)} = 1000 + 200 + 100 = 1300 \]
-
-Total annual expenses last year:
-\[ \text{Total Annual Expenses (Last Year)} = 1300 \times 12 = 15600 \]
-
-#### This Year's Monthly Expenses:
-1. **Rent**: Increased by 30%
-   \[ \text{New Rent} = 1000 + (0.30 \times 1000) = 1000 + 300 = 1300 \]
-
-2. **Food**: Increased by 50%
-   \[ \text{New Food Cost} = 200 + (0.50 \times 200) = 200 + 100 = 300 \]
-
-3. **Car Insurance**: Tripled
-   \[ \text{New Car Insurance} = 3 \times 100 = 300 \]
-
-Total monthly expenses this year:
-\[ \text{Total Monthly Expenses (This Year)} = 1300 + 300 + 300 = 1900 \]
-
-Total annual expenses this year:
-\[ \text{Total Annual Expenses (This Year)} = 1900 \times 12 = 22800 \]
-
-#### Difference in Annual Expenses:
-\[ \text{Difference} = \text{Total Annual Expenses (This Year)} - \text{Total Annual Expenses (Last Year)} \]
-\[ \text{Difference} = 22800 - 15600 = 7200 \]
-
-Thus, Jessica pays **$7200 more** for her expenses this year compared to last year.","Last year Jessica paid $1000 for rent, $200 for food, and $100 for car insurance each month. This year her rent goes up by 30%, food costs increase by 50%, and the cost of her car insurance triples because she was at fault in an accident. How much more does Jessica pay for her expenses over the whole year compared to last year?"
-234,small_wrong_to_scheduled_correct,False,True,True,True,7,6,3,0.9917727708816528,8,0.05,8,8,256,"To determine how many nickels Mark gets in his change, we need to follow these steps:
+Thus, Jessica pays $7200 more for her expenses over the whole year compared to last year.",,"Last year Jessica paid $1000 for rent, $200 for food, and $100 for car insurance each month. This year her rent goes up by 30%, food costs increase by 50%, and the cost of her car insurance triples because she was at fault in an accident. How much more does Jessica pay for her expenses over the whole year compared to last year?"
+234,small_wrong_to_scheduled_correct,False,,True,True,7,6,3,0.9917727708816528,0.03888888888888888,1.0306616597705418,8,0.05,8,,256,"To determine how many nickels Mark gets in his change, we need to follow these steps:
 
 1. **Calculate the total cost of the items Mark buys:**
    - Bread: $4.20
@@ -346,53 +523,41 @@ Thus, Jessica pays **$7200 more** for her expenses this year compared to last ye
 
 6. **Calculate the remaining change using nickels:**
    - Each nickel is worth $0.05.
-   - Number of nickels needed: $0.40 / $0.05 = 8 nickels","To determine how many nickels Mark gets in his change, we need to follow these steps:
+   - Number of nickels needed: $0.40 / $0.05 = 8 nickels",,"Mark buys a loaf of bread for $4.20 and some cheese for $2.05. He gives the cashier $7.00. If the cashier only has 1 quarter and 1 dime in his till, plus a bunch of nickels, how many nickels does Mark get in his change?"
+241,small_wrong_to_scheduled_correct,False,,True,True,19,18,,0.00026100873947143555,0.15,0.15026100873947143,12,1,12,,102,"To determine the number of desktop computers sold, we need to follow these steps:
 
-1. **Calculate the total cost of the items:**
-   - Cost of the loaf of bread: \( \$4.20 \)
-   - Cost of the cheese: \( \$2.05 \)
+1. **Identify the fractions of sales for each type of computer:**
+   - Half of the sales are laptops.
+   - One-third of the sales are netbooks.
+   - The rest are desktop computers.
 
-   Total cost:
-   \[
-   4.20 + 2.05 = 6.25
-   \]
-
-2. **Determine the amount of money Mark gave to the cashier:**
-   - Amount given: \( \$7.00 \)
-
-3. **Calculate the change Mark should receive:**
-   \[
-   7.00 - 6.25 = 0.75
-   \]
-   So, Mark should receive \( \$0.75 \) in change.
-
-4. **Identify the denominations available for change:**
-   - The cashier has 1 quarter (\( \$0.25 \))
-   - The cashier has 1 dime (\( \$0.10 \))
-   - The cashier has a bunch of nickels (\( \$0.05 \))
-
-5. **Use the largest denominations first to make up the change:**
-   - Use 1 quarter: \( \$0.25 \)
-   - Remaining change needed: 
+2. **Calculate the fraction of sales for desktop computers:**
+   - The total fraction of sales for laptops and netbooks is:
      \[
-     0.75 - 0.25 = 0.50
+     \frac{1}{2} + \frac{1}{3}
+     \]
+   - To add these fractions, we need a common denominator. The least common multiple of 2 and 3 is 6.
+   - Convert each fraction to have a denominator of 6:
+     \[
+     \frac{1}{2} = \frac{3}{6}, \quad \frac{1}{3} = \frac{2}{6}
+     \]
+   - Add the fractions:
+     \[
+     \frac{3}{6} + \frac{2}{6} = \frac{5}{6}
+     \]
+   - Therefore, the fraction of sales for desktop computers is:\[
+     1 - \frac{5}{6} = \frac{1}{6}
      \]
 
-   - Use 1 dime: \( \$0.10 \)
-   - Remaining change needed:
+3. **Determine the number of desktop computers sold:**
+   - Total number of computers sold is 72.
+   - The number of desktop computers is:
      \[
-     0.50 - 0.10 = 0.40
+     \frac{1}{6} \times 72 = 12
      \]
 
-6. **Use nickels to make up the remaining change:**
-   - Each nickel is worth \( \$0.05 \)
-   - Number of nickels needed:
-     \[
-     \frac{0.40}{0.05} = 8
-     \]
-
-Therefore, Mark will receive 8 nickels in his change.","Mark buys a loaf of bread for $4.20 and some cheese for $2.05. He gives the cashier $7.00. If the cashier only has 1 quarter and 1 dime in his till, plus a bunch of nickels, how many nickels does Mark get in his change?"
-242,small_wrong_to_scheduled_correct,False,True,True,True,11,10,,0.999999463558197,36,30,36,36,174,"To determine how many cookies Ann keeps, we need to follow these steps:
+Thus, the number of desktop computers sold is \(\boxed{12}\).",,"Mr. Lu owns a computer store. For last month, half of their sales are laptops, one-third are netbooks, and the rest are desktop computers. If Mr. Lu's store was able to sell a total of 72 computers, how many of them are desktop computers?"
+242,small_wrong_to_scheduled_correct,False,,True,True,11,10,,0.999999463558197,0.09166666666666667,1.0916661302248638,36,30,36,,174,"To determine how many cookies Ann keeps, we need to follow these steps:
 
 1. Calculate the total number of each type of cookie Ann initially baked.
 2. Subtract the number of each type of cookie Ann gave away.
@@ -418,29 +583,47 @@ Finally, we sum the remaining cookies:
 
 Total cookies kept = 12 (oatmeal raisin) + 6 (sugar) + 18 (chocolate chip) = 36 cookies
 
-So, the total number of cookies Ann keeps is \(\boxed{36}\).","To solve this problem, we need to follow these steps:
+So, the total number of cookies Ann keeps is \(\boxed{36}\).",,"Ann is baking cookies. She bakes three dozen oatmeal raisin cookies, two dozen sugar cookies, and four dozen chocolate chip cookies. Ann gives away two dozen oatmeal raisin cookies, 1.5 dozen sugar cookies, and 2.5 dozen chocolate chip cookies. How many total cookies does she keep?"
+246,small_wrong_to_scheduled_correct,False,,True,True,18,17,,4.0531158447265625e-06,0.15,0.15000405311584472,52,2,52,,129,"To determine how much money each boy receives, we need to follow these steps:
 
-### Step 1: Calculate the initial number of each type of cookie.
-- Oatmeal raisin cookies: \(3 \text{ dozen} = 3 \times 12 = 36 \text{ cookies}\)
-- Sugar cookies: \(2 \text{ dozen} = 2 \times 12 = 24 \text{ cookies}\)
-- Chocolate chip cookies: \(4 \text{ dozen} = 4 \times 12 = 48 \text{ cookies}\)
+1. **Determine the number of boys and girls in the family:**
+   - The ratio of boys to girls is 5:7.
+   - Let the number of boys be \( 5x \) and the number of girls be \( 7x \).
+   - The total number of children is given as 180.
+   - Therefore, we can write the equation:
+     \[
+     5x + 7x = 180
+     \]
+   - Simplify the equation:
+     \[
+     12x = 180
+     \]
+   - Solve for \( x \):
+     \[
+     x = \frac{180}{12} = 15
+     \]
+   - Now, calculate the number of boys and girls:
+     \[
+     \text{Number of boys} = 5x = 5 \times 15 = 75
+     \]
+     \[
+     \text{Number of girls} = 7x = 7 \times 15 = 105
+     \]
 
-### Step 2: Calculate the number of each type of cookie given away.
-- Oatmeal raisin cookies given away: \(2 \text{ dozen} = 2 \times 12 = 24 \text{ cookies}\)
-- Sugar cookies given away: \(1.5 \text{ dozen} = 1.5 \times 12 = 18 \text{ cookies}\)
-- Chocolate chip cookies given away: \(2.5 \text{ dozen} = 2.5 \times 12 = 30 \text{ cookies}\)
+2.**Calculate the amount of money each boy receives:**
+   - The total amount of money given to the boys is $3900.
+   - There are 75 boys.
+   - To find the amount each boy receives, divide the total amount by the number of boys:
+     \[
+     \text{Amount per boy} = \frac{3900}{75}
+     \]
+   - Perform the division:
+     \[
+     \frac{3900}{75} = 52
+     \]
 
-### Step 3: Calculate the number of each type of cookie Ann keeps.
-- Oatmeal raisin cookies kept: \(36 - 24 = 12 \text{ cookies}\)
-- Sugar cookies kept: \(24 - 18 = 6 \text{ cookies}\)
-- Chocolate chip cookies kept: \(48 - 30 = 18 \text{ cookies}\)
-
-### Step 4: Sum up all the cookies Ann keeps.
-Total cookies kept:
-\[ 12 + 6 + 18 = 36 \]
-
-Therefore, Ann keeps a total of 36 cookies.","Ann is baking cookies. She bakes three dozen oatmeal raisin cookies, two dozen sugar cookies, and four dozen chocolate chip cookies. Ann gives away two dozen oatmeal raisin cookies, 1.5 dozen sugar cookies, and 2.5 dozen chocolate chip cookies. How many total cookies does she keep?"
-256,small_wrong_to_scheduled_correct,False,True,True,True,5,4,,0.8365083932876587,108,1,108,108,256,"To determine the actual distance between Pence and Hillcrest, we need to use the scale provided on the map. The scale tells us that 1/4 inch on the map represents 8 miles in reality. We can use this information to find out how many miles correspond to 3 3/8 inches on the map.
+Therefore, each boy receives \(\boxed{52}\) dollars.",,"The ratio of boys to girls in a family is 5:7. The total number of children in the family is 180. If the boys are given $3900 to share, how much money does each boy receive?"
+256,small_wrong_to_scheduled_correct,False,,True,True,5,4,,0.8365083932876587,0.05357142857142857,0.8900798218590873,108,1,108,,256,"To determine the actual distance between Pence and Hillcrest, we need to use the scale provided on the map. The scale tells us that 1/4 inch on the map represents 8 miles in reality. We can use this information to find out how many miles correspond to 3 3/8 inches on the map.
 
 First, let's convert 3 3/8 inches to an improper fraction:\[ 3 \frac{3}{8} = \frac{27}{8} \text{ inches} \]
 
@@ -454,35 +637,68 @@ This means there are 13.5 segments of 1/4 inch in 27/8 inches. Since each 1/4 in
 \[ 13.5 \times 8 = 108 \text{ miles} \]
 
 Therefore, the actual distance between Pence and Hillcrest is:
-\[ \boxed{108","To solve this problem, we need to convert the map distance into actual road distance using the given scale. Let's break it down step by step.
+\[ \boxed{108",,"On a road map, 1/4 inch represents 8 miles of actual road distance. The towns of Pence and Hillcrest are represented by points 3 3/8 inches apart on the map. What is the actual distance, in miles, between the towns?"
+264,small_wrong_to_scheduled_correct,False,,True,True,13,12,,0.06074261665344238,0.10833333333333332,0.16907594998677572,21600,3,21600,,256,"To calculate the total earnings of the Italian restaurant by the end of the month, we need to break down the earnings for weekdays and weekends separately, and then sum them up.
 
-1. **Understand the Scale:**
-   - On the map, \( \frac{1}{4} \) inch represents 8 miles in reality.
-
-2. **Convert Map Distance to Inches:**
-   - The distance between Pence and Hillcrest on the map is \( 3 \frac{3}{8} \) inches.
-   - Convert the mixed number to an improper fraction:
+1. **Weekday Earnings:**
+   - The restaurant earns $600 every weekday.
+   - There are 5 weekdays in a week.
+   - Therefore, the total earnings for weekdays in one week is:
      \[
-     3 \frac{3}{8} = 3 + \frac{3}{8} = \frac{24}{8} + \frac{3}{8} = \frac{27}{8} \text{ inches}
+     600 \text{ dollars/weekday} \times 5 \text{ weekdays} = 3000 \text{ dollars}
      \]
 
-3. **Determine the Scale Factor:**
-   - Since \( \frac{1}{4} \) inch on the map corresponds to 8 miles, we can find out how many \( \frac{1}{4} \) inch segments fit into \( \frac{27}{8} \) inches.
-   - To do this, divide \( \frac{27}{8} \) by \( \frac{1}{4} \):
-     \[
-     \frac{27}{8} \div \frac{1}{4} = \frac{27}{8} \times 4 = \frac{27 \times 4}{8} = \frac{108}{8} = 13.5
+2. **Weekend Earnings:**
+   - The restaurant earns twice as much on the weekend as it does on a weekday.
+   - Therefore, the earnings on a weekend day are:\[
+     2 \times 600 \text{ dollars} = 1200 \text{ dollars/day}
      \]
-   - This means there are 13.5 segments of \( \frac{1}{4} \) inch in \( \frac{27}{8} \) inches.
-
-4. **Calculate the Actual Distance:**
-   - Each segment of \( \frac{1}{4} \) inch represents 8 miles.
-   - Therefore, the total actual distance is:
+   - There are 2 days in a weekend.
+   - Therefore, the total earnings for the weekend in one week is:
      \[
-     13.5 \times 8 = 108 \text{ miles}
+     1200 \text{ dollars/day} \times 2 \text{ days} = 2400 \text{ dollars}
      \]
 
-So, the actual distance between the towns of Pence and Hillcrest is \( 108 \) miles.","On a road map, 1/4 inch represents 8 miles of actual road distance. The towns of Pence and Hillcrest are represented by points 3 3/8 inches apart on the map. What is the actual distance, in miles, between the towns?"
-271,small_wrong_to_scheduled_correct,False,True,True,True,22,21,,0.38778460025787354,250,150,250,250,63,"To calculate the total amount of money Nadia used to buy the flowers, we need to follow these steps:
+3. **Total Weekly Earnings:**
+   - Adding the weekday and weekend earnings together gives us the total weekly earnings:
+     \[
+     3000 \text{ dollars (weekdays)} + 2400 \text{ dollars (weekends)} = 5400 \text{ dollars/week}
+     \]
+
+4. **Monthly Earnings:**
+   - Assuming there are approximately 4 weeks in a month, the monthly earnings would be:
+     \[
+     5400 \text{ dollars/week} \times 4 \text{ weeks} = 21600 \text{ dollars}
+     \]
+
+Therefore, the Italian restaurant earns approximately $21,600 by the end of the month",,An Italian restaurant earns $600 every weekday and twice as much on the weekend. How much money does it earn by the end of the month?
+266,small_wrong_to_scheduled_correct,False,,True,True,14,13,,0.035956382751464844,0.12352941176470587,0.15948579451617073,4,3,4,,145,"To determine how many hours John spends at the gym each week, we need to break down his activities and calculate the total time spent.
+
+1. **Weightlifting Time:**
+   - John spends 1 hour each day lifting weights.
+   - Since he goes to the gym 3 times a week, the total weightlifting time per week is:
+     \[
+     1 \text{ hour/day} \times 3 \text{ days/week} = 3 \text{ hours/week}
+     \]
+
+2. **Warming Up and Cardio Time:**
+   - John spends a third of his weightlifting time warming up and doing cardio each day.
+   - The time spent warming up and doing cardio per day is:
+     \[
+     \frac{1 \text{ hour}}{3} = \frac{1}{3} \text{ hour/day}
+     \]
+   - Since he goes to the gym 3 times a week, the total warming up and cardio time per week is:\[
+     \frac{1}{3} \text{ hour/day} \times 3 \text{ days/week} = 1 \text{ hour/week}
+     \]
+
+3. **Total Time Spent at the Gym:**
+   - To find the total time John spends at the gym each week, we add the weightlifting time and the warming up and cardio time:
+     \[
+     3 \text{ hours/week (weightlifting)} + 1 \text{ hour/week (warming up and cardio)} = 4 \text{ hours/week}
+     \]
+
+Therefore, John spends a total of 4 hours at the gym each week.",,"Johns goes to the gym 3 times a week.  He spends 1 hour each day lifting weight. Additionally, he also spends a third of his weightlifting time warming up and doing cardio each day.  How many hours does he spend at the gym a week?"
+271,small_wrong_to_scheduled_correct,False,,True,True,22,21,,0.38778460025787354,0.15,0.5377846002578736,250,150,250,,63,"To calculate the total amount of money Nadia used to buy the flowers, we need to follow these steps:
 
 1. Calculate the number of lilies Nadia bought.
 2. Calculate the cost of the roses.
@@ -502,46 +718,45 @@ Lilies cost twice as much as roses, so each lily costs $5 * 2 = $10. Nadia bough
 Cost of lilies = 15 * $10 = $150Step 4: Add the costs together to get the total amount.
 Total cost = Cost of roses + Cost of lilies = $100 + $150 = $250
 
-Therefore, the total amount of money Nadia used to buy the flowers is $250.","To solve this problem, we'll break it down into steps:
+Therefore, the total amount of money Nadia used to buy the flowers is $250.",,"Nadia was sent to the flower shop to buy 20 roses and 3/4 times as many Lillies as roses. If roses cost $5 each and lilies cost twice as much each, calculate the total amount of money Nadia used to buy the flowers."
+284,small_wrong_to_scheduled_correct,False,,True,True,18,17,,0.0,0.15,0.15,768000,2560,768000,,98,"To determine the total number of vibrations Matt experiences, we need to follow these steps:
 
-### Step 1: Calculate the number of Lilies
-Nadia needs to buy \( \frac{3}{4} \) times as many Lilies as roses. She is buying 20 roses.
+1. **Calculate the vibration rate at the highest setting:**
+   - The lowest setting vibrates at 1600 vibrations per second.
+   - The highest setting vibrates 60% faster than the lowest setting.
 
+   First, find 60% of 1600 vibrations per second:
+   \[
+   0.60 \times 1600 = 960 \text{ vibrations per second}
+   \]
+
+   Add this to the lowest setting's vibration rate to get the highest setting's vibration rate:
+   \[
+   1600 + 960 = 2560 \text{ vibrations per second}
+   \]
+
+2. **Convert the usage time from minutes to seconds:**
+   - Matt uses the massager for 5 minutes.
+   - There are 60 seconds in a minute.
+
+   Convert 5 minutes to seconds:
+   \[
+   5 \times 60 = 300 \text{ seconds}
+   \]
+
+3. **Calculate the total number of vibrations:**- The massager vibrates at 2560 vibrations per second.
+   - Matt uses it for 300 seconds.
+
+   Multiply the vibration rate by the time in seconds:
+   \[
+   2560 \times 300 = 768000 \text{ vibrations}
+   \]
+
+Thus, the total number of vibrations Matt experiences is:
 \[
-\text{Number of Lilies} = \frac{3}{4} \times 20 = 15
-\]
-
-So, Nadia needs to buy 15 Lilies.
-
-### Step 2: Calculate the cost of the Roses
-Each rose costs $5.
-
-\[
-\text{Total cost of roses} = 20 \times 5 = \$100
-\]
-
-### Step 3: Calculate the cost of the Lilies
-Each Lily costs twice as much as a rose. Since each rose costs $5, each Lily costs:
-
-\[
-2 \times 5 = \$10
-\]
-
-Now, calculate the total cost for 15 Lilies:
-
-\[
-\text{Total cost of Lilies} = 15 \times 10 = \$150
-\]
-
-### Step 4: Calculate the total amount spent
-Add the total cost of the roses and the total cost of the Lilies:
-
-\[
-\text{Total amount spent} = \$100 + \$150 = \$250
-\]
-
-Therefore, Nadia used a total of \$250 to buy the flowers.","Nadia was sent to the flower shop to buy 20 roses and 3/4 times as many Lillies as roses. If roses cost $5 each and lilies cost twice as much each, calculate the total amount of money Nadia used to buy the flowers."
-287,small_wrong_to_scheduled_correct,False,True,True,True,10,9,10,0.9877570867538452,18,4,18,18,237,"To determine how much Bran still needs to pay for his tuition fee, we need to follow these steps:
+\boxed{768000}
+\]",,"Matt buys a massager.  At the lowest setting, it vibrates at 1600 vibrations per second.  At the highest setting, it vibrates 60% faster.  Matt uses it for 5 minutes at the highest setting.  How many vibrations does he experience?"
+287,small_wrong_to_scheduled_correct,False,,True,True,10,9,10,0.9877570867538452,0.07894736842105263,1.0667044551748979,18,4,18,,237,"To determine how much Bran still needs to pay for his tuition fee, we need to follow these steps:
 
 1. Calculate the amount covered by the scholarship.
 2. Determine the remaining tuition fee after the scholarship.
@@ -575,36 +790,4 @@ Let's go through each step in detail:
    \text{Amount Bran still needs to pay} = 63 - 45 = 18
    \]
 
-Therefore, the amount Bran still needs to pay is \(\boxed{18}\).","To determine how much Bran still needs to pay for his tuition fee, we can break down the problem into several steps:
-
-1. **Calculate the total tuition fee:**
-   \[
-   \text{Total tuition fee} = \$90
-   \]
-
-2. **Determine the amount covered by the scholarship:**
-   The scholarship covers 30% of the tuition fee.
-   \[
-   \text{Scholarship amount} = 0.30 \times 90 = \$27
-   \]
-
-3. **Calculate the remaining tuition fee after the scholarship:**
-   \[
-   \text{Remaining tuition fee} = 90 - 27 = \$63
-   \]
-
-4. **Calculate the amount Bran earns from his part-time job over 3 months:**
-   Bran earns $15 per month.
-   \[
-   \text{Earnings from part-time job} = 15 \times 3 = \$45
-   \]
-
-5. **Determine the remaining amount Bran needs to pay after using his earnings:**
-   \[
-   \text{Amount still needed} = 63 - 45 = \$18
-   \]
-
-Therefore, Bran still needs to pay:
-\[
-\boxed{18}
-\]","Bran's tuition fee is $90. He does a part-time job that pays him $15 per month and he has a scholarship that takes care of 30% of his tuition fee. If he needs to pay his tuition fee within 3 months, how much does Bran still need to pay?"
+Therefore, the amount Bran still needs to pay is \(\boxed{18}\).",,"Bran's tuition fee is $90. He does a part-time job that pays him $15 per month and he has a scholarship that takes care of 30% of his tuition fee. If he needs to pay his tuition fee within 3 months, how much does Bran still need to pay?"
