@@ -29,6 +29,7 @@ DEFAULT_MLP_ALPHA = 1e-4
 DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 DEFAULT_THRESHOLDS = "0.15,0.20,0.25"
 DEFAULT_MAX_NEW_TOKENS = 256
+DEFAULT_LARGE_BASELINE_MAX_NEW_TOKENS = 768
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 DEFAULT_CACHE_PATH = os.path.join(PROJECT_ROOT, "chunk_scheduler_cache.pt")
 DEFAULT_SAVE_CACHE_EVERY = 5
@@ -60,7 +61,18 @@ def parse_args():
         help="MLP initial learning rate.",
     )
     parser.add_argument("--thresholds", default=DEFAULT_THRESHOLDS, help="Comma-separated risk thresholds to simulate.")
-    parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS, help="Max generation tokens.")
+    parser.add_argument(
+        "--max-new-tokens",
+        type=int,
+        default=DEFAULT_MAX_NEW_TOKENS,
+        help="Max generation tokens for scheduled takeover continuations.",
+    )
+    parser.add_argument(
+        "--large-baseline-max-new-tokens",
+        type=int,
+        default=DEFAULT_LARGE_BASELINE_MAX_NEW_TOKENS,
+        help="Max generation tokens for the full large-model baseline.",
+    )
     parser.add_argument("--cache-path", default=DEFAULT_CACHE_PATH, help="Path to cached large-model outputs.")
     parser.add_argument("--save-cache-every", type=int, default=DEFAULT_SAVE_CACHE_EVERY, help="Save cache every N new generations.")
     parser.add_argument(
@@ -500,7 +512,7 @@ def simulate_threshold(
                     large_tokenizer,
                     question=question,
                     assistant_prefix=None,
-                    max_new_tokens=args.max_new_tokens,
+                    max_new_tokens=args.large_baseline_max_new_tokens,
                 )
                 new_cache_entries += 1
                 if args.save_cache_every > 0 and new_cache_entries % args.save_cache_every == 0:
