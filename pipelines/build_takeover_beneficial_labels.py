@@ -686,7 +686,16 @@ def main():
                 takeover_start_chunk_id = -1
                 safe_prefix_text = None
 
-            cache_key = (question_id, takeover_start_chunk_id, args.large_handoff_chunks, args.max_new_tokens)
+            cache_key = (
+                question_id,
+                takeover_start_chunk_id,
+                args.large_handoff_chunks,
+                args.max_new_tokens,
+                args.min_chunk_tokens,
+                args.max_chunk_tokens,
+                os.path.abspath(args.small_model_path),
+                os.path.abspath(args.model_path),
+            )
             if cache_key not in cache:
                 cache[cache_key] = simulate_local_handoff(
                     question=question,

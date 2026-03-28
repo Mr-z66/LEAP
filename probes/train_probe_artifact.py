@@ -204,6 +204,16 @@ def main():
     print(f"Loaded questions with feature spec '{args.feature_key}' and label '{args.label_key}': {len(question_records)}")
 
     X, y, groups = build_feature_arrays(question_records, args.feature_key, args.label_key)
+    unique_labels, label_counts = np.unique(y, return_counts=True)
+    if X.shape[0] == 0:
+        raise ValueError(f"No training rows found for label_key={args.label_key!r} and feature_key={args.feature_key!r}.")
+    if len(unique_labels) < 2:
+        raise ValueError(
+            f"Label {args.label_key!r} has only one class in the dataset: "
+            f"labels={unique_labels.tolist()} counts={label_counts.tolist()}"
+        )
+    if len(set(int(qid) for qid in groups)) < 2:
+        raise ValueError("Need at least two question groups to make a grouped train/test split.")
     splitter = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.random_state)
     train_indices, test_indices = next(splitter.split(X, y, groups))
 

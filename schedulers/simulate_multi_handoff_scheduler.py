@@ -567,6 +567,10 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             trigger_scores.append(combined_score)
             trigger_progresses.append(progress_ratio)
 
+            # Roll back the discarded small-model chunk before applying the large-model handoff.
+            total_tokens -= small_chunk["generated_token_count"]
+            runtime_small_chunks.pop()
+
             large_result = run_large_handoff(
                 model=large_model,
                 tokenizer=large_tokenizer,
