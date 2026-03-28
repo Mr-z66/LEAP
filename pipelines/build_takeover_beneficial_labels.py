@@ -152,9 +152,9 @@ def extract_final_answer(text):
             return boxed_value
 
     explicit_patterns = [
-        r"(?i)final answer\s*[:锛歖?\s*([^\n]+)",
+        r"(?i)final answer\s*[:?]\s*([^\n]+)",
         r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:锛歖?\s*([^\n]+)",
+        r"(?i)answer\s*[:?]\s*([^\n]+)",
         r"####\s*([^\n]+)",
     ]
     for pattern in explicit_patterns:
@@ -430,7 +430,7 @@ def save_outputs(records, output_path, cache, cache_path):
     print(f"Checkpoint saved | labels: {output_path} | cache: {cache_path} | rows: {len(records)}")
 
 
-def group_chunks_by_question(dataset, start_question, num_questions):
+def group_chunks_by_question(dataset, start_question, num_questions, only_small_wrong):
     grouped = defaultdict(list)
     for item in dataset:
         question_id = int(item["question_id"])
@@ -439,19 +439,16 @@ def group_chunks_by_question(dataset, start_question, num_questions):
         grouped[question_id].append(item)
 
     ordered_question_ids = sorted(grouped.keys())
-    if num_questions is not None:
-        ordered_question_ids = ordered_question_ids[:num_questions]
 
     grouped_records = []
     for question_id in ordered_question_ids:
         chunks = sorted(grouped[question_id], key=lambda row: int(row["chunk_id"]))
-        if chunks and chunks[0].get("is_final_correct") and args_only_small_wrong:
+        if chunks and chunks[0].get("is_final_correct") and only_small_wrong:
             continue
         grouped_records.append((question_id, chunks))
+    if num_questions is not None:
+        grouped_records = grouped_records[:num_questions]
     return grouped_records
-
-
-args_only_small_wrong = False
 
 
 def build_processed_pairs(existing_records):
@@ -621,12 +618,15 @@ def build_question_candidates(question_records, question_to_chunk_scores, args):
 
 def main():
     args = parse_args()
-    global args_only_small_wrong
-    args_only_small_wrong = args.only_small_wrong
 
     print(f"Loading strict labeled chunk data from: {args.input_path}")
     dataset = torch.load(args.input_path)
-    question_records = group_chunks_by_question(dataset, args.start_question, args.num_questions)
+    question_records = group_chunks_by_question(
+        dataset,
+        args.start_question,
+        args.num_questions,
+        args.only_small_wrong,
+    )
     print(f"Questions selected for takeover_beneficial labeling: {len(question_records)}")
 
     question_to_chunk_scores = None
@@ -736,6 +736,20 @@ def main():
                 save_outputs(output_records, args.output_path, cache, args.cache_path)
 
     save_outputs(output_records, args.output_path, cache, args.cache_path)
+    beneficial_count = sum(int(row["takeover_beneficial"]) for row in output_records)
+    harmful_count = sum(int(row["takeover_harmful"]) for row in output_records)
+    neutral_count = len(output_records) - beneficial_count - harmful_count
+    beneficial_question_ids = {int(row["question_id"]) for row in output_records if int(row["takeover_beneficial"]) == 1}
+    avg_beneficial_per_question = beneficial_count / max(len(question_records), 1)
+    print(
+        "Label distribution | "
+        f"beneficial={beneficial_count} | harmful={harmful_count} | neutral={neutral_count}"
+    )
+    print(
+        "Beneficial coverage | "
+        f"questions_with_beneficial={len(beneficial_question_ids)}/{len(question_records)} | "
+        f"avg_beneficial_per_question={avg_beneficial_per_question:.4f}"
+    )
 
 
 if __name__ == "__main__":

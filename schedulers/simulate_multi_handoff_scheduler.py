@@ -30,7 +30,7 @@ DEFAULT_MAX_CHUNK_TOKENS = 30
 DEFAULT_TAIL_BONUS_WEIGHT = 0.0
 DEFAULT_MAX_HANDOFFS = 2
 DEFAULT_LARGE_HANDOFF_CHUNKS = 2
-DEFAULT_PROBE_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact.pt")
+DEFAULT_PROBE_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "beneficial_probe_artifact.pt")
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
 # ========================================================
@@ -199,9 +199,9 @@ def extract_final_answer(text):
             return boxed_value
 
     explicit_patterns = [
-        r"(?i)final answer\s*[:锛歖?\s*([^\n]+)",
+        r"(?i)final answer\s*[:?]\s*([^\n]+)",
         r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:锛歖?\s*([^\n]+)",
+        r"(?i)answer\s*[:?]\s*([^\n]+)",
         r"####\s*([^\n]+)",
     ]
     for pattern in explicit_patterns:
@@ -381,6 +381,10 @@ def load_probe_artifact(args):
     if not args.probe_artifact_path or not os.path.exists(args.probe_artifact_path):
         return None
     artifact = torch.load(args.probe_artifact_path)
+    if artifact.get("label_key") != "takeover_beneficial":
+        raise ValueError(
+            f"Multi-handoff scheduler expects a takeover_beneficial artifact, but got label_key={artifact.get('label_key')!r} from {args.probe_artifact_path}."
+        )
     return artifact
 
 
@@ -721,8 +725,10 @@ def main():
         train_question_ids = list(artifact["train_question_ids"])
         test_question_ids = list(artifact["test_question_ids"])
     else:
-        print("Probe artifact not found; fitting probe inside scheduler.")
-        probe, scaler, train_question_ids, test_question_ids = fit_probe(question_records, args)
+        raise FileNotFoundError(
+            "Multi-handoff scheduler now requires a trained takeover_beneficial artifact. "
+            "Please run probes/train_probe_artifact.py with --label-key takeover_beneficial first."
+        )
     print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")
 
     test_records = [question_records[question_id] for question_id in sorted(test_question_ids)]
