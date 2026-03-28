@@ -1,5 +1,6 @@
 import argparse
 import csv
+import json
 import os
 import re
 import statistics
@@ -21,7 +22,7 @@ DEFAULT_SMALL_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-1.5B")
 DEFAULT_LARGE_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_RANDOM_STATE = 55
-DEFAULT_FEATURE_KEY = "boundary_hidden_state"
+DEFAULT_FEATURE_KEY = "boundary"
 DEFAULT_PROBE_TYPE = "mlp"
 DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
 DEFAULT_MLP_MAX_ITER = 300
@@ -36,6 +37,7 @@ DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by
 DEFAULT_CACHE_PATH = os.path.join(PROJECT_ROOT, "chunk_scheduler_cache.pt")
 DEFAULT_SAVE_CACHE_EVERY = 5
 DEFAULT_CASE_EXPORT_DIR = os.path.join(PROJECT_ROOT, "scheduler_case_exports")
+DEFAULT_SUMMARY_EXPORT_PATH = os.path.join(PROJECT_ROOT, "scheduler_run_summary.json")
 # ========================================================
 
 
@@ -94,6 +96,11 @@ def parse_args():
         action="store_true",
         help="Skip the full large-model baseline to save compute.",
     )
+    parser.add_argument(
+        "--summary-export-path",
+        default=DEFAULT_SUMMARY_EXPORT_PATH,
+        help="Path to save the threshold-level scheduler summary JSON.",
+    )
     return parser.parse_args()
 
 
@@ -101,6 +108,58 @@ def tensor_to_numpy(value):
     if isinstance(value, torch.Tensor):
         return value.detach().cpu().to(torch.float32).numpy()
     return np.asarray(value, dtype=np.float32)
+
+
+def canonical_feature_name(name):
+    aliases = {
+        "boundary": "boundary_hidden_state",
+        "mean": "mean_hidden_state",
+        "entropy": "final_entropy",
+        "top1_prob": "final_top1_prob",
+        "margin": "final_margin",
+    }
+    return aliases.get(name, name)
+
+
+def parse_feature_spec(feature_spec):
+    parts = []
+    for part in feature_spec.split("+"):
+        token = part.strip()
+        if token:
+            parts.append(token)
+    if not parts:
+        raise ValueError(f"Empty feature spec: {feature_spec}")
+    return parts
+
+
+def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
+    values = []
+    for token in parse_feature_spec(feature_spec):
+        if token == "delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = base - tensor_to_numpy(prev_chunk["boundary_hidden_state"])
+        elif token == "abs_delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = np.abs(base - tensor_to_numpy(prev_chunk["boundary_hidden_state"]))
+        elif token == "relative_position":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([int(chunk["chunk_id"]) / denom], dtype=np.float32)
+        elif token == "remaining_ratio":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([(denom - int(chunk["chunk_id"])) / denom], dtype=np.float32)
+        else:
+            feature_key = canonical_feature_name(token)
+            if feature_key not in chunk:
+                raise KeyError(f"Feature component '{token}' (resolved to '{feature_key}') not found in chunk.")
+            value = tensor_to_numpy(chunk[feature_key])
+        values.append(np.asarray(value, dtype=np.float32).reshape(-1))
+    return np.concatenate(values, axis=0)
 
 
 def safe_mean(values):
@@ -284,8 +343,17 @@ def generate_answer(model, tokenizer, question, assistant_prefix, max_new_tokens
 
 def build_question_records(dataset, feature_key):
     question_records = {}
+    required_tokens = parse_feature_spec(feature_key)
     for item in dataset:
-        if feature_key not in item:
+        has_all_components = True
+        for token in required_tokens:
+            if token in {"delta_prev", "abs_delta_prev", "relative_position", "remaining_ratio"}:
+                continue
+            resolved_key = canonical_feature_name(token)
+            if resolved_key not in item:
+                has_all_components = False
+                break
+        if not has_all_components:
             continue
         question_id = int(item["question_id"])
         record = question_records.setdefault(
@@ -320,8 +388,11 @@ def build_feature_arrays(question_records, feature_key):
     groups = []
     chunk_refs = []
     for question_id, record in question_records.items():
-        for chunk in record["chunks"]:
-            rows.append(tensor_to_numpy(chunk[feature_key]))
+        chunks = record["chunks"]
+        total_chunks = len(chunks)
+        for index, chunk in enumerate(chunks):
+            prev_chunk = None if index == 0 else chunks[index - 1]
+            rows.append(build_feature_vector(chunk, prev_chunk, total_chunks, feature_key))
             labels.append(int(chunk["label"]))
             groups.append(question_id)
             chunk_refs.append((question_id, int(chunk["chunk_id"])))
@@ -370,16 +441,23 @@ def fit_probe_and_score(question_records, args):
     }
 
 
+def artifact_positive_score(artifact, positive_prob):
+    label_key = artifact.get("label_key", "label")
+    if label_key == "takeover_beneficial":
+        return positive_prob
+    return 1.0 - positive_prob
+
+
 def score_with_artifact(question_records, artifact, feature_key):
     probe = artifact["probe"]
     scaler = artifact["scaler"]
     X, _, _, chunk_refs = build_feature_arrays(question_records, feature_key)
     X_scaled = scaler.transform(X)
-    prefix_correct_scores = probe.predict_proba(X_scaled)[:, 1]
-    error_scores = 1.0 - prefix_correct_scores
+    positive_scores = probe.predict_proba(X_scaled)[:, 1]
+    trigger_scores = np.asarray([artifact_positive_score(artifact, score) for score in positive_scores], dtype=np.float32)
 
     question_to_chunk_scores = {}
-    for (question_id, chunk_id), score in zip(chunk_refs, error_scores):
+    for (question_id, chunk_id), score in zip(chunk_refs, trigger_scores):
         question_to_chunk_scores.setdefault(question_id, {})[chunk_id] = float(score)
 
     return {
@@ -487,6 +565,19 @@ def export_case_rows(summary, export_dir):
     write_rows(prepared_rows, f"{base_name}_all.csv")
     for outcome_type, rows in categorized_rows.items():
         write_rows(rows, f"{base_name}_{outcome_type}.csv")
+
+
+def export_run_summary(simulation_summaries, output_path):
+    serializable = []
+    for summary in simulation_summaries:
+        row = {key: value for key, value in summary.items() if key != "per_question_rows"}
+        serializable.append(row)
+
+    payload = {
+        "threshold_summaries": serializable,
+    }
+    with open(output_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, ensure_ascii=False)
 
 
 def simulate_threshold(
@@ -750,17 +841,20 @@ def main():
 
     print(f"Loading labeled chunk dataset from: {args.label_path}")
     dataset = torch.load(args.label_path)
-    question_records = build_question_records(dataset, args.feature_key)
-    print(f"Loaded questions with {args.feature_key}: {len(question_records)}")
 
+    requested_feature_key = args.feature_key
+    artifact = None
     if args.probe_artifact_path and os.path.exists(args.probe_artifact_path):
         print(f"Loading fixed probe artifact from: {args.probe_artifact_path}")
         artifact = torch.load(args.probe_artifact_path)
-        artifact_feature_key = artifact.get("feature_key", args.feature_key)
-        if artifact_feature_key != args.feature_key:
-            raise ValueError(
-                f"Probe artifact feature_key={artifact_feature_key} does not match requested feature_key={args.feature_key}."
-            )
+        args.feature_key = artifact.get("feature_key", args.feature_key)
+        if requested_feature_key != args.feature_key:
+            print(f"Using artifact feature spec '{args.feature_key}' instead of requested '{requested_feature_key}'.")
+
+    question_records = build_question_records(dataset, args.feature_key)
+    print(f"Loaded questions with {args.feature_key}: {len(question_records)}")
+
+    if artifact is not None:
         probe_bundle = score_with_artifact(question_records, artifact, args.feature_key)
     else:
         print("Probe artifact not found; fitting probe inside scheduler.")
@@ -810,6 +904,8 @@ def main():
         print_threshold_summary(summary)
 
     best_summary = max(simulation_summaries, key=lambda item: item["scheduled_gain_over_small"])
+    export_run_summary(simulation_summaries, args.summary_export_path)
+    print(f"Saved scheduler summary to: {args.summary_export_path}")
     print("\nRecommended scheduler threshold")
     print("=" * 50)
     print(

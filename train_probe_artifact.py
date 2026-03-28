@@ -14,8 +14,9 @@ DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_str
 DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact.pt")
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_RANDOM_STATE = 55
-DEFAULT_FEATURE_KEY = "boundary_hidden_state"
+DEFAULT_FEATURE_KEY = "boundary"
 DEFAULT_PROBE_TYPE = "mlp"
+DEFAULT_LABEL_KEY = "label"
 DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
 DEFAULT_MLP_MAX_ITER = 300
 DEFAULT_MLP_ALPHA = 1e-4
@@ -25,9 +26,14 @@ DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train and save a fixed probe artifact for routing experiments.")
-    parser.add_argument("--label-path", default=DEFAULT_LABEL_PATH, help="Path to strict labeled chunk data.")
+    parser.add_argument("--label-path", default=DEFAULT_LABEL_PATH, help="Path to labeled chunk data.")
     parser.add_argument("--output-path", default=DEFAULT_OUTPUT_PATH, help="Where to save the probe artifact.")
-    parser.add_argument("--feature-key", default=DEFAULT_FEATURE_KEY, help="Chunk feature used by the probe.")
+    parser.add_argument(
+        "--feature-key",
+        default=DEFAULT_FEATURE_KEY,
+        help="Feature spec used by the probe, for example boundary+mean+relative_position.",
+    )
+    parser.add_argument("--label-key", default=DEFAULT_LABEL_KEY, help="Label field to train on, for example label or takeover_beneficial.")
     parser.add_argument("--test-size", type=float, default=DEFAULT_TEST_SIZE, help="Held-out question ratio.")
     parser.add_argument("--random-state", type=int, default=DEFAULT_RANDOM_STATE, help="Random seed for the split.")
     parser.add_argument(
@@ -52,6 +58,90 @@ def tensor_to_numpy(value):
     if isinstance(value, torch.Tensor):
         return value.detach().cpu().to(torch.float32).numpy()
     return np.asarray(value, dtype=np.float32)
+
+
+def canonical_feature_name(name):
+    aliases = {
+        "boundary": "boundary_hidden_state",
+        "mean": "mean_hidden_state",
+        "entropy": "final_entropy",
+        "top1_prob": "final_top1_prob",
+        "margin": "final_margin",
+    }
+    return aliases.get(name, name)
+
+
+def parse_feature_spec(feature_spec):
+    parts = []
+    for part in feature_spec.split("+"):
+        token = part.strip()
+        if token:
+            parts.append(token)
+    if not parts:
+        raise ValueError(f"Empty feature spec: {feature_spec}")
+    return parts
+
+
+def build_question_records(dataset, label_key):
+    question_records = {}
+    for item in dataset:
+        if label_key not in item:
+            continue
+        label_value = int(item[label_key])
+        if label_value not in {0, 1}:
+            continue
+        question_id = int(item["question_id"])
+        record = question_records.setdefault(question_id, {"chunks": []})
+        record["chunks"].append(item)
+
+    for record in question_records.values():
+        record["chunks"] = sorted(record["chunks"], key=lambda chunk: int(chunk["chunk_id"]))
+    return question_records
+
+
+def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
+    values = []
+    for token in parse_feature_spec(feature_spec):
+        if token == "delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = base - tensor_to_numpy(prev_chunk["boundary_hidden_state"])
+        elif token == "abs_delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = np.abs(base - tensor_to_numpy(prev_chunk["boundary_hidden_state"]))
+        elif token == "relative_position":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([int(chunk["chunk_id"]) / denom], dtype=np.float32)
+        elif token == "remaining_ratio":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([(denom - int(chunk["chunk_id"])) / denom], dtype=np.float32)
+        else:
+            feature_key = canonical_feature_name(token)
+            if feature_key not in chunk:
+                raise KeyError(f"Feature component '{token}' (resolved to '{feature_key}') not found in chunk.")
+            value = tensor_to_numpy(chunk[feature_key])
+        values.append(np.asarray(value, dtype=np.float32).reshape(-1))
+    return np.concatenate(values, axis=0)
+
+
+def build_feature_arrays(question_records, feature_spec, label_key):
+    rows = []
+    labels = []
+    groups = []
+    for question_id, record in question_records.items():
+        chunks = record["chunks"]
+        total_chunks = len(chunks)
+        for index, chunk in enumerate(chunks):
+            prev_chunk = None if index == 0 else chunks[index - 1]
+            rows.append(build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec))
+            labels.append(int(chunk[label_key]))
+            groups.append(question_id)
+    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64)
 
 
 def parse_hidden_layer_sizes(hidden_layers_text):
@@ -105,41 +195,15 @@ def build_probe(args):
     )
 
 
-def build_question_records(dataset, feature_key):
-    question_records = {}
-    for item in dataset:
-        if feature_key not in item:
-            continue
-        question_id = int(item["question_id"])
-        record = question_records.setdefault(question_id, {"chunks": []})
-        record["chunks"].append(item)
-
-    for record in question_records.values():
-        record["chunks"] = sorted(record["chunks"], key=lambda chunk: int(chunk["chunk_id"]))
-    return question_records
-
-
-def build_feature_arrays(question_records, feature_key):
-    rows = []
-    labels = []
-    groups = []
-    for question_id, record in question_records.items():
-        for chunk in record["chunks"]:
-            rows.append(tensor_to_numpy(chunk[feature_key]))
-            labels.append(int(chunk["label"]))
-            groups.append(question_id)
-    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64)
-
-
 def main():
     args = parse_args()
 
     print(f"Loading labeled chunk dataset from: {args.label_path}")
     dataset = torch.load(args.label_path)
-    question_records = build_question_records(dataset, args.feature_key)
-    print(f"Loaded questions with {args.feature_key}: {len(question_records)}")
+    question_records = build_question_records(dataset, args.label_key)
+    print(f"Loaded questions with feature spec '{args.feature_key}' and label '{args.label_key}': {len(question_records)}")
 
-    X, y, groups = build_feature_arrays(question_records, args.feature_key)
+    X, y, groups = build_feature_arrays(question_records, args.feature_key, args.label_key)
     splitter = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.random_state)
     train_indices, test_indices = next(splitter.split(X, y, groups))
 
@@ -161,6 +225,8 @@ def main():
         "probe": probe,
         "scaler": scaler,
         "feature_key": args.feature_key,
+        "feature_dim": int(X.shape[1]),
+        "label_key": args.label_key,
         "probe_type": args.probe_type,
         "random_state": args.random_state,
         "test_size": args.test_size,
@@ -176,6 +242,7 @@ def main():
 
     torch.save(artifact, args.output_path)
     print(f"Saved probe artifact to: {args.output_path}")
+    print(f"Feature dim: {artifact['feature_dim']}")
     print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")
 
 

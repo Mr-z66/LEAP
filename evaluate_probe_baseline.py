@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import statistics
 
@@ -21,7 +22,7 @@ from sklearn.preprocessing import StandardScaler
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DATA_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
 DEFAULT_FEATURE_KEYS = [
-    "boundary_hidden_state",
+    "boundary",
 ]
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_NUM_SPLITS = 20
@@ -32,6 +33,7 @@ DEFAULT_MLP_MAX_ITER = 300
 DEFAULT_MLP_ALPHA = 1e-4
 DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 DEFAULT_THRESHOLD_GRID = "0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
+DEFAULT_SUMMARY_CSV_PATH = os.path.join(PROJECT_ROOT, "probe_feature_summary.csv")
 # ========================================================
 
 
@@ -42,7 +44,10 @@ def parse_args():
         "--features",
         nargs="+",
         default=DEFAULT_FEATURE_KEYS,
-        help="Feature keys to evaluate. Defaults to boundary first, then mean.",
+        help=(
+            "Feature specs to evaluate. Examples: boundary, mean, boundary+mean, "
+            "boundary+delta_prev, boundary+mean+relative_position"
+        ),
     )
     parser.add_argument("--test-size", type=float, default=DEFAULT_TEST_SIZE, help="GroupShuffleSplit test ratio.")
     parser.add_argument("--num-splits", type=int, default=DEFAULT_NUM_SPLITS, help="Number of grouped random splits.")
@@ -71,6 +76,11 @@ def parse_args():
         default=DEFAULT_THRESHOLD_GRID,
         help="Comma-separated thresholds for scanning error-score decision points.",
     )
+    parser.add_argument(
+        "--summary-csv-path",
+        default=DEFAULT_SUMMARY_CSV_PATH,
+        help="Where to save the per-feature comparison summary CSV.",
+    )
     return parser.parse_args()
 
 
@@ -80,8 +90,87 @@ def tensor_to_numpy(value):
     return np.asarray(value, dtype=np.float32)
 
 
-def load_filtered_samples(dataset, feature_key):
-    return [sample for sample in dataset if feature_key in sample and sample["label"] in {0, 1}]
+def canonical_feature_name(name):
+    aliases = {
+        "boundary": "boundary_hidden_state",
+        "mean": "mean_hidden_state",
+        "entropy": "final_entropy",
+        "top1_prob": "final_top1_prob",
+        "margin": "final_margin",
+    }
+    return aliases.get(name, name)
+
+
+def parse_feature_spec(feature_spec):
+    parts = []
+    for part in feature_spec.split("+"):
+        token = part.strip()
+        if token:
+            parts.append(token)
+    if not parts:
+        raise ValueError(f"Empty feature spec: {feature_spec}")
+    return parts
+
+
+def build_question_records(dataset):
+    question_records = {}
+    for item in dataset:
+        if int(item["label"]) not in {0, 1}:
+            continue
+        question_id = int(item["question_id"])
+        record = question_records.setdefault(question_id, {"chunks": []})
+        record["chunks"].append(item)
+
+    for record in question_records.values():
+        record["chunks"] = sorted(record["chunks"], key=lambda chunk: int(chunk["chunk_id"]))
+    return question_records
+
+
+def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
+    values = []
+    for token in parse_feature_spec(feature_spec):
+        if token == "delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = base - tensor_to_numpy(prev_chunk["boundary_hidden_state"])
+        elif token == "abs_delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = np.abs(base - tensor_to_numpy(prev_chunk["boundary_hidden_state"]))
+        elif token == "relative_position":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([int(chunk["chunk_id"]) / denom], dtype=np.float32)
+        elif token == "remaining_ratio":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([(denom - int(chunk["chunk_id"])) / denom], dtype=np.float32)
+        else:
+            feature_key = canonical_feature_name(token)
+            if feature_key not in chunk:
+                raise KeyError(f"Feature component '{token}' (resolved to '{feature_key}') not found in chunk.")
+            value = tensor_to_numpy(chunk[feature_key])
+        values.append(np.asarray(value, dtype=np.float32).reshape(-1))
+    return np.concatenate(values, axis=0)
+
+
+def build_labeled_rows(question_records, feature_spec):
+    rows = []
+    for question_id, record in question_records.items():
+        chunks = record["chunks"]
+        total_chunks = len(chunks)
+        for index, chunk in enumerate(chunks):
+            prev_chunk = None if index == 0 else chunks[index - 1]
+            rows.append(
+                {
+                    "question_id": question_id,
+                    "label": int(chunk["label"]),
+                    "features": build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec),
+                }
+            )
+    return rows
 
 
 def safe_mean(values):
@@ -92,6 +181,56 @@ def safe_stdev(values):
     if len(values) <= 1:
         return 0.0
     return statistics.stdev(values)
+
+
+def export_summary_csv(all_results, output_path):
+    rows = []
+    for result in all_results:
+        if not result["valid_splits"]:
+            rows.append(
+                {
+                    "feature_key": result["feature_key"],
+                    "feature_dim": result["feature_dim"],
+                    "valid_splits": 0,
+                    "prefix_correct_auroc_mean": float("nan"),
+                    "error_auprc_mean": float("nan"),
+                    "error_f1_mean": float("nan"),
+                    "best_threshold_error_f1_mean": float("nan"),
+                }
+            )
+            continue
+
+        prefix_correct_aurocs = [item["prefix_correct_auroc"] for item in result["valid_splits"]]
+        error_auprcs = [item["error_auprc"] for item in result["valid_splits"]]
+        error_f1s = [item["error_f1"] for item in result["valid_splits"]]
+        best_threshold_f1s = [item["best_threshold_result"]["error_f1"] for item in result["valid_splits"]]
+        rows.append(
+            {
+                "feature_key": result["feature_key"],
+                "feature_dim": result["feature_dim"],
+                "valid_splits": len(result["valid_splits"]),
+                "prefix_correct_auroc_mean": safe_mean(prefix_correct_aurocs),
+                "error_auprc_mean": safe_mean(error_auprcs),
+                "error_f1_mean": safe_mean(error_f1s),
+                "best_threshold_error_f1_mean": safe_mean(best_threshold_f1s),
+            }
+        )
+
+    with open(output_path, "w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=[
+                "feature_key",
+                "feature_dim",
+                "valid_splits",
+                "prefix_correct_auroc_mean",
+                "error_auprc_mean",
+                "error_f1_mean",
+                "best_threshold_error_f1_mean",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def parse_threshold_grid(threshold_text):
@@ -253,8 +392,8 @@ def run_single_split(X, y, groups, random_state, test_size, args):
     }
 
 
-def evaluate_feature(samples, feature_key, num_splits, base_random_state, test_size, args):
-    X = np.stack([tensor_to_numpy(sample[feature_key]) for sample in samples])
+def evaluate_feature(samples, feature_spec, num_splits, base_random_state, test_size, args):
+    X = np.stack([sample["features"] for sample in samples])
     y = np.array([int(sample["label"]) for sample in samples], dtype=np.int64)
     groups = np.array([int(sample["question_id"]) for sample in samples], dtype=np.int64)
 
@@ -266,7 +405,8 @@ def evaluate_feature(samples, feature_key, num_splits, base_random_state, test_s
             split_results.append(split_result)
 
     return {
-        "feature_key": feature_key,
+        "feature_key": feature_spec,
+        "feature_dim": int(X.shape[1]),
         "num_chunks": len(samples),
         "num_questions": len(np.unique(groups)),
         "positive_ratio": float(y.mean()),
@@ -280,6 +420,7 @@ args.thresholds = parse_threshold_grid(args.threshold_grid)
 
 print(f"Loading labeled chunk dataset from: {args.data_path}")
 dataset = torch.load(args.data_path)
+question_records = build_question_records(dataset)
 
 if args.probe_type == "mlp":
     print(
@@ -293,14 +434,14 @@ print(f"Threshold scan grid: {args.thresholds}")
 
 all_results = []
 for feature_key in args.features:
-    samples = load_filtered_samples(dataset, feature_key)
+    samples = build_labeled_rows(question_records, feature_key)
     if not samples:
         print(f"\nSkipping {feature_key}: no labeled samples found.")
         continue
 
     result = evaluate_feature(
         samples=samples,
-        feature_key=feature_key,
+        feature_spec=feature_key,
         num_splits=args.num_splits,
         base_random_state=args.base_random_state,
         test_size=args.test_size,
@@ -310,7 +451,7 @@ for feature_key in args.features:
 
     print("\nLeakage-free strict baseline")
     print("=" * 50)
-    print(f"Feature: {result['feature_key']} | Probe: {args.probe_type}")
+    print(f"Feature: {result['feature_key']} | Probe: {args.probe_type} | Dim: {result['feature_dim']}")
     print(
         f"Chunks: {result['num_chunks']} | Questions: {result['num_questions']} "
         f"| Positive ratio: {result['positive_ratio']:.4f} | Negative ratio: {result['negative_ratio']:.4f}"
@@ -383,7 +524,7 @@ for feature_key in args.features:
         f"error_F1={best_split['best_threshold_result']['error_f1']:.4f}"
     )
 
-    print("\nFeature comparison summary")
+print("\nFeature comparison summary")
 print("=" * 50)
 for result in all_results:
     if not result["valid_splits"]:
@@ -396,6 +537,7 @@ for result in all_results:
     error_f1s = [item["error_f1"] for item in result["valid_splits"]]
     print(
         f"{result['feature_key']}: "
+        f"dim={result['feature_dim']}, "
         f"prefix_AUROC={safe_mean(prefix_correct_aurocs):.4f}+/-{safe_stdev(prefix_correct_aurocs):.4f}, "
         f"error_AUPRC={safe_mean(error_auprcs):.4f}+/-{safe_stdev(error_auprcs):.4f}, "
         f"error_recall={safe_mean(error_recalls):.4f}+/-{safe_stdev(error_recalls):.4f}, "
@@ -404,11 +546,7 @@ for result in all_results:
     )
 
 if all_results:
-    ranked_results = [
-        result
-        for result in all_results
-        if result["valid_splits"]
-    ]
+    ranked_results = [result for result in all_results if result["valid_splits"]]
     if ranked_results:
         best_feature = max(
             ranked_results,
@@ -418,8 +556,10 @@ if all_results:
         print("\nRecommended primary feature")
         print("=" * 50)
         print(
-            f"{best_feature['feature_key']} | "
-            f"probe={args.probe_type} | "
-            f"mean error_F1={best_error_f1:.4f} | "
+            f"{best_feature['feature_key']} | dim={best_feature['feature_dim']} | "
+            f"probe={args.probe_type} | mean error_F1={best_error_f1:.4f} | "
             f"dataset={os.path.basename(args.data_path)}"
         )
+
+export_summary_csv(all_results, args.summary_csv_path)
+print(f"\nSaved feature comparison summary to: {args.summary_csv_path}")

@@ -1,6 +1,7 @@
 import os
 import re
 
+import numpy as np
 import torch
 from datasets import load_dataset
 from tqdm import tqdm
@@ -28,6 +29,54 @@ def decode_tokens(tokenizer, token_ids):
     return tokenizer.decode(token_ids, skip_special_tokens=True)
 
 
+def compute_token_confidence(logits):
+    probabilities = torch.softmax(logits.to(torch.float32), dim=-1)
+    entropy = float(-(probabilities * torch.log(probabilities.clamp_min(1e-12))).sum().item())
+    top_values = torch.topk(probabilities, k=2)
+    top1_prob = float(top_values.values[0].item())
+    top2_prob = float(top_values.values[1].item()) if top_values.values.numel() > 1 else 0.0
+    return {
+        "entropy": entropy,
+        "top1_prob": top1_prob,
+        "margin": float(top1_prob - top2_prob),
+    }
+
+
+def summarize_confidence(token_confidences):
+    if not token_confidences:
+        zero = torch.tensor([0.0], dtype=torch.float32)
+        return {
+            "mean_entropy": zero.clone(),
+            "max_entropy": zero.clone(),
+            "final_entropy": zero.clone(),
+            "mean_top1_prob": zero.clone(),
+            "min_top1_prob": zero.clone(),
+            "final_top1_prob": zero.clone(),
+            "mean_margin": zero.clone(),
+            "min_margin": zero.clone(),
+            "final_margin": zero.clone(),
+        }
+
+    entropy_values = np.asarray([item["entropy"] for item in token_confidences], dtype=np.float32)
+    top1_values = np.asarray([item["top1_prob"] for item in token_confidences], dtype=np.float32)
+    margin_values = np.asarray([item["margin"] for item in token_confidences], dtype=np.float32)
+
+    def scalar_tensor(value):
+        return torch.tensor([float(value)], dtype=torch.float32)
+
+    return {
+        "mean_entropy": scalar_tensor(np.mean(entropy_values)),
+        "max_entropy": scalar_tensor(np.max(entropy_values)),
+        "final_entropy": scalar_tensor(entropy_values[-1]),
+        "mean_top1_prob": scalar_tensor(np.mean(top1_values)),
+        "min_top1_prob": scalar_tensor(np.min(top1_values)),
+        "final_top1_prob": scalar_tensor(top1_values[-1]),
+        "mean_margin": scalar_tensor(np.mean(margin_values)),
+        "min_margin": scalar_tensor(np.min(margin_values)),
+        "final_margin": scalar_tensor(margin_values[-1]),
+    }
+
+
 def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
     prompt_inputs = tokenizer(prompt_text, return_tensors="pt").to(model.device)
     input_ids = prompt_inputs.input_ids
@@ -35,6 +84,7 @@ def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
 
     generated_token_ids = []
     generated_hidden_states = []
+    generated_token_confidences = []
 
     for step in range(max_new_tokens):
         with torch.no_grad():
@@ -54,6 +104,7 @@ def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
 
         logits = outputs.logits[0, -1, :]
         past_key_values = outputs.past_key_values
+        generated_token_confidences.append(compute_token_confidence(logits))
         next_id = torch.argmax(logits).item()
         generated_token_ids.append(next_id)
 
@@ -77,20 +128,26 @@ def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
             final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu()
         )
 
-    valid_length = min(len(non_eos_token_ids), len(generated_hidden_states))
-    return non_eos_token_ids[:valid_length], generated_hidden_states[:valid_length]
+    valid_length = min(len(non_eos_token_ids), len(generated_hidden_states), len(generated_token_confidences))
+    return (
+        non_eos_token_ids[:valid_length],
+        generated_hidden_states[:valid_length],
+        generated_token_confidences[:valid_length],
+    )
 
 
-def build_chunks(tokenizer, token_ids, hidden_states):
+def build_chunks(tokenizer, token_ids, hidden_states, token_confidences):
     chunks = []
     current_chunk_token_ids = []
     current_chunk_hidden_states = []
+    current_chunk_confidences = []
     chunk_start_idx = 0
 
     for token_idx, token_id in enumerate(token_ids):
         token_text = tokenizer.decode([token_id], skip_special_tokens=False)
         current_chunk_token_ids.append(token_id)
         current_chunk_hidden_states.append(hidden_states[token_idx])
+        current_chunk_confidences.append(token_confidences[token_idx])
 
         chunk_len = len(current_chunk_token_ids)
         hit_punctuation = any(p in token_text for p in PUNCTUATIONS)
@@ -106,6 +163,7 @@ def build_chunks(tokenizer, token_ids, hidden_states):
 
         chunk_token_ids = list(current_chunk_token_ids)
         chunk_hidden_states = list(current_chunk_hidden_states)
+        chunk_confidences = list(current_chunk_confidences)
         chunks.append(
             {
                 "chunk_id": len(chunks),
@@ -117,16 +175,19 @@ def build_chunks(tokenizer, token_ids, hidden_states):
                 "boundary_hidden_state": chunk_hidden_states[-1].clone(),
                 "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
                 "cut_reason": cut_reason,
+                **summarize_confidence(chunk_confidences),
             }
         )
 
         current_chunk_token_ids = []
         current_chunk_hidden_states = []
+        current_chunk_confidences = []
         chunk_start_idx = token_idx + 1
 
     if current_chunk_token_ids:
         chunk_token_ids = list(current_chunk_token_ids)
         chunk_hidden_states = list(current_chunk_hidden_states)
+        chunk_confidences = list(current_chunk_confidences)
         chunks.append(
             {
                 "chunk_id": len(chunks),
@@ -138,6 +199,7 @@ def build_chunks(tokenizer, token_ids, hidden_states):
                 "boundary_hidden_state": chunk_hidden_states[-1].clone(),
                 "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
                 "cut_reason": "tail",
+                **summarize_confidence(chunk_confidences),
             }
         )
 
@@ -169,7 +231,7 @@ for idx, row in enumerate(tqdm(dataset, desc="Building heuristic chunks")):
     ]
     prompt_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-    generated_token_ids, generated_hidden_states = generate_with_hidden_states(
+    generated_token_ids, generated_hidden_states, generated_token_confidences = generate_with_hidden_states(
         model=model,
         tokenizer=tokenizer,
         prompt_text=prompt_text,
@@ -179,7 +241,7 @@ for idx, row in enumerate(tqdm(dataset, desc="Building heuristic chunks")):
     generated_text = decode_tokens(tokenizer, generated_token_ids).strip()
     model_final_answer = extract_last_number(generated_text)
     ground_truth_final_answer = extract_last_number(ground_truth_answer)
-    chunks = build_chunks(tokenizer, generated_token_ids, generated_hidden_states)
+    chunks = build_chunks(tokenizer, generated_token_ids, generated_hidden_states, generated_token_confidences)
 
     prefix_token_ids = []
     for chunk in chunks:

@@ -3,7 +3,11 @@ import os
 import re
 from collections import defaultdict
 
+import numpy as np
 import torch
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -13,9 +17,19 @@ DEFAULT_INPUT_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_str
 DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "gsm8k_takeover_beneficial_labels.pt")
 DEFAULT_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
 DEFAULT_CACHE_PATH = os.path.join(PROJECT_ROOT, "takeover_beneficial_cache.pt")
+DEFAULT_PROBE_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact.pt")
 DEFAULT_MAX_NEW_TOKENS = 768
 DEFAULT_SAVE_EVERY = 25
 DEFAULT_START_QUESTION = 0
+DEFAULT_RANDOM_STATE = 55
+DEFAULT_FEATURE_KEY = "boundary_hidden_state"
+DEFAULT_CANDIDATE_MODE = "hybrid"
+DEFAULT_TOP_K = 2
+DEFAULT_EXPLORE_POSITIONS = "middle,last"
+DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
+DEFAULT_MLP_MAX_ITER = 300
+DEFAULT_MLP_ALPHA = 1e-4
+DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 # ========================================================
 
@@ -26,17 +40,73 @@ def parse_args():
     parser.add_argument("--output-path", default=DEFAULT_OUTPUT_PATH, help="Path to save takeover_beneficial labels.")
     parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH, help="Path to the large model.")
     parser.add_argument("--cache-path", default=DEFAULT_CACHE_PATH, help="Path to cached takeover generations.")
+    parser.add_argument("--probe-artifact-path", default=DEFAULT_PROBE_ARTIFACT_PATH, help="Optional fixed probe artifact for candidate selection.")
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS, help="Max generation tokens for takeover.")
     parser.add_argument("--save-every", type=int, default=DEFAULT_SAVE_EVERY, help="Save every N newly processed chunks.")
     parser.add_argument("--start-question", type=int, default=DEFAULT_START_QUESTION, help="Skip questions below this id.")
     parser.add_argument("--num-questions", type=int, default=None, help="Only process the first N questions after filtering.")
     parser.add_argument("--resume", action="store_true", help="Resume from existing output and cache files.")
+    parser.add_argument("--random-state", type=int, default=DEFAULT_RANDOM_STATE, help="Random seed for candidate scoring.")
+    parser.add_argument("--feature-key", default=DEFAULT_FEATURE_KEY, help="Feature key used for candidate risk scoring.")
+    parser.add_argument(
+        "--candidate-mode",
+        choices=["all", "topk", "hybrid"],
+        default=DEFAULT_CANDIDATE_MODE,
+        help="How to choose chunk candidates for beneficial labeling.",
+    )
+    parser.add_argument("--top-k", type=int, default=DEFAULT_TOP_K, help="Top-k risky chunks per question when using topk/hybrid.")
+    parser.add_argument(
+        "--explore-positions",
+        default=DEFAULT_EXPLORE_POSITIONS,
+        help="Comma-separated exploratory chunk positions for hybrid mode: first,middle,last.",
+    )
+    parser.add_argument("--mlp-hidden-layers", default=DEFAULT_MLP_HIDDEN_LAYERS, help="Comma-separated MLP hidden sizes.")
+    parser.add_argument("--mlp-max-iter", type=int, default=DEFAULT_MLP_MAX_ITER, help="MLP max iterations for candidate scoring.")
+    parser.add_argument("--mlp-alpha", type=float, default=DEFAULT_MLP_ALPHA, help="MLP L2 regularization for candidate scoring.")
+    parser.add_argument(
+        "--mlp-learning-rate-init",
+        type=float,
+        default=DEFAULT_MLP_LEARNING_RATE_INIT,
+        help="MLP initial learning rate for candidate scoring.",
+    )
     return parser.parse_args()
+
+
+def tensor_to_numpy(value):
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().to(torch.float32).numpy()
+    return np.asarray(value, dtype=np.float32)
+
+
+def parse_hidden_layer_sizes(hidden_layers_text):
+    layer_sizes = []
+    for part in hidden_layers_text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        layer_sizes.append(int(part))
+    if not layer_sizes:
+        raise ValueError("MLP hidden layers cannot be empty.")
+    return tuple(layer_sizes)
+
+
+def parse_csv_tokens(text):
+    values = []
+    for part in text.split(","):
+        part = part.strip().lower()
+        if not part:
+            continue
+        values.append(part)
+    return values
 
 
 def extract_last_number(text):
     matches = re.findall(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
     return matches[-1] if matches else None
+
+
+def normalize_numeric_text(text):
+    return text.replace(",", "").strip().rstrip(".")
 
 
 def extract_final_answer(text):
@@ -50,9 +120,9 @@ def extract_final_answer(text):
             return boxed_value
 
     explicit_patterns = [
-        r"(?i)final answer\s*[:：]\s*([^\n]+)",
+        r"(?i)final answer\s*[:：]?\s*([^\n]+)",
         r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:：]\s*([^\n]+)",
+        r"(?i)answer\s*[:：]?\s*([^\n]+)",
         r"####\s*([^\n]+)",
     ]
     for pattern in explicit_patterns:
@@ -62,7 +132,7 @@ def extract_final_answer(text):
             if explicit_value is not None:
                 return explicit_value
 
-    return extract_last_number(text)
+    return extract_last_number(normalize_numeric_text(text))
 
 
 def build_generation_messages(question, assistant_prefix=None):
@@ -169,6 +239,134 @@ def build_processed_pairs(existing_records):
     return processed
 
 
+def build_feature_arrays(question_records, feature_key):
+    rows = []
+    labels = []
+    groups = []
+    chunk_refs = []
+    for question_id, chunks in question_records:
+        for chunk in chunks:
+            if feature_key not in chunk:
+                raise KeyError(f"Feature key '{feature_key}' missing for question {question_id}, chunk {chunk['chunk_id']}")
+            rows.append(tensor_to_numpy(chunk[feature_key]))
+            labels.append(int(chunk["label"]))
+            groups.append(question_id)
+            chunk_refs.append((question_id, int(chunk["chunk_id"])))
+    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64), chunk_refs
+
+
+def upsample_minority_class(X, y, random_state):
+    unique_labels, counts = np.unique(y, return_counts=True)
+    if len(unique_labels) < 2 or counts[0] == counts[1]:
+        return X, y
+
+    majority_label = unique_labels[np.argmax(counts)]
+    minority_label = unique_labels[np.argmin(counts)]
+    majority_indices = np.flatnonzero(y == majority_label)
+    minority_indices = np.flatnonzero(y == minority_label)
+
+    rng = np.random.default_rng(random_state)
+    sampled_minority_indices = rng.choice(minority_indices, size=len(majority_indices), replace=True)
+    balanced_indices = np.concatenate([majority_indices, sampled_minority_indices])
+    rng.shuffle(balanced_indices)
+    return X[balanced_indices], y[balanced_indices]
+
+
+def score_candidates_with_mlp(question_records, args):
+    X, y, groups, chunk_refs = build_feature_arrays(question_records, args.feature_key)
+    splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=args.random_state)
+    train_indices, _ = next(splitter.split(X, y, groups))
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X[train_indices])
+    X_all = scaler.transform(X)
+    y_train = y[train_indices]
+
+    probe = MLPClassifier(
+        hidden_layer_sizes=parse_hidden_layer_sizes(args.mlp_hidden_layers),
+        activation="relu",
+        solver="adam",
+        alpha=args.mlp_alpha,
+        batch_size="auto",
+        learning_rate_init=args.mlp_learning_rate_init,
+        max_iter=args.mlp_max_iter,
+        early_stopping=True,
+        n_iter_no_change=15,
+        random_state=args.random_state,
+    )
+    X_fit, y_fit = upsample_minority_class(X_train, y_train, args.random_state)
+    probe.fit(X_fit, y_fit)
+    prefix_correct_scores = probe.predict_proba(X_all)[:, 1]
+    error_scores = 1.0 - prefix_correct_scores
+
+    question_to_chunk_scores = defaultdict(dict)
+    for (question_id, chunk_id), score in zip(chunk_refs, error_scores):
+        question_to_chunk_scores[int(question_id)][int(chunk_id)] = float(score)
+    return question_to_chunk_scores
+
+
+def load_candidate_scores(question_records, args):
+    if args.probe_artifact_path and os.path.exists(args.probe_artifact_path):
+        print(f"Loading fixed probe artifact for candidate scoring from: {args.probe_artifact_path}")
+        artifact = torch.load(args.probe_artifact_path)
+        artifact_feature_key = artifact.get("feature_key", args.feature_key)
+        if artifact_feature_key != args.feature_key:
+            raise ValueError(
+                f"Probe artifact feature_key={artifact_feature_key} does not match requested feature_key={args.feature_key}."
+            )
+        probe = artifact["probe"]
+        scaler = artifact["scaler"]
+        X, _, _, chunk_refs = build_feature_arrays(question_records, args.feature_key)
+        X_scaled = scaler.transform(X)
+        prefix_correct_scores = probe.predict_proba(X_scaled)[:, 1]
+        error_scores = 1.0 - prefix_correct_scores
+        question_to_chunk_scores = defaultdict(dict)
+        for (question_id, chunk_id), score in zip(chunk_refs, error_scores):
+            question_to_chunk_scores[int(question_id)][int(chunk_id)] = float(score)
+        return question_to_chunk_scores
+
+    print("Probe artifact not found; fitting temporary MLP for candidate scoring.")
+    return score_candidates_with_mlp(question_records, args)
+
+
+def add_explore_candidate(candidate_ids, chunks, position_name):
+    if not chunks:
+        return
+    if position_name == "first":
+        candidate_ids.add(int(chunks[0]["chunk_id"]))
+    elif position_name == "middle":
+        candidate_ids.add(int(chunks[len(chunks) // 2]["chunk_id"]))
+    elif position_name == "last":
+        candidate_ids.add(int(chunks[-1]["chunk_id"]))
+    else:
+        raise ValueError(f"Unsupported explore position: {position_name}")
+
+
+def build_question_candidates(question_records, question_to_chunk_scores, args):
+    candidate_map = {}
+    explore_positions = parse_csv_tokens(args.explore_positions)
+
+    for question_id, chunks in question_records:
+        if args.candidate_mode == "all":
+            candidate_map[question_id] = {int(chunk["chunk_id"]) for chunk in chunks}
+            continue
+
+        chunk_scores = question_to_chunk_scores.get(question_id, {})
+        ranked_ids = sorted(
+            (int(chunk["chunk_id"]) for chunk in chunks),
+            key=lambda chunk_id: chunk_scores.get(chunk_id, 0.0),
+            reverse=True,
+        )
+        candidate_ids = set(ranked_ids[: max(args.top_k, 0)])
+
+        if args.candidate_mode == "hybrid":
+            for position_name in explore_positions:
+                add_explore_candidate(candidate_ids, chunks, position_name)
+
+        candidate_map[question_id] = candidate_ids
+    return candidate_map
+
+
 def main():
     args = parse_args()
 
@@ -176,6 +374,14 @@ def main():
     dataset = torch.load(args.input_path)
     question_records = group_chunks_by_question(dataset, args.start_question, args.num_questions)
     print(f"Questions selected for takeover_beneficial labeling: {len(question_records)}")
+
+    question_to_chunk_scores = None
+    if args.candidate_mode != "all":
+        question_to_chunk_scores = load_candidate_scores(question_records, args)
+    candidate_map = build_question_candidates(question_records, question_to_chunk_scores, args)
+    candidate_total = sum(len(candidate_ids) for candidate_ids in candidate_map.values())
+    total_chunks = sum(len(chunks) for _, chunks in question_records)
+    print(f"Candidate chunks selected: {candidate_total}/{total_chunks}")
 
     print(f"Loading large model from: {args.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, local_files_only=True)
@@ -197,9 +403,13 @@ def main():
         ground_truth_final_answer = chunks[0]["ground_truth_final_answer"]
         small_is_correct = bool(chunks[0]["is_final_correct"])
         small_final_answer = chunks[0]["model_final_answer"]
+        candidate_ids = candidate_map.get(question_id, set())
 
         for index, chunk in enumerate(chunks):
             chunk_id = int(chunk["chunk_id"])
+            if chunk_id not in candidate_ids:
+                continue
+
             pair_key = (question_id, chunk_id)
             if pair_key in processed_pairs:
                 continue
@@ -244,6 +454,8 @@ def main():
                     "takeover_full_reasoning": takeover_result["full_reasoning"],
                     "small_is_correct": small_is_correct,
                     "small_final_answer": small_final_answer,
+                    "candidate_mode": args.candidate_mode,
+                    "candidate_error_score": None if question_to_chunk_scores is None else question_to_chunk_scores.get(question_id, {}).get(chunk_id),
                     "takeover_beneficial": beneficial,
                     "takeover_harmful": harmful,
                     "takeover_label": takeover_label,
