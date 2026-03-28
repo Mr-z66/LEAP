@@ -1,0 +1,5 @@
+﻿python pipelines/build_dataset.py
+python pipelines/referee_32b_labeling_strict.py --num-samples 100 --save-every 5
+python probes/evaluate_probe_baseline.py --probe-type mlp --features boundary+mean+relative_position boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob
+python probes/train_probe_artifact.py --feature-key boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob
+python schedulers/simulate_chunk_scheduler.py --probe-artifact-path probe_artifact.pt --thresholds 0.10,0.15,0.20,0.25 --tail-bonus-weight 0.05

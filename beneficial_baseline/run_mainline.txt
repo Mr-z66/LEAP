@@ -1,0 +1,6 @@
+﻿Remove-Item gsm8k_takeover_beneficial_labels.pt -ErrorAction SilentlyContinue
+Remove-Item beneficial_probe_artifact.pt -ErrorAction SilentlyContinue
+Remove-Item takeover_beneficial_cache.pt -ErrorAction SilentlyContinue
+python pipelines/build_takeover_beneficial_labels.py --small-model-path models/Qwen2.5-1.5B --model-path models/Qwen2.5-32B --feature-key boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob --candidate-mode hybrid --top-k 2 --explore-positions middle,last --large-handoff-chunks 2 --max-new-tokens 256 --only-small-wrong --num-questions 20
+python probes/train_probe_artifact.py --label-path gsm8k_takeover_beneficial_labels.pt --label-key takeover_beneficial --feature-key boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob --output-path beneficial_probe_artifact.pt
+python schedulers/simulate_multi_handoff_scheduler.py --probe-artifact-path beneficial_probe_artifact.pt --thresholds 0.01,0.02,0.05,0.10,0.15,0.20 --large-handoff-chunks 2 --max-handoffs 2 --num-test-questions 20

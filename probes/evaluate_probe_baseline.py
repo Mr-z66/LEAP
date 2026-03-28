@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import csv
 import os
 import statistics
@@ -19,7 +19,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
 # ================= Default Configuration =================
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_DATA_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
 DEFAULT_FEATURE_KEYS = [
     "boundary",
@@ -563,3 +563,4 @@ if all_results:
 
 export_summary_csv(all_results, args.summary_csv_path)
 print(f"\nSaved feature comparison summary to: {args.summary_csv_path}")
+

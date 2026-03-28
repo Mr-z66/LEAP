@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import os
 import re
 import statistics
@@ -12,7 +12,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ================= Default Configuration =================
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
 DEFAULT_SMALL_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-1.5B")
 DEFAULT_LARGE_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
@@ -29,7 +29,7 @@ DEFAULT_MIN_CHUNK_TOKENS = 5
 DEFAULT_MAX_CHUNK_TOKENS = 30
 DEFAULT_TAIL_BONUS_WEIGHT = 0.0
 DEFAULT_MAX_HANDOFFS = 2
-DEFAULT_LARGE_HANDOFF_CHUNKS = 1
+DEFAULT_LARGE_HANDOFF_CHUNKS = 2
 DEFAULT_PROBE_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact.pt")
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
@@ -75,6 +75,9 @@ def canonical_feature_name(name):
     aliases = {
         "boundary": "boundary_hidden_state",
         "mean": "mean_hidden_state",
+        "entropy": "final_entropy",
+        "top1_prob": "final_top1_prob",
+        "margin": "final_margin",
     }
     return aliases.get(name, name)
 
@@ -196,9 +199,9 @@ def extract_final_answer(text):
             return boxed_value
 
     explicit_patterns = [
-        r"(?i)final answer\s*[:：]?\s*([^\n]+)",
+        r"(?i)final answer\s*[:锛歖?\s*([^\n]+)",
         r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:：]?\s*([^\n]+)",
+        r"(?i)answer\s*[:锛歖?\s*([^\n]+)",
         r"####\s*([^\n]+)",
     ]
     for pattern in explicit_patterns:
@@ -209,6 +212,54 @@ def extract_final_answer(text):
                 return explicit_value
 
     return extract_last_number(normalize_numeric_text(text))
+
+
+def compute_token_confidence(logits):
+    probabilities = torch.softmax(logits.to(torch.float32), dim=-1)
+    entropy = float(-(probabilities * torch.log(probabilities.clamp_min(1e-12))).sum().item())
+    top_values = torch.topk(probabilities, k=2)
+    top1_prob = float(top_values.values[0].item())
+    top2_prob = float(top_values.values[1].item()) if top_values.values.numel() > 1 else 0.0
+    return {
+        "entropy": entropy,
+        "top1_prob": top1_prob,
+        "margin": float(top1_prob - top2_prob),
+    }
+
+
+def summarize_confidence(token_confidences):
+    if not token_confidences:
+        zero = torch.tensor([0.0], dtype=torch.float32)
+        return {
+            "mean_entropy": zero.clone(),
+            "max_entropy": zero.clone(),
+            "final_entropy": zero.clone(),
+            "mean_top1_prob": zero.clone(),
+            "min_top1_prob": zero.clone(),
+            "final_top1_prob": zero.clone(),
+            "mean_margin": zero.clone(),
+            "min_margin": zero.clone(),
+            "final_margin": zero.clone(),
+        }
+
+    entropy_values = np.asarray([item["entropy"] for item in token_confidences], dtype=np.float32)
+    top1_values = np.asarray([item["top1_prob"] for item in token_confidences], dtype=np.float32)
+    margin_values = np.asarray([item["margin"] for item in token_confidences], dtype=np.float32)
+
+    def scalar_tensor(value):
+        return torch.tensor([float(value)], dtype=torch.float32)
+
+    return {
+        "mean_entropy": scalar_tensor(np.mean(entropy_values)),
+        "max_entropy": scalar_tensor(np.max(entropy_values)),
+        "final_entropy": scalar_tensor(entropy_values[-1]),
+        "mean_top1_prob": scalar_tensor(np.mean(top1_values)),
+        "min_top1_prob": scalar_tensor(np.min(top1_values)),
+        "final_top1_prob": scalar_tensor(top1_values[-1]),
+        "mean_margin": scalar_tensor(np.mean(margin_values)),
+        "min_margin": scalar_tensor(np.min(margin_values)),
+        "final_margin": scalar_tensor(margin_values[-1]),
+    }
 
 
 def build_generation_messages(question, assistant_prefix=None):
@@ -341,6 +392,7 @@ def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_
     generated_token_ids = []
     chunk_token_ids = []
     chunk_hidden_states = []
+    chunk_confidences = []
     reached_eos = False
     cut_reason = None
 
@@ -358,6 +410,7 @@ def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_
 
         logits = outputs.logits[0, -1, :]
         past_key_values = outputs.past_key_values
+        chunk_confidences.append(compute_token_confidence(logits))
         next_id = torch.argmax(logits).item()
         generated_token_ids.append(next_id)
 
@@ -402,6 +455,7 @@ def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_
     chunk_text = decode_tokens(tokenizer, chunk_token_ids).strip()
     full_reasoning = (normalized_prefix or "") + chunk_text
     boundary_hidden_state = chunk_hidden_states[-1] if chunk_hidden_states else None
+    mean_hidden_state = torch.stack(chunk_hidden_states).mean(dim=0) if chunk_hidden_states else None
 
     if cut_reason is None and chunk_token_ids:
         cut_reason = "tail"
@@ -412,8 +466,10 @@ def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_
         "token_ids": chunk_token_ids,
         "generated_token_count": len(chunk_token_ids),
         "boundary_hidden_state": boundary_hidden_state,
+        "mean_hidden_state": mean_hidden_state,
         "cut_reason": cut_reason,
         "reached_eos": reached_eos,
+        **summarize_confidence(chunk_confidences),
     }
 
 
@@ -464,6 +520,8 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     triggered = False
     trigger_scores = []
     trigger_progresses = []
+    runtime_small_chunks = []
+    reset_prev_chunk = False
 
     while total_tokens < args.max_new_tokens:
         safe_prefix = prefix
@@ -484,8 +542,14 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
 
         total_tokens += small_chunk["generated_token_count"]
         progress_ratio = total_tokens / max(args.max_new_tokens, 1)
+        small_chunk["chunk_id"] = chunk_index
+        runtime_small_chunks.append(small_chunk)
 
-        prev_chunk = runtime_small_chunks[-2] if len(runtime_small_chunks) >= 2 else None
+        if reset_prev_chunk:
+            prev_chunk = None
+            reset_prev_chunk = False
+        else:
+            prev_chunk = runtime_small_chunks[-2] if len(runtime_small_chunks) >= 2 else None
         total_chunks_for_features = max(len(runtime_small_chunks), int(small_chunk["chunk_id"]) + 1)
         feature_spec = artifact.get("feature_key", args.feature_key) if artifact is not None else args.feature_key
         feature_vector = build_feature_vector(small_chunk, prev_chunk, total_chunks_for_features, feature_spec)
@@ -511,6 +575,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             total_large_tokens += large_result["generated_token_count"]
             handoff_count += 1
             chunk_index += large_result["generated_chunks"]
+            reset_prev_chunk = True
             if large_result["reached_eos"]:
                 break
             continue
@@ -716,3 +781,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

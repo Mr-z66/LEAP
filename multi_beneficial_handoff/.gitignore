@@ -1,0 +1,7 @@
+﻿.venv/
+*.pt
+*.log
+*.csv
+*.json
+*.jsonl
+*.txt

@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import os
 
 import numpy as np
@@ -9,7 +9,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
 # ================= Default Configuration =================
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
 DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact.pt")
 DEFAULT_TEST_SIZE = 0.2
@@ -248,3 +248,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

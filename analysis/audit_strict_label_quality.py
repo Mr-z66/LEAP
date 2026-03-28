@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import json
 import os
 import random
@@ -10,7 +10,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ================= Default Configuration =================
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_INPUT_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
 DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "judge_audit_samples_strict_quality.jsonl")
 DEFAULT_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
@@ -294,3 +294,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

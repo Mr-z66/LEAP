@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import csv
 import json
 import os
@@ -16,7 +16,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ================= Default Configuration =================
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
 DEFAULT_SMALL_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-1.5B")
 DEFAULT_LARGE_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
@@ -266,9 +266,9 @@ def extract_final_answer(text):
             return boxed_value
 
     explicit_patterns = [
-        r"(?i)final answer\s*[:：]\s*([^\n]+)",
+        r"(?i)final answer\s*[:锛歖\s*([^\n]+)",
         r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:：]\s*([^\n]+)",
+        r"(?i)answer\s*[:锛歖\s*([^\n]+)",
         r"####\s*([^\n]+)",
     ]
     for pattern in explicit_patterns:
@@ -918,3 +918,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
