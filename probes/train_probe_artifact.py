@@ -51,6 +51,24 @@ def parse_args():
         default=DEFAULT_MLP_LEARNING_RATE_INIT,
         help="MLP initial learning rate.",
     )
+    parser.add_argument(
+        "--low-entropy-error-final-entropy-max",
+        type=float,
+        default=None,
+        help="Optional max final_entropy for treating strict error chunks as low-entropy hard negatives.",
+    )
+    parser.add_argument(
+        "--low-entropy-error-final-top1-min",
+        type=float,
+        default=None,
+        help="Optional min final_top1_prob for treating strict error chunks as low-entropy hard negatives.",
+    )
+    parser.add_argument(
+        "--low-entropy-error-oversample",
+        type=int,
+        default=1,
+        help="Repeat low-entropy strict error chunks this many times during training. Use 1 to disable.",
+    )
     return parser.parse_args()
 
 
@@ -81,6 +99,30 @@ def parse_feature_spec(feature_spec):
         raise ValueError(f"Empty feature spec: {feature_spec}")
     return parts
 
+
+
+
+def low_entropy_error_multiplier(chunk, label_key, args):
+    if label_key != "label":
+        return 1
+    if int(chunk.get(label_key, 1)) != 0:
+        return 1
+    if args.low_entropy_error_oversample <= 1:
+        return 1
+
+    entropy_max = args.low_entropy_error_final_entropy_max
+    top1_min = args.low_entropy_error_final_top1_min
+    if entropy_max is None and top1_min is None:
+        return 1
+
+    entropy_value = float(tensor_to_numpy(chunk.get("final_entropy", 0.0)).reshape(-1)[0]) if "final_entropy" in chunk else None
+    top1_value = float(tensor_to_numpy(chunk.get("final_top1_prob", 0.0)).reshape(-1)[0]) if "final_top1_prob" in chunk else None
+
+    if entropy_max is not None and (entropy_value is None or entropy_value > entropy_max):
+        return 1
+    if top1_min is not None and (top1_value is None or top1_value < top1_min):
+        return 1
+    return args.low_entropy_error_oversample
 
 def build_question_records(dataset, label_key):
     question_records = {}
@@ -129,10 +171,11 @@ def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
     return np.concatenate(values, axis=0)
 
 
-def build_feature_arrays(question_records, feature_spec, label_key):
+def build_feature_arrays(question_records, feature_spec, label_key, args=None):
     rows = []
     labels = []
     groups = []
+    multipliers = []
     for question_id, record in question_records.items():
         chunks = record["chunks"]
         total_chunks = len(chunks)
@@ -141,7 +184,8 @@ def build_feature_arrays(question_records, feature_spec, label_key):
             rows.append(build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec))
             labels.append(int(chunk[label_key]))
             groups.append(question_id)
-    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64)
+            multipliers.append(low_entropy_error_multiplier(chunk, label_key, args) if args is not None else 1)
+    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64), np.asarray(multipliers, dtype=np.int64)
 
 
 def parse_hidden_layer_sizes(hidden_layers_text):
@@ -154,6 +198,18 @@ def parse_hidden_layer_sizes(hidden_layers_text):
     if not layer_sizes:
         raise ValueError("MLP hidden layers cannot be empty.")
     return tuple(layer_sizes)
+
+
+def expand_by_multipliers(X, y, multipliers, groups=None):
+    if multipliers is None or np.all(multipliers == 1):
+        if groups is None:
+            return X, y
+        return X, y, groups
+
+    repeated_indices = np.repeat(np.arange(len(y)), multipliers.astype(np.int64))
+    if groups is None:
+        return X[repeated_indices], y[repeated_indices]
+    return X[repeated_indices], y[repeated_indices], groups[repeated_indices]
 
 
 def upsample_minority_class(X, y, random_state):
@@ -203,7 +259,7 @@ def main():
     question_records = build_question_records(dataset, args.label_key)
     print(f"Loaded questions with feature spec '{args.feature_key}' and label '{args.label_key}': {len(question_records)}")
 
-    X, y, groups = build_feature_arrays(question_records, args.feature_key, args.label_key)
+    X, y, groups, multipliers = build_feature_arrays(question_records, args.feature_key, args.label_key, args=args)
     unique_labels, label_counts = np.unique(y, return_counts=True)
     if X.shape[0] == 0:
         raise ValueError(f"No training rows found for label_key={args.label_key!r} and feature_key={args.feature_key!r}.")
@@ -220,10 +276,12 @@ def main():
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X[train_indices])
     y_train = y[train_indices]
+    train_multipliers = multipliers[train_indices]
 
     probe = build_probe(args)
     if args.probe_type == "mlp":
-        X_fit, y_fit = upsample_minority_class(X_train, y_train, args.random_state)
+        X_weighted, y_weighted = expand_by_multipliers(X_train, y_train, train_multipliers)
+        X_fit, y_fit = upsample_minority_class(X_weighted, y_weighted, args.random_state)
         probe.fit(X_fit, y_fit)
     else:
         probe.fit(X_train, y_train)
@@ -251,6 +309,12 @@ def main():
     }
 
     torch.save(artifact, args.output_path)
+    if args.low_entropy_error_oversample > 1 and args.label_key == "label":
+        low_entropy_train_count = int(np.sum(train_multipliers > 1))
+        print(
+            "Low-entropy hard negative oversampling | "
+            f"count={low_entropy_train_count} | factor={args.low_entropy_error_oversample}"
+        )
     print(f"Saved probe artifact to: {args.output_path}")
     print(f"Feature dim: {artifact['feature_dim']}")
     print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")

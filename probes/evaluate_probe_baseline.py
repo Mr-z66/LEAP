@@ -81,6 +81,24 @@ def parse_args():
         default=DEFAULT_SUMMARY_CSV_PATH,
         help="Where to save the per-feature comparison summary CSV.",
     )
+    parser.add_argument(
+        "--low-entropy-error-final-entropy-max",
+        type=float,
+        default=None,
+        help="Optional max final_entropy for treating strict error chunks as low-entropy hard negatives.",
+    )
+    parser.add_argument(
+        "--low-entropy-error-final-top1-min",
+        type=float,
+        default=None,
+        help="Optional min final_top1_prob for treating strict error chunks as low-entropy hard negatives.",
+    )
+    parser.add_argument(
+        "--low-entropy-error-oversample",
+        type=int,
+        default=1,
+        help="Repeat low-entropy strict error chunks this many times during MLP training. Use 1 to disable.",
+    )
     return parser.parse_args()
 
 
@@ -111,6 +129,29 @@ def parse_feature_spec(feature_spec):
         raise ValueError(f"Empty feature spec: {feature_spec}")
     return parts
 
+
+
+
+def low_entropy_error_multiplier(row, args):
+    if int(row["label"]) != 0:
+        return 1
+    if args.low_entropy_error_oversample <= 1:
+        return 1
+
+    entropy_max = args.low_entropy_error_final_entropy_max
+    top1_min = args.low_entropy_error_final_top1_min
+    if entropy_max is None and top1_min is None:
+        return 1
+
+    chunk = row["chunk"]
+    entropy_value = float(tensor_to_numpy(chunk.get("final_entropy", 0.0)).reshape(-1)[0]) if "final_entropy" in chunk else None
+    top1_value = float(tensor_to_numpy(chunk.get("final_top1_prob", 0.0)).reshape(-1)[0]) if "final_top1_prob" in chunk else None
+
+    if entropy_max is not None and (entropy_value is None or entropy_value > entropy_max):
+        return 1
+    if top1_min is not None and (top1_value is None or top1_value < top1_min):
+        return 1
+    return args.low_entropy_error_oversample
 
 def build_question_records(dataset):
     question_records = {}
@@ -168,6 +209,7 @@ def build_labeled_rows(question_records, feature_spec):
                     "question_id": question_id,
                     "label": int(chunk["label"]),
                     "features": build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec),
+                    "chunk": chunk,
                 }
             )
     return rows
@@ -260,6 +302,13 @@ def parse_hidden_layer_sizes(hidden_layers_text):
     return tuple(layer_sizes)
 
 
+def expand_by_multipliers(X, y, multipliers):
+    if multipliers is None or np.all(multipliers == 1):
+        return X, y
+    repeated_indices = np.repeat(np.arange(len(y)), multipliers.astype(np.int64))
+    return X[repeated_indices], y[repeated_indices]
+
+
 def upsample_minority_class(X, y, random_state):
     unique_labels, counts = np.unique(y, return_counts=True)
     if len(unique_labels) < 2 or counts[0] == counts[1]:
@@ -336,7 +385,7 @@ def scan_thresholds(y_test, error_score, thresholds):
     return threshold_results
 
 
-def run_single_split(X, y, groups, random_state, test_size, args):
+def run_single_split(X, y, groups, multipliers, random_state, test_size, args):
     splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
     train_indices, test_indices = next(splitter.split(X, y, groups))
 
@@ -344,6 +393,7 @@ def run_single_split(X, y, groups, random_state, test_size, args):
     X_test = X[test_indices]
     y_train = y[train_indices]
     y_test = y[test_indices]
+    train_multipliers = multipliers[train_indices]
     groups_train = groups[train_indices]
     groups_test = groups[test_indices]
 
@@ -356,7 +406,8 @@ def run_single_split(X, y, groups, random_state, test_size, args):
 
     probe = build_probe(args, random_state)
     if args.probe_type == "mlp":
-        X_train_fit, y_train_fit = upsample_minority_class(X_train_scaled, y_train, random_state)
+        X_train_weighted, y_train_weighted = expand_by_multipliers(X_train_scaled, y_train, train_multipliers)
+        X_train_fit, y_train_fit = upsample_minority_class(X_train_weighted, y_train_weighted, random_state)
         probe.fit(X_train_fit, y_train_fit)
     else:
         probe.fit(X_train_scaled, y_train)
@@ -371,6 +422,7 @@ def run_single_split(X, y, groups, random_state, test_size, args):
 
     return {
         "random_state": random_state,
+        "low_entropy_hard_negative_train_count": int(np.sum(train_multipliers > 1)),
         "train_questions": len(np.unique(groups_train)),
         "test_questions": len(np.unique(groups_test)),
         "train_chunks": len(train_indices),
@@ -396,11 +448,12 @@ def evaluate_feature(samples, feature_spec, num_splits, base_random_state, test_
     X = np.stack([sample["features"] for sample in samples])
     y = np.array([int(sample["label"]) for sample in samples], dtype=np.int64)
     groups = np.array([int(sample["question_id"]) for sample in samples], dtype=np.int64)
+    multipliers = np.array([low_entropy_error_multiplier(sample, args) for sample in samples], dtype=np.int64)
 
     split_results = []
     for offset in range(num_splits):
         random_state = base_random_state + offset
-        split_result = run_single_split(X, y, groups, random_state, test_size, args)
+        split_result = run_single_split(X, y, groups, multipliers, random_state, test_size, args)
         if split_result is not None:
             split_results.append(split_result)
 
@@ -411,6 +464,7 @@ def evaluate_feature(samples, feature_spec, num_splits, base_random_state, test_
         "num_questions": len(np.unique(groups)),
         "positive_ratio": float(y.mean()),
         "negative_ratio": float(1.0 - y.mean()),
+        "low_entropy_hard_negative_count": int(np.sum(multipliers > 1)),
         "valid_splits": split_results,
     }
 
@@ -456,6 +510,11 @@ for feature_key in args.features:
         f"Chunks: {result['num_chunks']} | Questions: {result['num_questions']} "
         f"| Positive ratio: {result['positive_ratio']:.4f} | Negative ratio: {result['negative_ratio']:.4f}"
     )
+    if args.low_entropy_error_oversample > 1:
+        print(
+            f"Low-entropy hard negatives in dataset: {result['low_entropy_hard_negative_count']} | "
+            f"oversample factor: {args.low_entropy_error_oversample}"
+        )
     print(f"Valid grouped splits: {len(result['valid_splits'])}/{args.num_splits}")
 
     if not result["valid_splits"]:

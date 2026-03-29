@@ -266,9 +266,9 @@ def extract_final_answer(text):
             return boxed_value
 
     explicit_patterns = [
-        r"(?i)final answer\s*[:锛歖\s*([^\n]+)",
+        r"(?i)final answer\s*[:?]\s*([^\n]+)",
         r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:锛歖\s*([^\n]+)",
+        r"(?i)answer\s*[:?]\s*([^\n]+)",
         r"####\s*([^\n]+)",
     ]
     for pattern in explicit_patterns:
