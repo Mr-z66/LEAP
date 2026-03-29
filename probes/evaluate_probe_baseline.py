@@ -1,6 +1,7 @@
-﻿import argparse
+import argparse
 import csv
 import os
+import re
 import statistics
 
 import numpy as np
@@ -132,6 +133,47 @@ def parse_feature_spec(feature_spec):
 
 
 
+DERIVED_SCALAR_FEATURES = {
+    "relative_position",
+    "remaining_ratio",
+    "digit_count",
+    "operator_count",
+    "numeric_density",
+    "contains_multiple_numbers",
+    "has_equation_like_pattern",
+    "has_finalization_cue",
+}
+
+
+def chunk_text(chunk):
+    return str(chunk.get("chunk_text", "") or "")
+
+
+def chunk_scalar_feature(chunk, token):
+    text = chunk_text(chunk)
+    compact_text = text.replace(",", "")
+    digits = re.findall(r"\d", compact_text)
+    numbers = re.findall(r"-?\d+(?:\.\d+)?", compact_text)
+    non_space_chars = len(re.findall(r"\S", text))
+    lower_text = text.lower()
+
+    if token == "digit_count":
+        return np.asarray([len(digits)], dtype=np.float32)
+    if token == "operator_count":
+        return np.asarray([sum(text.count(symbol) for symbol in "+-*/=")], dtype=np.float32)
+    if token == "numeric_density":
+        return np.asarray([len(digits) / max(non_space_chars, 1)], dtype=np.float32)
+    if token == "contains_multiple_numbers":
+        return np.asarray([1.0 if len(set(numbers)) >= 2 else 0.0], dtype=np.float32)
+    if token == "has_equation_like_pattern":
+        has_pattern = "=" in text or bool(re.search(r"\d\s*[-+*/]\s*\d", compact_text))
+        return np.asarray([1.0 if has_pattern else 0.0], dtype=np.float32)
+    if token == "has_finalization_cue":
+        has_cue = bool(re.search(r"\b(therefore|thus|so|answer|final answer|total)\b", lower_text))
+        return np.asarray([1.0 if has_cue else 0.0], dtype=np.float32)
+    raise KeyError(f"Unsupported derived scalar feature: {token}")
+
+
 def low_entropy_error_multiplier(row, args):
     if int(row["label"]) != 0:
         return 1
@@ -188,6 +230,8 @@ def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
         elif token == "remaining_ratio":
             denom = max(total_chunks - 1, 1)
             value = np.asarray([(denom - int(chunk["chunk_id"])) / denom], dtype=np.float32)
+        elif token in DERIVED_SCALAR_FEATURES:
+            value = chunk_scalar_feature(chunk, token)
         else:
             feature_key = canonical_feature_name(token)
             if feature_key not in chunk:
