@@ -40,7 +40,7 @@ Thus, the total number of pages James writes in a year is \(\boxed{624}\).","To 
    - Over 52 weeks, he writes \(12 \text{ pages/week} \times 52 \text{ weeks/year} = 624 \text{ pages/year}\).
 
 Therefore, James writes a total of 624 pages in a year.",James writes a 3-page letter to 2 different friends twice a week.  How many pages does he write a year?
-6,small_correct_to_scheduled_correct,True,True,True,True,8,7,,0.14197450876235962,0.025,0.1669745087623596,48,48,48,48,207,"To determine how many pieces of pizza Albert eats in one day, we need to follow these steps:
+6,small_correct_to_scheduled_correct,True,True,True,True,10,9,,0.27300530672073364,0.03125,0.30425530672073364,48,48,48,48,120,"To determine how many pieces of pizza Albert eats in one day, we need to follow these steps:
 
 1. Calculate the total number of slices from the large pizzas.
 2. Calculate the total number of slices from the small pizzas.
@@ -48,23 +48,19 @@ Therefore, James writes a total of 624 pages in a year.",James writes a 3-page l
 
 First, let's calculate the total number of slices from the large pizzas:
 - Albert buys 2 large pizzas.
-- Each large pizza has 16 slices.So, the total number of slices from the large pizzas is:
-\[ 2 \text{ large pizzas} \times 16 \text{ slices per large pizza} = 32 \text{ slices} \]
+- Each large pizza has 16 slices.
+- Therefore, the total number of slices from the large pizzas is \(2 \times 16 = 32\).
 
-Next, let's calculate the total number of slices from the small pizzas:
-- Albert buys 2 small pizzas.
+Next, let's calculate the total number of slices from the small pizzas:- Albert buys 2 small pizzas.
 - Each small pizza has 8 slices.
+- Therefore, the total number of slices from the small pizzas is \(2 \times 8 = 16\).
 
-So, the total number of slices from the small pizzas is:
-\[ 2 \text{ small pizzas} \times 8 \text{ slices per small pizza} = 16 \text{ slices} \]
+Now, we add the slices from both the large and small pizzas:
+- Total slices from large pizzas: 32
+- Total slices from small pizzas: 16
+- Combined total: \(32 + 16 = 48\)
 
-Now, we add the slices from the large pizzas and the small pizzas together:
-\[ 32 \text{ slices from large pizzas} + 16 \text{ slices from small pizzas} = 48 \text{ slices} \]
-
-Therefore, if Albert eats all the pizzas, he will have eaten:
-\[
-\boxed{48}
-\] slices of pizza in one day.","To determine how many pieces of pizza Albert eats in one day if he eats all the pizzas he bought, we need to follow these steps:
+Therefore, if Albert eats all the pizzas, he will have eaten 48 pieces of pizza in one day.","To determine how many pieces of pizza Albert eats in one day if he eats all the pizzas he bought, we need to follow these steps:
 
 1. **Calculate the total number of slices from the large pizzas:**
    - Each large pizza has 16 slices.
@@ -163,38 +159,41 @@ Thus, Harry has \(\boxed{19}\) apples.","Let's break down the problem step by st
    - Harry's apples = 38 / 2 = 19
 
 So, Harry has 19 apples.","Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
-76,small_correct_to_scheduled_correct,True,True,True,True,4,3,,0.1577697992324829,0.008695652173913044,0.16646545140639596,768,768,768,768,246,"To determine the total number of vegetables produced by the garden, we need to calculate the number of each type of vegetable and then sum them up.
+76,small_correct_to_scheduled_correct,True,True,True,True,9,8,,0.23963290452957153,0.01956521739130435,0.2591981219208759,768,768,768,768,170,"To determine the total number of vegetables produced by the garden, we need to calculate the number of each type of vegetable and then sum them up.
 
 1. **Potatoes:**
-   The garden produced 237 potatoes.This is given directly in the problem.
+   The garden produced 237 potatoes.
 
 2. **Cucumbers:**
-   The garden produced 60 fewer cucumbers than potatoes.
+   The garden produced 60 fewer cucumbers than potatoes. Therefore, the number of cucumbers is:
    \[
-   \text{Number of cucumbers} = 237 - 60 = 177
+   237 - 60 = 177
    \]
 
-3. **Peppers:**
-   The garden produced twice as many peppers as cucumbers.
+3.**Peppers:**
+   The garden produced twice as many peppers as cucumbers. Therefore, the number of peppers is:
    \[
-   \text{Number of peppers} = 2 \times 177 = 354
+   2 \times 177 = 354
    \]
 
-4. **Total number of vegetables:**
-   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers.
+4. **Total Vegetables:**
+   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers:
    \[
-   \text{Total vegetables} = 237 + 177 + 354
+   237 + 177 + 354
    \]
 
-   Let's perform the addition step-by-step:
-   \[
-   237 + 177 = 414
-   \]
-   \[
-   414 + 354 = 768
-   \]
+Let's perform the addition step-by-step:
+\[
+237 + 177 = 414
+\]
+\[
+414 + 354 = 768
+\]
 
-Therefore, the total number of vegetables produced by the garden is \boxed{768}.","To solve this problem, we need to find out how many of each type of vegetable the garden produced and then sum them up.
+Thus, the total number of vegetables produced by the garden is:
+\[
+\boxed{768}
+\]","To solve this problem, we need to find out how many of each type of vegetable the garden produced and then sum them up.
 
 1. **Potatoes:**
    The garden produced 237 potatoes.

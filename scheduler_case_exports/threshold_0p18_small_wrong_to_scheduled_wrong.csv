@@ -106,6 +106,30 @@ To find the total number of hard hats remaining in the truck, we sum up the rema
 \[ 16 + 3 + 24 = 43 \]
 
 Thus, the total number of hard hats that remained in the truck is \( \boxed{43} \).","In a truck, there are 26 pink hard hats, 15 green hard hats, and 24 yellow hard hats.  If Carl takes away 4 pink hard hats, and John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats that he removed, then calculate the total number of hard hats that remained in the truck."
+23,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,,,5,4,4,5,,,"To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
+
+Step 1: Calculate the total cost of the shorts.
+- Ann bought 5 pairs of shorts.
+- Each pair costs $7.
+\[ \text{Total cost of shorts} = 5 \times 7 = 35 \]
+
+Step 2: Calculate the total cost of the shoes.
+- Ann bought 2 pairs of shoes.
+- Each pair costs $10.
+\[ \text{Total cost of shoes} = 2 \times 10 = 20 \]
+
+Step 3: Add the costs of the shorts and shoes to find the combined cost.
+\[ \text{Combined cost of shorts and shoes} = 35 + 20 = 55 \]
+
+Step 4: Subtract the combined cost of the shorts and shoes from the total amount spent to find the amount spent on the tops.
+- Total amount spent is $75.
+\[ \text{Amount spent on tops} = 75 - 55 = 20 \]
+
+Step 5: Determine the cost per top.
+- Ann bought 4 tops.
+\[ \text{Cost per top} = \frac{\text{Amount spent on tops}}{\text{Number of tops}} = \frac{20}{4} = 5 \]
+
+Therefore, each top cost $5.","Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each top cost?"
 95,small_wrong_to_scheduled_wrong,False,True,False,True,4,3,4,0.5503937005996704,0.009090909090909092,0.5594846096905794,64,4,4,64,256,"To determine the total value of Alice's money after exchanging her quarters for nickels, we need to follow these steps:
 
 1. **Calculate the total value of the quarters:**

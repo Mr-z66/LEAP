@@ -41,6 +41,35 @@ DEFAULT_SUMMARY_EXPORT_PATH = os.path.join(PROJECT_ROOT, "scheduler_run_summary.
 # ========================================================
 
 
+class TorchMLPProbe(torch.nn.Module):
+    def __init__(self, input_dim, hidden_layers, dropout=0.0):
+        super().__init__()
+        dims = [input_dim, *hidden_layers, 1]
+        layers = []
+        for idx in range(len(dims) - 2):
+            layers.append(torch.nn.Linear(dims[idx], dims[idx + 1]))
+            layers.append(torch.nn.ReLU())
+            if dropout > 0:
+                layers.append(torch.nn.Dropout(dropout))
+        layers.append(torch.nn.Linear(dims[-2], dims[-1]))
+        self.network = torch.nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x).squeeze(-1)
+
+    def predict_proba(self, X):
+        self.eval()
+        with torch.no_grad():
+            if isinstance(X, np.ndarray):
+                X_tensor = torch.from_numpy(X).to(torch.float32)
+            else:
+                X_tensor = X.to(torch.float32)
+            logits = self.forward(X_tensor)
+            pos_prob = torch.sigmoid(logits).cpu().numpy()
+        neg_prob = 1.0 - pos_prob
+        return np.stack([neg_prob, pos_prob], axis=1)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Simulate a chunk-level small-to-large routing system.")
     parser.add_argument("--label-path", default=DEFAULT_LABEL_PATH, help="Path to strict labeled chunk data.")
@@ -496,7 +525,13 @@ def artifact_positive_score(artifact, positive_prob):
 
 
 def score_with_artifact(question_records, artifact, feature_key):
-    probe = artifact["probe"]
+    probe = artifact.get("probe")
+    if probe is None:
+        hidden_layers_text = artifact["config"]["hidden_layers"]
+        hidden_layers = tuple(int(part.strip()) for part in hidden_layers_text.split(",") if part.strip())
+        dropout = float(artifact.get("config", {}).get("dropout", 0.0))
+        probe = TorchMLPProbe(input_dim=int(artifact["feature_dim"]), hidden_layers=hidden_layers, dropout=dropout)
+        probe.load_state_dict(artifact["probe_state_dict"])
     scaler = artifact["scaler"]
     X, _, _, chunk_refs = build_feature_arrays(question_records, feature_key)
     X_scaled = scaler.transform(X)

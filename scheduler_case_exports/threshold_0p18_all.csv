@@ -108,7 +108,7 @@ Thus, the total number of flowers in Mark's garden is \(\boxed{35}\).","Let's br
      \]
 
 Therefore, Mark has a total of 35 flowers in his garden.","Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?"
-6,small_correct_to_scheduled_correct,True,True,True,True,8,7,,0.14197450876235962,0.025,0.1669745087623596,48,48,48,48,207,"To determine how many pieces of pizza Albert eats in one day, we need to follow these steps:
+6,small_correct_to_scheduled_correct,True,True,True,True,10,9,,0.27300530672073364,0.03125,0.30425530672073364,48,48,48,48,120,"To determine how many pieces of pizza Albert eats in one day, we need to follow these steps:
 
 1. Calculate the total number of slices from the large pizzas.
 2. Calculate the total number of slices from the small pizzas.
@@ -116,23 +116,19 @@ Therefore, Mark has a total of 35 flowers in his garden.","Mark has a garden wit
 
 First, let's calculate the total number of slices from the large pizzas:
 - Albert buys 2 large pizzas.
-- Each large pizza has 16 slices.So, the total number of slices from the large pizzas is:
-\[ 2 \text{ large pizzas} \times 16 \text{ slices per large pizza} = 32 \text{ slices} \]
+- Each large pizza has 16 slices.
+- Therefore, the total number of slices from the large pizzas is \(2 \times 16 = 32\).
 
-Next, let's calculate the total number of slices from the small pizzas:
-- Albert buys 2 small pizzas.
+Next, let's calculate the total number of slices from the small pizzas:- Albert buys 2 small pizzas.
 - Each small pizza has 8 slices.
+- Therefore, the total number of slices from the small pizzas is \(2 \times 8 = 16\).
 
-So, the total number of slices from the small pizzas is:
-\[ 2 \text{ small pizzas} \times 8 \text{ slices per small pizza} = 16 \text{ slices} \]
+Now, we add the slices from both the large and small pizzas:
+- Total slices from large pizzas: 32
+- Total slices from small pizzas: 16
+- Combined total: \(32 + 16 = 48\)
 
-Now, we add the slices from the large pizzas and the small pizzas together:
-\[ 32 \text{ slices from large pizzas} + 16 \text{ slices from small pizzas} = 48 \text{ slices} \]
-
-Therefore, if Albert eats all the pizzas, he will have eaten:
-\[
-\boxed{48}
-\] slices of pizza in one day.","To determine how many pieces of pizza Albert eats in one day if he eats all the pizzas he bought, we need to follow these steps:
+Therefore, if Albert eats all the pizzas, he will have eaten 48 pieces of pizza in one day.","To determine how many pieces of pizza Albert eats in one day if he eats all the pizzas he bought, we need to follow these steps:
 
 1. **Calculate the total number of slices from the large pizzas:**
    - Each large pizza has 16 slices.
@@ -257,7 +253,7 @@ To find the total number of hard hats remaining in the truck, we sum up the rema
 \[ 16 + 3 + 24 = 43 \]
 
 Thus, the total number of hard hats that remained in the truck is \( \boxed{43} \).","In a truck, there are 26 pink hard hats, 15 green hard hats, and 24 yellow hard hats.  If Carl takes away 4 pink hard hats, and John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats that he removed, then calculate the total number of hard hats that remained in the truck."
-22,small_wrong_to_scheduled_correct,False,True,True,True,16,15,,0.12415546178817749,0.0380952380952381,0.1622506998834156,7,10,7,7,143,"Let's break down the problem step by step:
+22,small_wrong_to_scheduled_correct,False,True,True,True,21,20,,0.13163870573043823,0.05,0.18163870573043822,7,10,7,7,58,"Let's break down the problem step by step:
 
 1. **Determine the length of Jamie's last name:**
    Jamie's last name is ""Grey"". The length of ""Grey"" is 4 letters.
@@ -277,25 +273,18 @@ Thus, the total number of hard hats that remained in the truck is \( \boxed{43} 
    \[
    B = 10
    \]
-   Therefore,Bobbie's last name has 10 letters.
+   Therefore, Bobbie's last name has 10 letters.
 
 3. **Determine the length of Samantha's last name:**
-   The problem states that Samantha’s last name has three fewer letters than Bobbie’s last name. Let's denote the length of Samantha's last name as \( S \).
-
-   So, we have:
-   \[
+   The problem states that Samantha's last name has three fewer letters than Bobbie's last name. So, if Bobbie's last name has 10 letters, Samantha's last name has:\[
    S = B - 3
    \]
-   Substituting the value of \( B \) (which is 10):
+   Substituting \( B = 10 \):
    \[
-   S = 10 - 3
-   \]
-   Simplifying this:
-   \[
-   S = 7
+   S = 10 - 3 = 7
    \]
 
-Therefore, Samantha’s last name has 7 letters.","To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
+Therefore, Samantha's last name has 7 letters.","To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
 
 1. **Identify the number of letters in Jamie's last name:**
    - Jamie's full name is Jamie Grey.
@@ -324,40 +313,7 @@ Therefore, Samantha’s last name has 7 letters.","To solve this problem, we nee
      \]
 
 Therefore, the number of letters in Samantha’s last name is \(\boxed{7}\).","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
-23,small_wrong_to_scheduled_correct,False,True,True,True,14,13,,0.12097764015197754,0.03333333333333333,0.15431097348531086,5,4,5,5,201,"To determine the cost of each top, we need to follow these steps:
-
-1. Calculate the total cost of the shorts.
-2. Calculate the total cost of the shoes.
-3. Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops.
-4. Divide the total cost of the tops by the number of tops to find the cost per top.
-
-Let's go through each step in detail:
-
-1. **Calculate the total cost of the shorts:**
-   Ann bought 5 pairs of shorts, each costing $7.
-   \[
-   \text{Total cost of shorts} = 5 \times 7 = 35 \text{ dollars}
-   \]
-
-2. **Calculate the total cost of the shoes:**
-   Ann bought 2 pairs of shoes,each costing $10.
-   \[
-   \text{Total cost of shoes} = 2 \times 10 = 20 \text{ dollars}
-   \]
-
-3. **Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops:**
-   Ann spent a total of $75.
-   \[
-   \text{Total cost of tops} = 75 - (35 + 20) = 75 - 55 = 20 \text{ dollars}
-   \]
-
-4. **Divide the total cost of the tops by the number of tops to find the cost per top:**
-   Ann bought 4 tops.
-   \[
-   \text{Cost per top} = \frac{20}{4} = 5 \text{ dollars}
-   \]
-
-Thus, the cost of each top is \(\boxed{5}\) dollars.","To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
+23,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,,,5,4,4,5,,,"To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
 
 Step 1: Calculate the total cost of the shorts.
 - Ann bought 5 pairs of shorts.
@@ -430,30 +386,36 @@ Step 3: Calculate the total amount shared.
                 = $5250
 
 Therefore, the total amount of money shared between Ken and Tony was $5250.","Mr. Sam shared a certain amount of money between his two sons, Ken and Tony. If Ken got $1750, and Tony got twice as much as Ken, how much was the money shared?"
-38,small_wrong_to_scheduled_correct,False,True,True,True,4,3,10,0.15785151720046997,0.0125,0.17035151720046998,9,6,9,9,256,"To determine how many ounces of tea Artemis needs for the party, we can follow these steps:
+38,small_wrong_to_scheduled_correct,False,True,True,True,9,8,10,0.18143725395202637,0.028125,0.20956225395202638,9,6,9,9,256,"To determine how many ounces of tea Artemis needs for the party, we can follow these steps:
 
 1. **Determine the ratio of tea to water in the original cup:**
-   - The original cup is 8 ounces and uses 1 ounce of tea.- This gives us a ratio of 1 ounce of tea per 8 ounces of water.
+   - The original cup is 8 ounces and uses 1 ounce of tea.
+   - Therefore, the ratio of tea to water is \( \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} \).
 
-2. **Calculate the amount of tea needed for one 6-ounce cup:**
-   - We know that 1 ounce of tea is used for 8 ounces of water.
-   - To find out how much tea is needed for 6 ounces of water, we set up a proportion:
+2. **Calculate the total amount of tea needed for the party:**
+   - The party has 12 people, and each person wants a 6-ounce cup of tea.- First, find the total volume of tea required:
      \[
-     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{6 \text{ ounces of water}}
-     \]
-   - Solving for \( x \):
-     \[
-     x = \frac{1 \times 6}{8} = \frac{6}{8} = 0.75 \text{ ounces of tea}
+     12 \text{ people} \times 6 \text{ ounces per person} = 72 \text{ ounces of tea}
      \]
 
-3. **Calculate the total amount of tea needed for 12 people:**
-   - Each person wants a 6-ounce cup of tea, which requires 0.75 ounces of tea.
-   - For 12 people:
+3. **Apply the ratio to the total volume:**
+   - Using the ratio from the original cup (1 ounce of tea per 8 ounces of water), we can set up a proportion to find out how much tea is needed for 72 ounces of water.
+   - Let \( x \) be the amount of tea needed for 72 ounces of water.
+   - The proportion is:
      \[
-     12 \times 0.75 = 9 \text{ ounces of tea}
+     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{72 \text{ ounces of water}}
      \]
 
-Therefore","To determine how many ounces of tea Artemis needs, we can follow these steps:
+4. **Solve for \( x \):**
+   - Cross-multiply to solve for \( x \):
+     \[
+     1 \times 72 = 8 \times x
+     \]
+     \[
+     72 = 8x
+     \]
+     \[
+     x = \frac{72}{8} = 9","To determine how many ounces of tea Artemis needs, we can follow these steps:
 
 1. **Understand the given ratio:**
    - Her mom drinks an 8-ounce cup of tea using 1 ounce of tea.
@@ -591,38 +553,41 @@ Thus, Harry has \(\boxed{19}\) apples.","Let's break down the problem step by st
    - Harry's apples = 38 / 2 = 19
 
 So, Harry has 19 apples.","Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
-76,small_correct_to_scheduled_correct,True,True,True,True,4,3,,0.1577697992324829,0.008695652173913044,0.16646545140639596,768,768,768,768,246,"To determine the total number of vegetables produced by the garden, we need to calculate the number of each type of vegetable and then sum them up.
+76,small_correct_to_scheduled_correct,True,True,True,True,9,8,,0.23963290452957153,0.01956521739130435,0.2591981219208759,768,768,768,768,170,"To determine the total number of vegetables produced by the garden, we need to calculate the number of each type of vegetable and then sum them up.
 
 1. **Potatoes:**
-   The garden produced 237 potatoes.This is given directly in the problem.
+   The garden produced 237 potatoes.
 
 2. **Cucumbers:**
-   The garden produced 60 fewer cucumbers than potatoes.
+   The garden produced 60 fewer cucumbers than potatoes. Therefore, the number of cucumbers is:
    \[
-   \text{Number of cucumbers} = 237 - 60 = 177
+   237 - 60 = 177
    \]
 
-3. **Peppers:**
-   The garden produced twice as many peppers as cucumbers.
+3.**Peppers:**
+   The garden produced twice as many peppers as cucumbers. Therefore, the number of peppers is:
    \[
-   \text{Number of peppers} = 2 \times 177 = 354
+   2 \times 177 = 354
    \]
 
-4. **Total number of vegetables:**
-   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers.
+4. **Total Vegetables:**
+   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers:
    \[
-   \text{Total vegetables} = 237 + 177 + 354
+   237 + 177 + 354
    \]
 
-   Let's perform the addition step-by-step:
-   \[
-   237 + 177 = 414
-   \]
-   \[
-   414 + 354 = 768
-   \]
+Let's perform the addition step-by-step:
+\[
+237 + 177 = 414
+\]
+\[
+414 + 354 = 768
+\]
 
-Therefore, the total number of vegetables produced by the garden is \boxed{768}.","To solve this problem, we need to find out how many of each type of vegetable the garden produced and then sum them up.
+Thus, the total number of vegetables produced by the garden is:
+\[
+\boxed{768}
+\]","To solve this problem, we need to find out how many of each type of vegetable the garden produced and then sum them up.
 
 1. **Potatoes:**
    The garden produced 237 potatoes.
@@ -682,33 +647,7 @@ Therefore, the garden produced a total of 768 vegetables.","A garden produced 23
    Number of slices left = 30 slices - 26 slices = 4 slices
 
 Therefore, there are 4 slices of cookie pie left.","Manny had 3 birthday cookie pies to share with his 24 classmates and his teacher, Mr. Keith.   If each of the cookie pies were cut into 10 slices and Manny, his classmates, and Mr. Keith all had 1 piece, how many slices are left?"
-84,small_correct_to_scheduled_correct,True,True,True,True,2,1,2,0.16660428047180176,0.008333333333333333,0.1749376138051351,90,90,90,90,211,"To determine the number of different rooms Hans could be checked into, we need to consider the total number of floors available and the number of rooms per floor.Let's break it down step by step:
-
-1. **Total Floors in the Hotel:**
-   The hotel has a total of 10 floors.
-
-2. **Rooms per Floor:**
-   Each floor has 10 identical rooms.
-
-3. **Unavailable Floor:**
-   The last floor (the 10th floor) is unavailable due to an accident.
-
-4. **Available Floors:**
-   Since the 10th floor is unavailable, only the first 9 floors are available for guests.
-
-5. **Calculating Available Rooms:**
-   - Each of the 9 available floors has 10 rooms.
-   - Therefore, the total number of available rooms is calculated as:
-     \[
-     9 \text{ floors} \times 10 \text{ rooms per floor} = 90 \text{ rooms}
-     \]
-
-Thus, Hans could be checked into any one of the 90 available rooms. 
-
-The final answer is:
-\[
-\boxed{90}
-\]","To determine the number of different rooms Hans could be checked into, let's break down the problem step by step:
+84,small_correct_to_scheduled_correct,True,True,True,False,,,2,,,,90,90,90,90,,,"To determine the number of different rooms Hans could be checked into, let's break down the problem step by step:
 
 1. **Total Floors and Rooms:**
    - The hotel has a total of 10 floors.
@@ -870,7 +809,7 @@ Let's break it down step-by-step:
      \]
 
 Therefore, Krystian borrows a total of 216 books in a week.","Krystian works in the library. He borrows an average of 40 books every day. Every Friday, his number of borrowed books is about 40% higher than the daily average. How many books does he borrow in a week if the library is open from Monday to Friday?"
-92,small_wrong_to_scheduled_correct,False,True,True,True,8,7,,0.1434585452079773,0.021052631578947368,0.16451117678692467,1825,1095,1825,1825,256,"To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+92,small_wrong_to_scheduled_correct,False,True,True,True,10,9,,0.2128661870956421,0.02631578947368421,0.2391819765693263,1825,1095,1825,1825,249,"To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
 
 1. Calculate the total amount of money each person will earn in a year.
 2. Determine how much each person will save, which is half of their annual earnings.
@@ -878,12 +817,12 @@ Therefore, Krystian borrows a total of 216 books in a week.","Krystian works in 
 
 First, let's calculate the annual earnings for each person:
 
-- Sally makes $6 per day.There are 365 days in a year (assuming it's not a leap year).
+- Sally makes $6 per day. There are 365 days in a year.
   \[
   \text{Sally's annual earnings} = 6 \times 365 = 2190 \text{ dollars}
   \]
 
-- Bob makes $4 per day.
+- Bob makes $4 per day. There are 365 days in a year.
   \[
   \text{Bob's annual earnings} = 4 \times 365 = 1460 \text{ dollars}
   \]
@@ -904,7 +843,9 @@ Finally, we add their savings together to find the total amount saved for the tr
 
 \[
 \text{Total savings} = 1095 + 730 = 1825 \text{ dollars}
-\]","To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+\]
+
+Therefore, Sally and Bob will have saved a total of \( \boxed{1825} \) dollars for their trip after a year.","To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
 
 1. **Calculate daily earnings:**
    - Sally earns $6 per day.

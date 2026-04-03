@@ -134,63 +134,6 @@ Therefore, Samantha’s last name has 7 letters.","To solve this problem, we nee
      \]
 
 Therefore, the number of letters in Samantha’s last name is \(\boxed{7}\).","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
-23,small_wrong_to_scheduled_correct,False,True,True,True,14,13,,0.12097764015197754,0.03333333333333333,0.15431097348531086,5,4,5,5,201,"To determine the cost of each top, we need to follow these steps:
-
-1. Calculate the total cost of the shorts.
-2. Calculate the total cost of the shoes.
-3. Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops.
-4. Divide the total cost of the tops by the number of tops to find the cost per top.
-
-Let's go through each step in detail:
-
-1. **Calculate the total cost of the shorts:**
-   Ann bought 5 pairs of shorts, each costing $7.
-   \[
-   \text{Total cost of shorts} = 5 \times 7 = 35 \text{ dollars}
-   \]
-
-2. **Calculate the total cost of the shoes:**
-   Ann bought 2 pairs of shoes,each costing $10.
-   \[
-   \text{Total cost of shoes} = 2 \times 10 = 20 \text{ dollars}
-   \]
-
-3. **Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops:**
-   Ann spent a total of $75.
-   \[
-   \text{Total cost of tops} = 75 - (35 + 20) = 75 - 55 = 20 \text{ dollars}
-   \]
-
-4. **Divide the total cost of the tops by the number of tops to find the cost per top:**
-   Ann bought 4 tops.
-   \[
-   \text{Cost per top} = \frac{20}{4} = 5 \text{ dollars}
-   \]
-
-Thus, the cost of each top is \(\boxed{5}\) dollars.","To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
-
-Step 1: Calculate the total cost of the shorts.
-- Ann bought 5 pairs of shorts.
-- Each pair costs $7.
-\[ \text{Total cost of shorts} = 5 \times 7 = 35 \]
-
-Step 2: Calculate the total cost of the shoes.
-- Ann bought 2 pairs of shoes.
-- Each pair costs $10.
-\[ \text{Total cost of shoes} = 2 \times 10 = 20 \]
-
-Step 3: Add the costs of the shorts and shoes to find the combined cost.
-\[ \text{Combined cost of shorts and shoes} = 35 + 20 = 55 \]
-
-Step 4: Subtract the combined cost of the shorts and shoes from the total amount spent to find the amount spent on the tops.
-- Total amount spent is $75.
-\[ \text{Amount spent on tops} = 75 - 55 = 20 \]
-
-Step 5: Determine the cost per top.
-- Ann bought 4 tops.
-\[ \text{Cost per top} = \frac{\text{Amount spent on tops}}{\text{Number of tops}} = \frac{20}{4} = 5 \]
-
-Therefore, each top cost $5.","Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each top cost?"
 38,small_wrong_to_scheduled_correct,False,True,True,True,4,3,10,0.15785151720046997,0.0125,0.17035151720046998,9,6,9,9,256,"To determine how many ounces of tea Artemis needs for the party, we can follow these steps:
 
 1. **Determine the ratio of tea to water in the original cup:**

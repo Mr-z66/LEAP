@@ -67,7 +67,7 @@ Thus, the total number of flowers in Mark's garden is \(\boxed{35}\).","Let's br
      \]
 
 Therefore, Mark has a total of 35 flowers in his garden.","Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?"
-22,small_wrong_to_scheduled_correct,False,True,True,True,16,15,,0.12415546178817749,0.0380952380952381,0.1622506998834156,7,10,7,7,143,"Let's break down the problem step by step:
+22,small_wrong_to_scheduled_correct,False,True,True,True,21,20,,0.13163870573043823,0.05,0.18163870573043822,7,10,7,7,58,"Let's break down the problem step by step:
 
 1. **Determine the length of Jamie's last name:**
    Jamie's last name is ""Grey"". The length of ""Grey"" is 4 letters.
@@ -87,25 +87,18 @@ Therefore, Mark has a total of 35 flowers in his garden.","Mark has a garden wit
    \[
    B = 10
    \]
-   Therefore,Bobbie's last name has 10 letters.
+   Therefore, Bobbie's last name has 10 letters.
 
 3. **Determine the length of Samantha's last name:**
-   The problem states that Samantha’s last name has three fewer letters than Bobbie’s last name. Let's denote the length of Samantha's last name as \( S \).
-
-   So, we have:
-   \[
+   The problem states that Samantha's last name has three fewer letters than Bobbie's last name. So, if Bobbie's last name has 10 letters, Samantha's last name has:\[
    S = B - 3
    \]
-   Substituting the value of \( B \) (which is 10):
+   Substituting \( B = 10 \):
    \[
-   S = 10 - 3
-   \]
-   Simplifying this:
-   \[
-   S = 7
+   S = 10 - 3 = 7
    \]
 
-Therefore, Samantha’s last name has 7 letters.","To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
+Therefore, Samantha's last name has 7 letters.","To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
 
 1. **Identify the number of letters in Jamie's last name:**
    - Jamie's full name is Jamie Grey.
@@ -134,63 +127,6 @@ Therefore, Samantha’s last name has 7 letters.","To solve this problem, we nee
      \]
 
 Therefore, the number of letters in Samantha’s last name is \(\boxed{7}\).","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
-23,small_wrong_to_scheduled_correct,False,True,True,True,14,13,,0.12097764015197754,0.03333333333333333,0.15431097348531086,5,4,5,5,201,"To determine the cost of each top, we need to follow these steps:
-
-1. Calculate the total cost of the shorts.
-2. Calculate the total cost of the shoes.
-3. Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops.
-4. Divide the total cost of the tops by the number of tops to find the cost per top.
-
-Let's go through each step in detail:
-
-1. **Calculate the total cost of the shorts:**
-   Ann bought 5 pairs of shorts, each costing $7.
-   \[
-   \text{Total cost of shorts} = 5 \times 7 = 35 \text{ dollars}
-   \]
-
-2. **Calculate the total cost of the shoes:**
-   Ann bought 2 pairs of shoes,each costing $10.
-   \[
-   \text{Total cost of shoes} = 2 \times 10 = 20 \text{ dollars}
-   \]
-
-3. **Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops:**
-   Ann spent a total of $75.
-   \[
-   \text{Total cost of tops} = 75 - (35 + 20) = 75 - 55 = 20 \text{ dollars}
-   \]
-
-4. **Divide the total cost of the tops by the number of tops to find the cost per top:**
-   Ann bought 4 tops.
-   \[
-   \text{Cost per top} = \frac{20}{4} = 5 \text{ dollars}
-   \]
-
-Thus, the cost of each top is \(\boxed{5}\) dollars.","To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
-
-Step 1: Calculate the total cost of the shorts.
-- Ann bought 5 pairs of shorts.
-- Each pair costs $7.
-\[ \text{Total cost of shorts} = 5 \times 7 = 35 \]
-
-Step 2: Calculate the total cost of the shoes.
-- Ann bought 2 pairs of shoes.
-- Each pair costs $10.
-\[ \text{Total cost of shoes} = 2 \times 10 = 20 \]
-
-Step 3: Add the costs of the shorts and shoes to find the combined cost.
-\[ \text{Combined cost of shorts and shoes} = 35 + 20 = 55 \]
-
-Step 4: Subtract the combined cost of the shorts and shoes from the total amount spent to find the amount spent on the tops.
-- Total amount spent is $75.
-\[ \text{Amount spent on tops} = 75 - 55 = 20 \]
-
-Step 5: Determine the cost per top.
-- Ann bought 4 tops.
-\[ \text{Cost per top} = \frac{\text{Amount spent on tops}}{\text{Number of tops}} = \frac{20}{4} = 5 \]
-
-Therefore, each top cost $5.","Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each top cost?"
 38,small_wrong_to_scheduled_correct,False,True,True,True,4,3,10,0.15785151720046997,0.0125,0.17035151720046998,9,6,9,9,256,"To determine how many ounces of tea Artemis needs for the party, we can follow these steps:
 
 1. **Determine the ratio of tea to water in the original cup:**
@@ -379,7 +315,7 @@ Let's break it down step-by-step:
      \]
 
 Therefore, Krystian borrows a total of 216 books in a week.","Krystian works in the library. He borrows an average of 40 books every day. Every Friday, his number of borrowed books is about 40% higher than the daily average. How many books does he borrow in a week if the library is open from Monday to Friday?"
-92,small_wrong_to_scheduled_correct,False,True,True,True,8,7,,0.1434585452079773,0.021052631578947368,0.16451117678692467,1825,1095,1825,1825,256,"To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+92,small_wrong_to_scheduled_correct,False,True,True,True,10,9,,0.2128661870956421,0.02631578947368421,0.2391819765693263,1825,1095,1825,1825,249,"To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
 
 1. Calculate the total amount of money each person will earn in a year.
 2. Determine how much each person will save, which is half of their annual earnings.
@@ -387,12 +323,12 @@ Therefore, Krystian borrows a total of 216 books in a week.","Krystian works in 
 
 First, let's calculate the annual earnings for each person:
 
-- Sally makes $6 per day.There are 365 days in a year (assuming it's not a leap year).
+- Sally makes $6 per day. There are 365 days in a year.
   \[
   \text{Sally's annual earnings} = 6 \times 365 = 2190 \text{ dollars}
   \]
 
-- Bob makes $4 per day.
+- Bob makes $4 per day. There are 365 days in a year.
   \[
   \text{Bob's annual earnings} = 4 \times 365 = 1460 \text{ dollars}
   \]
@@ -413,7 +349,9 @@ Finally, we add their savings together to find the total amount saved for the tr
 
 \[
 \text{Total savings} = 1095 + 730 = 1825 \text{ dollars}
-\]","To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+\]
+
+Therefore, Sally and Bob will have saved a total of \( \boxed{1825} \) dollars for their trip after a year.","To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
 
 1. **Calculate daily earnings:**
    - Sally earns $6 per day.

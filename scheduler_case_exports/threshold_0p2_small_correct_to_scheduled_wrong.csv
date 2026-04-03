@@ -1,57 +1,77 @@
 ﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
-57,small_correct_to_scheduled_wrong,True,,False,True,10,9,,0.8392819166183472,0.08333333333333333,0.9226152499516805,2,2,5,,256,"To determine how many kilograms of butter Liza has left after making the cookies, we need to follow these steps:
+87,small_correct_to_scheduled_wrong,True,True,False,True,5,4,7,0.1982983946800232,0.01388888888888889,0.2121872835689121,600,600,3,600,256,"To determine how much more the cow is worth after gaining weight, we need to follow these steps:
 
-1. Calculate the amount of butter used for chocolate chip cookies.
-2. Calculate the amount of butter used for peanut butter cookies.
-3. Determine the remaining butter after making chocolate chip and peanut butter cookies.
-4. Calculate the amount of butter used for sugar cookies.
-5. Determine the remaining butter after making sugar cookies.
+1. Calculate the cow's new weight.
+2. Determine the increase in weight.
+3. Calculate the increase in value based on the new weight.Let's go through each step.
 
-Let's start with the first step:
+### Step 1: Calculate the Cow's New Weight
 
-1. Liza bought 10 kilograms of butter. She used one-half of it for chocolate chip cookies.So, the amount of butter used for chocolate chip cookies is:
+The cow initially weighs 400 pounds and increases its weight to 1.5 times its starting weight.
+
+\[
+\text{New weight} = 1.5 \times 400 \text{ pounds}
+\]
+
+\[
+\text{New weight} = 600 \text{ pounds}
+\]
+
+### Step 2: Determine the Increase in Weight
+
+Next, we find the difference between the new weight and the initial weight.
+
+\[
+\text{Increase in weight} = \text{New weight} - \text{Initial weight}
+\]
+
+\[
+\text{Increase in weight} = 600 \text{ pounds} - 400 \text{ pounds}
+\]
+
+\[
+\text{Increase in weight} = 200 \text{ pounds}
+\]
+
+### Step 3: Calculate the Increase in Value
+
+The cow can be sold for $3 per pound. We need to calculate the additional value due to the increase in weight.
+
+\[
+\text{Increase in value} = \text{Increase in weight} \times \text{Price per pound}
+\]","To solve this problem, we need to follow these steps:
+
+1. **Determine the new weight of the cow:**
+   - The cow initially weighs 400 pounds.
+   - The weight increases to 1.5 times its starting weight.
+   - New weight = 1.5 × 400 pounds
+
+2. **Calculate the new weight:**
    \[
-   \frac{1}{2} \times 10 = 5 \text{ kilograms}
+   \text{New weight} = 1.5 \times 400 = 600 \text{ pounds}
    \]
 
-2. Next, she used one-fifth of the original 10 kilograms for peanut butter cookies. So, the amount of butter used for peanut butter cookies is:
+3. **Find the increase in weight:**
+   - Increase in weight = New weight - Initial weight
    \[
-   \frac{1}{5} \times 10 = 2 \text{ kilograms}
+   \text{Increase in weight} = 600 \text{ pounds} - 400 \text{ pounds} = 200 \text{ pounds}
    \]
 
-3. Now, we need to find out how much butter is left after making chocolate chip and peanut butter cookies. The total amount of butter used so far is:
+4. **Calculate the value of the cow before and after the weight gain:**
+   - Value per pound = $3
+   - Initial value = 400 pounds × $3/pound
    \[
-   5 + 2 = 7 \text{ kilograms}
+   \text{Initial value} = 400 \times 3 = \$1200
    \]
-   Therefore, the remaining butter is:
+   - New value = 600 pounds × $3/pound
    \[
-   10 - 7 = 3 \text{ kilograms}
-   \]
-
-4. Liza then used one-third of the remaining butter for sugar cookies. So, the amount of butter used for sugar cookies is:
-   \[
-   \frac{1}{3} \times 3 = 1 \text{ kilogram}
+   \text{New value} = 600 \times 3 = \$1800
    \]
 
-5. Finally, the amount of butter left after making all three types of cookies is:",,"Liza bought 10 kilograms of butter to make cookies. She used one-half of it for chocolate chip cookies, one-fifth of it for peanut butter cookies, and one-third of the remaining butter for sugar cookies. How many kilograms of butter are left after making those three kinds of cookies?"
-255,small_correct_to_scheduled_wrong,True,,False,True,8,7,,0.8707271814346313,0.06666666666666667,0.937393848101298,25,25,10,,165,"To determine Matt's age 10 years from now, we need to follow these steps:
-
-1. **Determine Bush's current age:**
-   - Bush is currently 12 years old.
-
-2. **Calculate the age difference between Bush and Matt:**
-   - Bush is younger than Matt by 3 years.
-
-3. **Calculate Matt's current age:**
-   - Since Bush is 3 years younger than Matt,we add 3 years to Bush's age to find Matt's age.
+5. **Determine how much more the cow is worth after gaining the weight:**
+   - Increase in value = New value - Initial value
    \[
-   \text{Matt's current age} = \text{Bush's current age} + 3 = 12 + 3 = 15 \text{ years}
+   \text{Increase in value} = \$1800 - \$1200 = \$600
    \]
 
-4. **Determine Matt's age 10 years from now:**
-   - To find Matt's age in 10 years, we add 10 years to his current age.
-   \[
-   \text{Matt's age in 10 years} = \text{Matt's current age} + 10 = 15 + 10 = 25 \text{ years}
-   \]
-
-Therefore, Matt will be 25 years old 10 years from now.",,Bush and Matt are brothers. Bush is younger than Matt by 3 years. This year Bush will be 12 years old. What will be Matt's age 10 years from now?
+Therefore, the cow is worth \$600 more after gaining the weight.",John's cow weighs 400 pounds.  It increased its weight to 1.5 times its starting weight.  He is able to sell the cow for $3 per pound.  How much more is it worth after gaining the weight?

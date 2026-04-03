@@ -1,395 +1,315 @@
 ﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
-8,small_wrong_to_scheduled_correct,False,,True,True,21,20,6,0.0824996829032898,0.15,0.2324996829032898,41,200,41,,146,"To determine how much Alexis paid for the shoes, we need to follow these steps:
+5,small_wrong_to_scheduled_correct,False,True,True,True,8,7,,0.27849245071411133,0.020000000000000004,0.29849245071411135,35,4,35,35,254,"To determine the total number of flowers in Mark's garden, we need to calculate the number of each color of flower and then sum them up.
 
-1. **Calculate the total amount spent on known items:**
-   - Button-up shirt: $30
-   - Suit pants: $46
-   - Suit coat: $38
-   - Socks: $11
-   - Belt: $18
+1. **Yellow Flowers:**
+   Mark has 10 yellow flowers.
 
-   Adding these amounts together:
+2. **Purple Flowers:**
+   There are 80% more purple flowers than yellow flowers. To find the number of purple flowers, we calculate 80% of the yellow flowers and add it to the number of yellow flowers.\[
+   \text{Number of purple flowers} = 10 + (0.80 \times 10) = 10 + 8 = 18
+   \]
+
+3. **Green Flowers:**
+   The number of green flowers is 25% of the combined number of yellow and purple flowers.
+   
+   First, we find the combined number of yellow and purple flowers:
+   
    \[
-   30 + 46 + 38 + 11 + 18 = 143
+   \text{Combined number of yellow and purple flowers} = 10 + 18 = 28
    \]
-
-2. **Determine the total budget:**
-   Alexis had a budget of $200.
-
-3. **Calculate the remaining budget after all purchases:**
-   Alexis has $16 left from her budget.
-
-4. **Calculate the total amount spent on all items:**
-   The total amount spent is the sum of the known items and the shoes:
+   
+   Then, we calculate 25% of this combined number:
+   
    \[
-   143 + \text{Shoes}
+   \text{Number of green flowers} = 0.25 \times 28 = 7
    \]
 
-5. **Set up the equation to find the cost of the shoes:**
-   The total amount spent should equal the budget minus the remaining amount:\[
-   143 + \text{Shoes} = 200 - 16
-   \]
-   Simplifying the right side:
+4. **Total Number of Flowers:**
+   Finally, we sum the number of yellow, purple, and green flowers to get the total number of flowers in the garden:
+   
    \[
-   143 + \text{Shoes} = 184
+   \text{Total number of flowers} = 10 + 18 + 7 = 35
    \]
 
-6. **Solve for the cost of the shoes:**
-   Subtract 143 from both sides of the equation:
+Thus, the total number of flowers in Mark's garden is \(\boxed{35}\).","Let's break down the problem step by step to find out how many flowers Mark has in his garden.
+
+1. **Identify the number of yellow flowers:**
+   - Mark has 10 yellow flowers.
+
+2. **Calculate the number of purple flowers:**
+   - There are 80% more purple flowers than yellow flowers.
+   - To find 80% of 10:
+     \[
+     0.80 \times 10 = 8
+     \]
+   - Therefore, the number of purple flowers is:
+     \[
+     10 + 8 = 18
+     \]
+
+3. **Determine the total number of yellow and purple flowers:**
+   - The total number of yellow and purple flowers is:
+     \[
+     10 + 18 = 28
+     \]
+
+4. **Calculate the number of green flowers:**
+   - There are only 25% as many green flowers as there are yellow and purple flowers.
+   - To find 25% of 28:
+     \[
+     0.25 \times 28 = 7
+     \]
+
+5. **Find the total number of flowers in the garden:**
+   - Add the number of yellow, purple, and green flowers together:
+     \[
+     10 + 18 + 7 = 35
+     \]
+
+Therefore, Mark has a total of 35 flowers in his garden.","Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?"
+38,small_wrong_to_scheduled_correct,False,True,True,True,9,8,10,0.18143725395202637,0.028125,0.20956225395202638,9,6,9,9,256,"To determine how many ounces of tea Artemis needs for the party, we can follow these steps:
+
+1. **Determine the ratio of tea to water in the original cup:**
+   - The original cup is 8 ounces and uses 1 ounce of tea.
+   - Therefore, the ratio of tea to water is \( \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} \).
+
+2. **Calculate the total amount of tea needed for the party:**
+   - The party has 12 people, and each person wants a 6-ounce cup of tea.- First, find the total volume of tea required:
+     \[
+     12 \text{ people} \times 6 \text{ ounces per person} = 72 \text{ ounces of tea}
+     \]
+
+3. **Apply the ratio to the total volume:**
+   - Using the ratio from the original cup (1 ounce of tea per 8 ounces of water), we can set up a proportion to find out how much tea is needed for 72 ounces of water.
+   - Let \( x \) be the amount of tea needed for 72 ounces of water.
+   - The proportion is:
+     \[
+     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{72 \text{ ounces of water}}
+     \]
+
+4. **Solve for \( x \):**
+   - Cross-multiply to solve for \( x \):
+     \[
+     1 \times 72 = 8 \times x
+     \]
+     \[
+     72 = 8x
+     \]
+     \[
+     x = \frac{72}{8} = 9","To determine how many ounces of tea Artemis needs, we can follow these steps:
+
+1. **Understand the given ratio:**
+   - Her mom drinks an 8-ounce cup of tea using 1 ounce of tea.
+   - This means the ratio of tea to water is \( \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} \).
+
+2. **Calculate the amount of tea needed per person at the party:**
+   - Each person at the party wants a 6-ounce cup of tea.
+   - Using the same ratio, we need to find out how much tea is required for a 6-ounce cup.
+
+3. **Set up the proportion based on the ratio:**
+   - For 8 ounces of water, 1 ounce of tea is used.
+   - For 6 ounces of water, let \( x \) be the amount of tea needed.
+   - We set up the proportion: 
+     \[
+     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{6 \text{ ounces of water}}
+     \]
+
+4. **Solve for \( x \):**
+   - Cross-multiply to solve for \( x \):
+     \[
+     1 \times 6 = 8 \times x
+     \]
+     \[
+     6 = 8x
+     \]
+     \[
+     x = \frac{6}{8} = \frac{3}{4} \text{ ounces of tea}
+     \]
+
+5. **Calculate the total amount of tea needed for all 12 people:**
+   - Each person needs \( \frac{3}{4} \) ounces of tea.
+   - There are 12 people:
+     \[
+     12 \times \frac{3}{4} = 12 \times 0.75 = 9 \text{ ounces of tea}
+     \]
+
+Therefore, Artemis needs \(\boxed{9}\) ounces of tea for the party.",Artemis is making tea for a party. She knows her mom drinks an 8-ounce cup of tea and uses one ounce of tea. She will use this same ratio for the party. The party has 12 people there and each of them wants a 6-ounce cup of tea. How many ounces of tea does she need?
+64,small_wrong_to_scheduled_correct,False,True,True,True,15,14,,0.32090216875076294,0.03409090909090909,0.354993077841672,840,30,840,840,256,"To determine James's weekly earnings, we need to calculate his earnings from both his main job and his second job separately, and then sum them up.
+
+First, let's calculate his earnings from his main job:
+- James earns $20 per hour at his main job.
+- He works 30 hours at his main job.
+
+\[
+\text{Earnings from main job} = 20 \, \text{dollars/hour} \times 30 \, \text{hours} = 600 \, \text{dollars}
+\]
+
+Next, let's calculate his earnings from his second job:
+- James earns 20% less at his second job compared to his main job.
+- His main job pays $20 per hour, so his second job pays:
+
+\[
+20 \,\text{dollars/hour} \times (1 - 0.20) = 20 \, \text{dollars/hour} \times 0.80 = 16 \, \text{dollars/hour}
+\]
+
+- He works half as many hours at his second job as he does at his main job. Since he works 30 hours at his main job, he works:
+
+\[
+\frac{30 \, \text{hours}}{2} = 15 \, \text{hours}
+\]
+
+\[
+\text{Earnings from second job} = 16 \, \text{dollars/hour} \times 15 \, \text{hours} = 240 \, \text{dollars}
+\]
+
+Finally, we sum the earnings from both jobs to find his total weekly earnings:
+
+\[
+\text{Total weekly earnings} = 600 \, \text{dollars} + 240 \, \text{dollars} = 840 \, \text{dollars}
+\]
+
+Thus, James earns \(\boxed{840}\) dollars per week.","To determine how much James earns per week, we need to calculate his earnings from both his main job and his second job separately, then sum them up.
+
+### Step 1: Calculate hourly wage for the second job
+James earns 20% less at his second job compared to his main job. 
+
+- Hourly wage at the main job: $20
+- 20% of $20 = \( 0.20 \times 20 = 4 \)
+
+So, his hourly wage at the second job is:
+\[ 20 - 4 = 16 \]
+
+### Step 2: Calculate hours worked at each job
+- Hours worked at the main job: 30 hours
+- Hours worked at the second job: half of 30 hours = \( \frac{30}{2} = 15 \) hours
+
+### Step 3: Calculate weekly earnings from the main job
+\[ \text{Earnings from main job} = \text{Hourly wage} \times \text{Hours worked} \]
+\[ \text{Earnings from main job} = 20 \times 30 = 600 \]
+
+### Step 4: Calculate weekly earnings from the second job
+\[ \text{Earnings from second job} = \text{Hourly wage} \times \text{Hours worked} \]
+\[ \text{Earnings from second job} = 16 \times 15 = 240 \]
+
+### Step 5: Calculate total weekly earnings
+\[ \text{Total weekly earnings} = \text{Earnings from main job} + \text{Earnings from second job} \]
+\[ \text{Total weekly earnings} = 600 + 240 = 840 \]
+
+Thus, James earns a total of \( \boxed{840} \) dollars per week.",James earns $20 an hour while working at his main job.  He earns 20% less while working his second job.  He works 30 hours at his main job and half that much at his second job.  How much does he earn per week?
+89,small_wrong_to_scheduled_correct,False,True,True,True,9,8,9,0.32557380199432373,0.03,0.35557380199432376,216,3,216,216,197,"To determine how many books Krystian borrows in a week, we need to break down the problem into smaller parts and calculate step by step.
+
+1. **Calculate the number of books borrowed on a regular day (Monday to Thursday):**
+   Krystian borrows an average of 40 books every day from Monday to Thursday.
    \[
-   \text{Shoes} = 184 - 143
+   \text{Books borrowed from Monday to Thursday} = 40 \text{ books/day} \times 4 \text{ days} = 160 \text{ books}
    \]
+
+2. **Calculate the number of books borrowed on Friday:**
+   On Friday, Krystian borrows 40% more books than the daily average.First, we find 40% of 40 books:
    \[
-   \text{Shoes} = 41
+   40\% \text{ of } 40 = 0.40 \times 40 = 16 \text{ books}
+   \]
+   Adding this to the daily average:
+   \[
+   \text{Books borrowed on Friday} = 40 + 16 = 56 \text{ books}
    \]
 
-Therefore, Alexis paid \(\boxed{41}\) dollars for the shoes.",,"Alexis is applying for a new job and bought a new set of business clothes to wear to the interview. She went to a department store with a budget of $200 and spent $30 on a button-up shirt, $46 on suit pants, $38 on a suit coat, $11 on socks, and $18 on a belt. She also purchased a pair of shoes, but lost the receipt for them. She has $16 left from her budget. How much did Alexis pay for the shoes?"
-67,small_wrong_to_scheduled_correct,False,,True,True,15,14,,0.07916820049285889,0.1323529411764706,0.21152114166932948,6,1,6,,256,"To find the average of their averages for the final three days, we need to calculate the total distance each has run and then determine the average distance they need to run per day over the final three days.
+3. **Calculate the total number of books borrowed in a week:**
+   Add the books borrowed from Monday to Thursday to the books borrowed on Friday:
+   \[
+   \text{Total books borrowed in a week} = 160 \text{ books} + 56 \text{ books} = 216 \text{ books}
+   \]
 
-First, let's calculate the total distance Jesse has run in the first four days:
+Thus, the total number of books Krystian borrows in a week is \(\boxed{216}\).","To solve this problem, we need to calculate the total number of books Krystian borrows in a week, considering that the library is open from Monday to Friday and that on Fridays, he borrows 40% more books than his daily average.
 
-- On the first three days, Jesse averages \(\frac{2}{3}\) of a mile per day. So, for the first three days, she runs:
+Let's break it down step-by-step:
+
+1. **Daily Average Borrowing:**
+   - Krystian borrows an average of 40 books per day from Monday to Thursday.
+   
+2. **Friday Borrowing:**
+   - On Fridays, he borrows 40% more books than the daily average.
+   - To find out how many books he borrows on Friday, we calculate:
+     \[
+     \text{Books borrowed on Friday} = 40 + (0.40 \times 40)
+     \]
+     \[
+     \text{Books borrowed on Friday} = 40 + 16 = 56
+     \]
+
+3. **Total Books Borrowed from Monday to Thursday:**
+   - From Monday to Thursday, there are 4 days.
+   - Each day, he borrows 40 books.
+   - Therefore, the total for these four days is:
+     \[
+     4 \times 40 = 160
+     \]
+
+4. **Total Books Borrowed on Friday:**
+   - As calculated earlier, he borrows 56 books on Friday.
+
+5. **Total Books Borrowed in a Week:**
+   - Adding the total from Monday to Thursday and the total for Friday:
+     \[
+     \text{Total books borrowed in a week} = 160 + 56 = 216
+     \]
+
+Therefore, Krystian borrows a total of 216 books in a week.","Krystian works in the library. He borrows an average of 40 books every day. Every Friday, his number of borrowed books is about 40% higher than the daily average. How many books does he borrow in a week if the library is open from Monday to Friday?"
+92,small_wrong_to_scheduled_correct,False,True,True,True,10,9,,0.2128661870956421,0.02631578947368421,0.2391819765693263,1825,1095,1825,1825,249,"To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+
+1. Calculate the total amount of money each person will earn in a year.
+2. Determine how much each person will save, which is half of their annual earnings.
+3. Add their savings together to find the total amount saved for the trip.
+
+First, let's calculate the annual earnings for each person:
+
+- Sally makes $6 per day. There are 365 days in a year.
   \[
-  3 \times \frac{2}{3} = 2 \text{ miles}
+  \text{Sally's annual earnings} = 6 \times 365 = 2190 \text{ dollars}
   \]
 
-- On the fourth day, Jesse runs 10 miles.
-
-So, the total distance Jesse has run in the first four days is:
-\[
-2 + 10 = 12 \text{ miles}
-\]
-
-Next, we need to find out how many miles Jesse has left to run to complete the 30-mile goal:
-\[
-30 - 12 = 18 \text{ miles}
-\]
-
-Jesse has 3 days left to run these 18 miles.Therefore, the average distance Jesse needs to run per day over the final three days is:
-\[
-\frac{18}{3} = 6 \text{ miles/day}
-\]
-
-Now, let's calculate the total distance Mia has run in the first four days:
-
-- Mia averages 3 miles per day over the first four days. So, for the first four days, she runs:
+- Bob makes $4 per day. There are 365 days in a year.
   \[
-  4 \times 3 = 12 \text{ miles}
+  \text{Bob's annual earnings} = 4 \times 365 = 1460 \text{ dollars}
   \]
 
-Mia also has 3 days left to run the remaining distance to complete the 30-mile goal:
+Next, we calculate how much each person will save, which is half of their annual earnings:
+
+- Sally saves half of her annual earnings:
+  \[
+  \text{Sally's savings} = \frac{2190}{2} = 1095 \text{ dollars}
+  \]
+
+- Bob saves half of his annual earnings:
+  \[
+  \text{Bob's savings} = \frac{1460}{2} = 730 \text{ dollars}
+  \]
+
+Finally, we add their savings together to find the total amount saved for the trip:
+
 \[
-30 - 12 = 18 \text{ miles}
+\text{Total savings} = 1095 + 730 = 1825 \text{ dollars}
 \]
 
-The average distance Mia needs to run per day over the final three days is:
-\[
-\frac{18}{3} = 6 \text{ miles/day}
-\]
+Therefore, Sally and Bob will have saved a total of \( \boxed{1825} \) dollars for their trip after a year.","To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
 
-Both Jesse and Mia need to run an average of 6 miles per day over the final three days. The average of their averages is:
-\[
-\frac{6 + 6}{2} = 6 \text{ miles/day}
-\]
+1. **Calculate daily earnings:**
+   - Sally earns $6 per day.
+   - Bob earns $4 per day.
 
-Thus, the average of their averages that they have to run over the final three days is:
-\[
-\boxed{",,Jesse and Mia are competing in a week long race. They have one week to run 30 miles. On the first three days Jesse averages (2/3) of a mile. On day four she runs 10 miles. Mia averages 3 miles a day over the first 4 days. What is the average of their average that they have to run over the final three days?
-107,small_wrong_to_scheduled_correct,False,,True,True,19,18,20,0.07277536392211914,0.12954545454545455,0.2023208184675737,97,107,97,,145,"To calculate the total number of cars that travel down Happy Street from Monday through Sunday, we need to determine the number of cars for each day and then sum them up.
+2. **Determine the amount each saves per day:**
+   - Since they both save half of what they earn:
+     - Sally saves \( \frac{6}{2} = 3 \) dollars per day.
+     - Bob saves \( \frac{4}{2} = 2 \) dollars per day.
 
-1. **Tuesday:**
-   - Number of cars: 25
+3. **Calculate total savings per day combined:**
+   - Combined, they save \( 3 + 2 = 5 \) dollars per day.
 
-2. **Monday:**
-   - Number of cars: 20% less than Tuesday
-   - Calculation: \( 25 - (25 \times 0.20) = 25 - 5 = 20 \)
+4. **Determine the number of days in a year:**
+   - There are 365 days in a year (assuming it's not a leap year).
 
-3. **Wednesday:**
-   - Number of cars: 2 more than Monday
-   - Calculation: \( 20 + 2 = 22 \)
+5. **Calculate total savings over the year:**
+   - Total savings = Savings per day * Number of days in a year
+   - Total savings = \( 5 \times 365 = 1825 \) dollars.
 
-4. **Thursday:**
-   - Number of cars: 10
-
-5. **Friday:**
-   - Number of cars: 10
-
-6. **Saturday:**
-   - Number of cars: 5
-
-7. **Sunday:**
-   - Number of cars: 5Now, let's sum up the number of cars for each day:
-
-\[
-20 \text{ (Monday)} + 25 \text{ (Tuesday)} + 22 \text{ (Wednesday)} + 10 \text{ (Thursday)} + 10 \text{ (Friday)} + 5 \text{ (Saturday)} + 5 \text{ (Sunday)}
-\]
-
-Adding these together:
-
-\[
-20 + 25 + 22 + 10 + 10 + 5 + 5 = 97
-\]
-
-Therefore, the total number of cars that travel down Happy Street from Monday through Sunday is **97**.",,"There is very little car traffic on Happy Street. During the week, most cars pass it on Tuesday - 25. On Monday, 20% less than on Tuesday, and on Wednesday, 2 more cars than on Monday. On Thursday and Friday, it is about 10 cars each day. On the weekend, traffic drops to 5 cars per day. How many cars travel down Happy Street from Monday through Sunday?"
-116,small_wrong_to_scheduled_correct,False,,True,True,10,9,12,0.9525418877601624,0.09375,1.0462918877601624,21,20,21,,256,"Let's break down the problem step by step:
-
-1. **Thank you cards**: Valerie has 3 thank you cards.
-2. **Bills**: She has 2 bills (water and electric).
-3. **Rebates**: She wants to send 3 more rebates than bills. Since she has 2 bills, she will send 3 + 2 = 5 rebates.
-4. **Job applications**: She has twice as many job applications as rebates. Since she has 5 rebates, she will have 2 * 5 = 10 job applications.
-
-Now, let's calculate the total number of stamps needed:- Each thank you card requires 1 stamp: \(3 \text{ cards} \times 1 \text{ stamp/card} = 3 \text{ stamps}\)
-- The water bill requires 1 stamp: \(1 \text{ bill} \times 1 \text{ stamp/bill} = 1 \text{ stamp}\)
-- The electric bill requires 2 stamps: \(1 \text{ bill} \times 2 \text{ stamps/bill} = 2 \text{ stamps}\)
-- Each rebate requires 1 stamp: \(5 \text{ rebates} \times 1 \text{ stamp/rebate} = 5 \text{ stamps}\)
-- Each job application requires 1 stamp: \(10 \text{ applications} \times 1 \text{ stamp/application} = 10 \text{ stamps}\)
-
-Adding all these together:
-\[ 3 \text{ (thank you cards)} + 1 \text{ (water bill)} + 2 \text{ (electric bill)} + 5 \text{ (rebates)} + 10 \text{ (job applications)} = 21 \text{ stamps} \]
-
-So, Valerie needs a total",,"Valerie needs to put stamps on the envelopes she is about to mail. She has thank you cards for each of her grandmother, uncle and aunt for the birthday presents they sent. She also has to pay the water bill and the electric bill separately. She wants to send three more mail-in rebates than she does bills and she has twice as many job applications as rebates to mail. How many stamps does she need if everything needs 1 stamp except the electric bill, which needs 2?"
-143,small_wrong_to_scheduled_correct,False,,True,True,10,9,,0.2804427146911621,0.07142857142857142,0.3518712861197335,45,0.75,45,,193,"To determine how many goldfish are below the surface, we can follow these steps:
-
-1. **Understand the given information:**
-   - 25% of the goldfish are at the surface.
-   - Toby counts 15 goldfish at the surface.
-   - The rest of the goldfish are below the surface.
-
-2. **Calculate the total number of goldfish:**
-   Since 25% of the goldfish are at the surface and Toby counts 15 goldfish at the surface, we can set up the following equation:
-   \[
-   0.25 \times \text{Total number of goldfish} = 15
-   \]
-   To find the total number of goldfish, we solve for the total:
-   \[
-   \text{Total number of goldfish} = \frac{15}{0.25}
-   \]
-   \[
-   \text{Total number of goldfish} = 60
-   \]
-
-3. **Determine the number of goldfish below the surface:**
-   We know that 75% of the goldfish are below the surface (since 100% - 25% = 75%). Therefore, we calculate 75% of the total number of goldfish:
-   \[
-   0.75 \times 60 = 45
-   \]
-
-So, the number of goldfish below the surface is \( \boxed{45} \).",,"Toby is counting goldfish in the local pond. He knows that only 25% of goldfish are at the surface and the rest are too deep below the surface to be able to see. If he counts 15 goldfish, how many are below the surface?"
-194,small_wrong_to_scheduled_correct,False,,True,True,11,10,,0.9251712560653687,0.07173913043478261,0.9969103865001513,322,32,322,,152,"To find the total cost of the gifts after the rebate, we need to follow these steps:
-
-1. Calculate the total cost of the polo shirts.
-2. Calculate the total cost of the necklaces.
-3. Add the cost of the computer game.
-4. Sum up the total cost of all the gifts.
-5. Subtract the rebate from the total cost.
-
-Let's go through each step:
-
-1. The cost of 3 polo shirts at $26 each:
-   \[
-   3 \times 26 = 78
-   \]
-
-2.The cost of 2 necklaces at $83 each:
-   \[
-   2 \times 83 = 166
-   \]
-
-3. The cost of 1 computer game at $90:
-   \[
-   90
-   \]
-
-4. Sum up the total cost of all the gifts:
-   \[
-   78 + 166 + 90 = 334
-   \]
-
-5. Subtract the $12 rebate from the total cost:
-   \[
-   334 - 12 = 322
-   \]
-
-Therefore, the total cost of the gifts after the rebate is \( \boxed{322} \).",,"Mr. Grey is purchasing gifts for his family. So far he has purchased 3 polo shirts for $26 each; 2 necklaces for $83 each; and 1 computer game for $90. Since Mr. Grey purchased all those using his credit card, he received a $12 rebate. What is the total cost of the gifts after the rebate?"
-199,small_wrong_to_scheduled_correct,False,,True,True,3,2,3,0.9501243233680725,0.023684210526315787,0.9738085338943883,150,15,150,,256,"To determine how much more Gary is spending per month to pay off the loan in 2 years instead of 5, we need to follow these steps:
-
-1. **Calculate the monthly payment for 5 years:**- Total loan amount: $6,000
-   - Duration: 5 years (which is 60 months)
-   - Monthly payment = Total loan amount / Number of months
-   \[
-   \text{Monthly payment for 5 years} = \frac{6000}{60} = 100
-   \]
-
-2. **Calculate the monthly payment for 2 years:**  
-   - Total loan amount: $6,000
-   - Duration: 2 years (which is 24 months)
-   - Monthly payment = Total loan amount / Number of months
-   \[
-   \text{Monthly payment for 2 years} = \frac{6000}{24} = 250
-   \]
-
-3. **Determine the difference in monthly payments:**  
-   - Monthly payment for 2 years: $250
-   - Monthly payment for 5 years: $100
-   - Difference in monthly payments:
-   \[
-   \text{Difference} = 250 - 100 = 150
-   \]
-
-Therefore, Gary is spending $150 more per month to pay off",,"Gary bought his first used car for $6,000.  Gary borrowed the money from his dad who said he could pay him back the full amount over 5 years.  Gary decided he would pay his dad back the full amount in 2 years.  How much more is Gary spending per month to pay the loan off in 2 years instead of 5?"
-211,small_wrong_to_scheduled_correct,False,,True,True,8,7,4,0.19662708044052124,0.06,0.25662708044052124,7200,300,7200,,256,"To determine how much more Jessica pays for her expenses over the whole year compared to last year, we need to calculate her total expenses for both years and then find the difference.
-
-### Last Year's Expenses:
-1. **Rent**: $1000 per month
-2. **Food**: $200 per month
-3. **Car Insurance**: $100 per month
-
-Total monthly expenses last year:
-\[ 1000 + 200 + 100 = 1300 \]dollars
-
-Total annual expenses last year:
-\[ 1300 \times 12 = 15600 \] dollars
-
-### This Year's Expenses:
-1. **Rent**: Increased by 30%
-   \[ 1000 \times 1.30 = 1300 \] dollars per month
-
-2. **Food**: Increased by 50%
-   \[ 200 \times 1.50 = 300 \] dollars per month
-
-3. **Car Insurance**: Tripled
-   \[ 100 \times 3 = 300 \] dollars per month
-
-Total monthly expenses this year:
-\[ 1300 + 300 + 300 = 1900 \] dollars
-
-Total annual expenses this year:
-\[ 1900 \times 12 = 22800 \] dollars
-
-### Difference in Annual Expenses:
-\[ 22800 - 15600 = 7200 \] dollars
-
-Thus, Jessica pays \(\boxed{7200}\) dollars more for her expenses over the whole year compared to",,"Last year Jessica paid $1000 for rent, $200 for food, and $100 for car insurance each month. This year her rent goes up by 30%, food costs increase by 50%, and the cost of her car insurance triples because she was at fault in an accident. How much more does Jessica pay for her expenses over the whole year compared to last year?"
-234,small_wrong_to_scheduled_correct,False,,True,True,7,6,3,0.9917727708816528,0.03888888888888888,1.0306616597705418,8,0.05,8,,256,"To determine how many nickels Mark gets in his change, we need to follow these steps:
-
-1. **Calculate the total cost of the items Mark buys:**
-   - Bread: $4.20
-   - Cheese: $2.05
-   - Total cost: $4.20 + $2.05 = $6.25
-
-2. **Determine the amount of money Mark gives to the cashier:**
-   - Amount given: $7.00
-
-3. **Calculate the change Mark should receive:**
-   - Change: $7.00 - $6.25 = $0.75
-
-4. **Identify the denominations available for change:**
-   - The cashier has 1 quarter ($0.25), 1 dime ($0.10), and a bunch of nickels ($0.05 each).
-
-5. **Use the largest denominations first to minimize the number of coins:**
-   - Use 1 quarter: $0.25
-   - Remaining change: $0.75 - $0.25 = $0.50
-   - Use 1 dime: $0.10
-   - Remaining change: $0.50 - $0.10 = $0.40
-
-6. **Calculate the remaining change using nickels:**
-   - Each nickel is worth $0.05.
-   - Number of nickels needed: $0.40 / $0.05 = 8 nickels",,"Mark buys a loaf of bread for $4.20 and some cheese for $2.05. He gives the cashier $7.00. If the cashier only has 1 quarter and 1 dime in his till, plus a bunch of nickels, how many nickels does Mark get in his change?"
-242,small_wrong_to_scheduled_correct,False,,True,True,11,10,,0.999999463558197,0.09166666666666667,1.0916661302248638,36,30,36,,174,"To determine how many cookies Ann keeps, we need to follow these steps:
-
-1. Calculate the total number of each type of cookie Ann initially baked.
-2. Subtract the number of each type of cookie Ann gave away.
-3. Sum the remaining cookies to find the total number of cookies Ann keeps.
-
-First, let's calculate the initial total number of each type of cookie:
-
-- Oatmeal raisin cookies: 3 dozen = 3 * 12 = 36 cookies
-- Sugar cookies: 2 dozen = 2 * 12 = 24 cookies
-- Chocolate chip cookies: 4 dozen = 4 * 12 = 48 cookies
-
-Next, we subtract the number of each type of cookie Ann gave away:
-
-- Oatmeal raisin cookies given away: 2 dozen = 2 * 12 = 24 cookiesRemaining oatmeal raisin cookies: 36 - 24 = 12 cookies
-
-- Sugar cookies given away: 1.5 dozen = 1.5 * 12 = 18 cookies
-  Remaining sugar cookies: 24 - 18 = 6 cookies
-
-- Chocolate chip cookies given away: 2.5 dozen = 2.5 * 12 = 30 cookies
-  Remaining chocolate chip cookies: 48 - 30 = 18 cookies
-
-Finally, we sum the remaining cookies:
-
-Total cookies kept = 12 (oatmeal raisin) + 6 (sugar) + 18 (chocolate chip) = 36 cookies
-
-So, the total number of cookies Ann keeps is \(\boxed{36}\).",,"Ann is baking cookies. She bakes three dozen oatmeal raisin cookies, two dozen sugar cookies, and four dozen chocolate chip cookies. Ann gives away two dozen oatmeal raisin cookies, 1.5 dozen sugar cookies, and 2.5 dozen chocolate chip cookies. How many total cookies does she keep?"
-256,small_wrong_to_scheduled_correct,False,,True,True,5,4,,0.8365083932876587,0.05357142857142857,0.8900798218590873,108,1,108,,256,"To determine the actual distance between Pence and Hillcrest, we need to use the scale provided on the map. The scale tells us that 1/4 inch on the map represents 8 miles in reality. We can use this information to find out how many miles correspond to 3 3/8 inches on the map.
-
-First, let's convert 3 3/8 inches to an improper fraction:\[ 3 \frac{3}{8} = \frac{27}{8} \text{ inches} \]
-
-Next, we know that:
-\[ \frac{1}{4} \text{ inch} = 8 \text{ miles} \]
-
-We need to find out how many 1/4 inch segments fit into 27/8 inches. To do this, we divide 27/8 by 1/4:
-\[ \frac{27}{8} \div \frac{1}{4} = \frac{27}{8} \times \frac{4}{1} = \frac{27 \times 4}{8} = \frac{108}{8} = 13.5 \]
-
-This means there are 13.5 segments of 1/4 inch in 27/8 inches. Since each 1/4 inch segment represents 8 miles, we multiply 13.5 by 8 to get the total distance:
-\[ 13.5 \times 8 = 108 \text{ miles} \]
-
-Therefore, the actual distance between Pence and Hillcrest is:
-\[ \boxed{108",,"On a road map, 1/4 inch represents 8 miles of actual road distance. The towns of Pence and Hillcrest are represented by points 3 3/8 inches apart on the map. What is the actual distance, in miles, between the towns?"
-271,small_wrong_to_scheduled_correct,False,,True,True,22,21,,0.38778460025787354,0.15,0.5377846002578736,250,150,250,,63,"To calculate the total amount of money Nadia used to buy the flowers, we need to follow these steps:
-
-1. Calculate the number of lilies Nadia bought.
-2. Calculate the cost of the roses.
-3. Calculate the cost of the lilies.
-4. Add the costs together to get the total amount.
-
-Step 1: Calculate the number of lilies Nadia bought.
-Nadia bought 3/4 times as many lilies as roses. Since she bought 20 roses, we calculate the number of lilies as follows:
-Number of lilies = 3/4 * 20 = 15
-
-Step 2: Calculate the cost of the roses.
-Roses cost $5 each, and Nadia bought 20 roses. So, the cost of the roses is:
-Cost of roses = 20 * $5 = $100
-
-Step 3: Calculate the cost of the lilies.
-Lilies cost twice as much as roses, so each lily costs $5 * 2 = $10. Nadia bought 15 lilies, so the cost of the lilies is:
-Cost of lilies = 15 * $10 = $150Step 4: Add the costs together to get the total amount.
-Total cost = Cost of roses + Cost of lilies = $100 + $150 = $250
-
-Therefore, the total amount of money Nadia used to buy the flowers is $250.",,"Nadia was sent to the flower shop to buy 20 roses and 3/4 times as many Lillies as roses. If roses cost $5 each and lilies cost twice as much each, calculate the total amount of money Nadia used to buy the flowers."
-287,small_wrong_to_scheduled_correct,False,,True,True,10,9,10,0.9877570867538452,0.07894736842105263,1.0667044551748979,18,4,18,,237,"To determine how much Bran still needs to pay for his tuition fee, we need to follow these steps:
-
-1. Calculate the amount covered by the scholarship.
-2. Determine the remaining tuition fee after the scholarship.
-3. Calculate the total amount Bran earns from his part-time job over 3 months.
-4. Determine the total amount Bran needs to pay.
-5. Find out how much more Bran needs to pay after accounting for his earnings.
-
-Let's go through each step in detail:
-
-1. **Calculate the amount covered by the scholarship:**
-   The scholarship covers 30% of the tuition fee.The tuition fee is $90.
-   \[
-   \text{Amount covered by scholarship} = 0.30 \times 90 = 27
-   \]
-
-2. **Determine the remaining tuition fee after the scholarship:**
-   Subtract the amount covered by the scholarship from the total tuition fee.
-   \[
-   \text{Remaining tuition fee} = 90 - 27 = 63
-   \]
-
-3. **Calculate the total amount Bran earns from his part-time job over 3 months:**
-   Bran earns $15 per month from his part-time job.
-   \[
-   \text{Total earnings from part-time job} = 15 \times 3 = 45
-   \]
-
-4. **Determine the total amount Bran needs to pay:**
-   Subtract the total earnings from his part-time job from the remaining tuition fee.
-   \[
-   \text{Amount Bran still needs to pay} = 63 - 45 = 18
-   \]
-
-Therefore, the amount Bran still needs to pay is \(\boxed{18}\).",,"Bran's tuition fee is $90. He does a part-time job that pays him $15 per month and he has a scholarship that takes care of 30% of his tuition fee. If he needs to pay his tuition fee within 3 months, how much does Bran still need to pay?"
+Therefore, Sally and Bob will have saved a total of \( \boxed{1825} \) dollars for their trip after a year.","Sally and Bob have made plans to go on a trip at the end of the year. They both decide to work as babysitters and save half of what they've earned for their trip. If Sally makes $6 per day and Bob makes $4 per day, how much money will they both have saved for their trip after a year?"

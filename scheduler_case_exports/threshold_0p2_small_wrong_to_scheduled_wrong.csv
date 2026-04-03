@@ -1,163 +1,238 @@
 ﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
-22,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,7,10,10,,,,,"Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
-30,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,6,3,3,,,,,"Ann, Bill, Cate, and Dale each buy personal pan pizzas cut into 4 pieces. If Bill and Dale eat 50% of their pizzas and Ann and Cate eat 75% of the pizzas, how many pizza pieces are left uneaten?"
-72,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,54,4,4,,,,,"Nancy is filling an aquarium for her fish. She fills it halfway and goes to answer the door. While she's gone, her cat knocks the aquarium over and spills half the water in it. Then Nancy comes back and triples the amount of water in the aquarium. If the aquarium is 4 feet long, 6 feet wide, and 3 feet high, how many cubic feet of water are in the aquarium?"
-108,small_wrong_to_scheduled_wrong,False,,False,True,6,5,6,0.9999978542327881,0.04285714285714285,1.042854997089931,41,4,574,,256,"To determine how much Henry spent in total on the pills, we need to break down the problem into smaller steps.
+9,small_wrong_to_scheduled_wrong,False,False,False,False,,,5,,,,990,3,3,5,,,"To determine how much money Tina makes, we need to break down her work schedule and calculate both her regular pay and her overtime pay.
 
-1. **Calculate the number of each type of pill:**
-   - Henry takes 9 pills a day for 14 days.
-   - Total pills = 9 pills/day * 14 days = 126 pills.
+### Step-by-Step Calculation:
 
-2. **Determine the cost of the 4 pills:**- Each of these 4 pills costs $1.50.
-   - Cost per set of 4 pills = 4 pills * $1.50/pill = $6.00.
+1. **Regular Pay Calculation:**
+   - Tina's regular hourly wage is $18.00.
+   - She works 8 hours at the regular rate each day.
+   - For 5 days, her total regular hours worked = \( 8 \text{ hours/day} \times 5 \text{ days} = 40 \text{ hours} \).
+   - Her total regular pay = \( 40 \text{ hours} \times \$18.00/\text{hour} = \$720.00 \).
 
-3. **Determine the cost of the remaining pills:**
-   - The remaining pills are 9 - 4 = 5 pills.
-   - Each of these 5 pills costs $5.50 more than the $1.50 pills.
-   - Cost per one of these 5 pills = $1.50 + $5.50 = $7.00.
-   - Cost per set of 5 pills = 5 pills * $7.00/pill = $35.00.
+2. **Overtime Pay Calculation:**
+   - Overtime is paid at 1.5 times the regular hourly wage.
+   - Her overtime hourly wage = \( 18.00 \times 1.5 = \$27.00 \).
+   - She works 2 hours of overtime each day (since she works 10 hours total and 8 are regular).
+   - For 5 days, her total overtime hours worked = \( 2 \text{ hours/day} \times 5 \text{ days} = 10 \text{ hours} \).
+   - Her total overtime pay = \( 10 \text{ hours} \times \$27.00/\text{hour} = \$270.00 \).
 
-4. **Calculate the total cost for one day:**
-   - Total cost for one day = Cost of 4 pills + Cost of 5 pills
-   - Total cost for one day = $6.00 + $35.00 = $41.00.
+3. **Total Pay Calculation:**
+   - Total pay = Regular pay + Overtime pay.
+   - Total pay = \( \$720.00 + \$270.00 = \$990.00 \).
 
-5. **Calculate the total cost for 14 days:**
-   - Total cost for 14 days = $41.00/day * 14 days = $574",,"Henry took 9 pills a day for 14 days. Of these 9 pills, 4 pills cost $1.50 each, and the other pills each cost $5.50 more. How much did he spend in total on the pills?"
-121,small_wrong_to_scheduled_wrong,False,,False,True,13,12,3,0.7139707803726196,0.121875,0.8358457803726196,6,4,4,,256,"To determine how long it took Stella and Twinkle to fill the truck, we need to follow these steps:
+Therefore, Tina makes a total of **$990.00** for working 10 hours every day for 5 days.","Tina makes $18.00 an hour.  If she works more than 8 hours per shift, she is eligible for overtime, which is paid by your hourly wage + 1/2 your hourly wage.  If she works 10 hours every day for 5 days, how much money does she make?"
+17,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,,0.23361527919769287,0.007894736842105263,0.24151001603979813,43,3,24,43,256,"To calculate the total number of hard hats remaining in the truck, we need to follow these steps:
 
-1. **Calculate the number of blocks filled by Stella and Twinkle in the first 4 hours:**
-   - Stella and Twinkle together fill at a rate of 250 blocks per hour.
-   - In 4 hours, they would fill \( 250 \text{ blocks/hour} \times 4 \text{ hours} = 1000 \text{ blocks} \).
+1. **Initial Count of Each Color:**- Pink: 26
+   - Green: 15
+   - Yellow: 24
 
-2. **Determine the remaining number of blocks to be filled:**
-   - The truck's total capacity is 6000 blocks.
-   - After 4 hours, there are \( 6000 \text{ blocks} - 1000 \text{ blocks} = 5000 \text{ blocks} \) left to fill.
+2. **Carl's Action:**  
+   Carl takes away 4 pink hard hats.
+   - Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
 
-3. **Calculate the new total number of people working:**- Initially, there were 2 people (Stella and Twinkle).
-   - After 4 hours, 6 more people join them.
-   - Therefore, the total number of people working now is \( 2 + 6 = 8 \).
+3. **John's Action:**  
+   John takes away 6 pink hard hats and twice as many green hard hats as the pink ones he removed.
+   - Pink hard hats taken by John: 6
+   - Green hard hats taken by John: \( 2 \times 6 = 12 \)
+   
+   - Remaining pink hard hats after John: \( 22 - 6 = 16 \)
+   - Remaining green hard hats after John: \( 15 - 12 = 3 \)
 
-4. **Determine the new combined rate of filling blocks:**
-   - Each person fills at a rate of 250 blocks per hour.
-   - With 8 people working together, the combined rate is \( 8 \times 250 \text{ blocks/hour} = 2000 \text{ blocks/hour} \).
+4. **Final Count of Each Color:**  
+   - Pink: 16
+   - Green: 3
+   - Yellow: 24 (unchanged)
 
-5. **Calculate the time required to fill the remaining 5000 blocks:**
-   - At a rate of 2000 blocks per hour, the time needed to fill 5000 blocks is:
+5. **Total Number of Hard Hats Remaining:**  
+   Sum up the remaining hard hats:
+   \[
+   16 \text{ (pink)} + 3 \text{ (green)} + 24","Let's break down the problem step by step to find out how many hard hats remain in the truck.
+
+### Initial Counts:
+- Pink hard hats: 26
+- Green hard hats: 15
+- Yellow hard hats: 24
+
+### Carl's Action:
+Carl takes away 4 pink hard hats.
+- Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
+
+### John's Actions:
+John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats he removed.
+- Number of pink hard hats John takes: 6
+- Number of green hard hats John takes: \( 2 \times 6 = 12 \)
+
+#### After John's Actions:
+- Remaining pink hard hats: \( 22 - 6 = 16 \)
+- Remaining green hard hats: \( 15 - 12 = 3 \)
+
+### Final Counts:
+- Pink hard hats remaining: 16
+- Green hard hats remaining: 3
+- Yellow hard hats remaining: 24 (unchanged)
+
+### Total Hard Hats Remaining:
+To find the total number of hard hats remaining in the truck, we sum up the remaining hard hats of each color:
+\[ 16 + 3 + 24 = 43 \]
+
+Thus, the total number of hard hats that remained in the truck is \( \boxed{43} \).","In a truck, there are 26 pink hard hats, 15 green hard hats, and 24 yellow hard hats.  If Carl takes away 4 pink hard hats, and John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats that he removed, then calculate the total number of hard hats that remained in the truck."
+22,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,,,7,10,10,7,,,"To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
+
+1. **Identify the number of letters in Jamie's last name:**
+   - Jamie's full name is Jamie Grey.
+   - The last name ""Grey"" has 4 letters.
+
+2. **Determine the relationship between Bobbie's and Jamie's last names:**
+   - If Bobbie took two letters off her last name, it would be twice the length of Jamie's last name.
+   - Let \( B \) represent the number of letters in Bobbie's last name.
+   - According to the problem, \( B - 2 = 2 \times 4 \).
+   - Simplify the equation:
      \[
-     \frac{5000 \text{ blocks}}{2000 \text{ blocks/hour}} = 2.5 \text{ hours}
+     B - 2 = 8
+     \]
+   - Solve for \( B \):
+     \[
+     B = 8 + 2 = 10
      \]
 
-6. **Add the initial 4 hours to the additional 2.5 hours:**
-   - Total time taken to fill the truck is \( 4 \text{ hours} +",,Stella and Twinkle are filling up a truck with a capacity of 6000 stone blocks at the rate of 250 blocks per hour per person. They work for four hours and are then joined by 6 other people who also work at the same rate. How many hours did filling the truck take?
-139,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,24,1,1,,,,,"Janice's office is on the third floor, and she has to walk up 3 flights of stairs to get to her office.  In a single day, she goes up the three flights of stairs 5 times, down the the three flights of stairs 3 times, and uses the elevator the remainder of the time.  How many flights of stairs does Janice walk (up and down) in a single day?"
-145,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,2,3,3,,,,,James watched 2 episodes of Jeopardy and 2 episodes of Wheel of Fortune.  Jeopardy is 20 minutes and Wheel of Fortune is twice as long.  How many hours did he watch TV?
-181,small_wrong_to_scheduled_wrong,False,,False,True,1,0,8,0.40346115827560425,0.01,0.41346115827560426,21,121,11,,256,"To determine how much the tree has grown from the end of 2017 until the end of 2019,we need to calculate its height at the end of each year and then find the difference between its final height in 2019 and its initial height in 2017.
+3. **Determine the relationship between Samantha's and Bobbie's last names:**
+   - Samantha’s last name has three fewer letters than Bobbie’s last name.
+   - Let \( S \) represent the number of letters in Samantha's last name.
+   - According to the problem, \( S = B - 3 \).
+   - Substitute \( B = 10 \) into the equation:
+     \[
+     S = 10 - 3 = 7
+     \]
 
-Let's break it down step-by-step:
+Therefore, the number of letters in Samantha’s last name is \(\boxed{7}\).","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
+23,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,,,5,4,4,5,,,"To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
 
-1. **Initial Height (End of 2017):**
-   - The tree is 100 meters tall.
+Step 1: Calculate the total cost of the shorts.
+- Ann bought 5 pairs of shorts.
+- Each pair costs $7.
+\[ \text{Total cost of shorts} = 5 \times 7 = 35 \]
 
-2. **Height at the End of 2018:**
-   - The tree grows by 10% each year.
-   - Growth for 2018 = 10% of 100 meters = \( 0.10 \times 100 = 10 \) meters.
-   - New height at the end of 2018 = Initial height + Growth = \( 100 + 10 = 110 \) meters.
+Step 2: Calculate the total cost of the shoes.
+- Ann bought 2 pairs of shoes.
+- Each pair costs $10.
+\[ \text{Total cost of shoes} = 2 \times 10 = 20 \]
 
-3. **Height at the End of 2019:**
-   - The tree grows by 10% again.
-   - Growth for 2019 = 10% of 110 meters = \( 0.10 \times 110 = 11 \) meters.
-   - New height at the end of",,A certain tree was 100 meters tall at the end of 2017. It will grow 10% more than its previous height each year. How long has the tree grown from 2017 until the end of 2019?
-182,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,230,3,3,,,,,"Lisa and Carly go shopping together. Lisa spends $40 on t-shirts then spends half of this amount on jeans and twice this amount on coats. Carly spends only a quarter as much as Lisa on t-shirts but spends 3 times as much on jeans and a quarter of the amount Lisa spent on coats. In dollars, how much did Lisa and Carly spend in total?"
-186,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,50,16,16,,,,,Christina has 3 snakes. 1 snake is 2 feet long. Another snake is 16 inches long. The last snake is 10 inches long. How many inches are all of her snakes combined?
-229,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,15,5,5,,,,,Jan buys 1000 feet of cable.  She splits it up into 25-foot sections.  She gives 1/4 of that to a friend.  She then puts half of the rest in storage. How much does she keep on hand?
-232,small_wrong_to_scheduled_wrong,False,,False,True,9,8,7,0.48500025272369385,0.075,0.5600002527236938,8,20,12,,223,"To determine the age of Jolene and Phil's fourth child, we need to follow the sequence of their children's births and calculate the age of each child step by step.
+Step 3: Add the costs of the shorts and shoes to find the combined cost.
+\[ \text{Combined cost of shorts and shoes} = 35 + 20 = 55 \]
 
-1. **First Child:**
-   - They gave birth to their first child exactly 15 years ago.
-   - Therefore, the first child is \(15\) years old.
+Step 4: Subtract the combined cost of the shorts and shoes from the total amount spent to find the amount spent on the tops.
+- Total amount spent is $75.
+\[ \text{Amount spent on tops} = 75 - 55 = 20 \]
 
-2. **Second Child:**
-   - They gave birth to their second child exactly one year after the birth of their first child.
-   - The second child was born \(15 + 1 = 16\) years ago.
-   - Therefore, the second child is \(16\) years old.(Note: This is incorrect based on the problem statement; it should be 14 years old since the first child is 15.)
+Step 5: Determine the cost per top.
+- Ann bought 4 tops.
+\[ \text{Cost per top} = \frac{\text{Amount spent on tops}}{\text{Number of tops}} = \frac{20}{4} = 5 \]
 
-3. **Third Child:**
-   - They gave birth to their third child on the fourth birthday of their second child.
-   - The second child was born 14 years ago, so the third child was born \(14 + 4 = 18\) years ago.
-   - Therefore, the third child is \(18\) years old. (Note: This is incorrect based on the problem statement; it should be 10 years old since the second child is 14.)
+Therefore, each top cost $5.","Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each top cost?"
+95,small_wrong_to_scheduled_wrong,False,True,False,True,4,3,4,0.5503937005996704,0.009090909090909092,0.5594846096905794,64,4,4,64,256,"To determine the total value of Alice's money after exchanging her quarters for nickels, we need to follow these steps:
 
-4. **Fourth Child:**
-   - They gave birth to their fourth child two years after the birth of their third child.
-   - The third child was born 10 years ago, so the fourth child was born \(10 + 2 = 12\) years ago.
-   - Therefore, the fourth child is \(12\) years old.
-
-Thus, the age of their fourth child is \(\boxed{12}\).",,"Jolene and Phil have four children, each with the same birthday.  They gave birth to their first child exactly 15 years ago.  They gave birth to their second child exactly one year after the birth of their first child.  They gave birth to their third child on the fourth birthday of their second child. Two years after the birth of their third child, they gave birth to their fourth child.  How old, in years, is their fourth child?"
-241,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,12,1,1,,,,,"Mr. Lu owns a computer store. For last month, half of their sales are laptops, one-third are netbooks, and the rest are desktop computers. If Mr. Lu's store was able to sell a total of 72 computers, how many of them are desktop computers?"
-246,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,52,2,2,,,,,"The ratio of boys to girls in a family is 5:7. The total number of children in the family is 180. If the boys are given $3900 to share, how much money does each boy receive?"
-264,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,21600,3,3,,,,,An Italian restaurant earns $600 every weekday and twice as much on the weekend. How much money does it earn by the end of the month?
-266,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,4,3,3,,,,,"Johns goes to the gym 3 times a week.  He spends 1 hour each day lifting weight. Additionally, he also spends a third of his weightlifting time warming up and doing cardio each day.  How many hours does he spend at the gym a week?"
-267,small_wrong_to_scheduled_wrong,False,,False,True,3,2,,0.8392788767814636,0.024999999999999998,0.8642788767814636,2,0.5,21,,256,"To determine how many pizzas Jimmy can make to bring home with the flour left, we need to follow these steps:
-
-1. **Calculate the total time Jimmy has to make pizzas:**Jimmy has 7 hours to make pizzas. Since there are 60 minutes in an hour:
+1. **Calculate the total value of the quarters:**
+   Alice has 20 quarters.Each quarter is worth $0.25.
    \[
-   7 \text{ hours} \times 60 \text{ minutes/hour} = 420 \text{ minutes}
+   \text{Total value of quarters} = 20 \times 0.25 = 5 \text{ dollars}
    \]
 
-2. **Determine how many pizzas Jimmy can make in the given time:**  
-   It takes Jimmy 10 minutes to make one pizza. Therefore, the number of pizzas he can make in 420 minutes is:
+2. **Determine the number of nickels Alice receives:**
+   Since each quarter is worth 25 cents and each nickel is worth 5 cents, the number of nickels Alice will receive is:
    \[
-   \frac{420 \text{ minutes}}{10 \text{ minutes/pizza}} = 42 \text{ pizzas}
+   \text{Number of nickels} = \frac{20 \times 25}{5} = \frac{500}{5} = 100 \text{ nickels}
    \]
 
-3. **Calculate the amount of flour used to make these pizzas:**  
-   Each pizza requires 0.5 kg of flour. Thus, the total amount of flour used for 42 pizzas is:
+3. **Calculate the number of iron nickels:**
+   Alice discovers that 20% of the nickels are iron nickels. Therefore, the number of iron nickels is:
    \[
-   42 \text{ pizzas} \times 0.5 \text{ kg/pizza} = 21 \text{ kg}
+   \text{Number of iron nickels} = 0.20 \times 100 = 20 \text{ iron nickels}
    \]
 
-4. **Determine the amount of flour left after making the pizzas:**  
-   Jimmy started with a 22 kg sack of flour. After using 21 kg",,"Jimmy is going to sell pizzas at the carnival to make some money. The carnival only gave him 7 hours to do so. He bought a 22kg sack of flour to make his pizzas and he takes 10 min to make each pizza for the customers. At the end of the 7 hours, he saw some flour was left. Knowing that each pizza needs 0.5kg of flour to make, how many pizzas can he make to bring home with the flour left?"
-280,small_wrong_to_scheduled_wrong,False,,False,True,3,2,3,0.9998177886009216,0.02045454545454545,1.0202723340554671,18,18.00,7.50,,256,"To determine the total cost of the cards the boy bought, we need to calculate the cost of the cards from each box separately and then sum these costs.
+4. **Calculate the number of regular nickels:**
+   The remaining nickels are regular nickels. Thus, the number of regular nickels is:
+   \[
+   \text{Number of","To solve this problem, we need to follow these steps:
 
-First, let's calculate the cost of the cards from the first box:- Each card in the first box costs $1.25.
-- The boy buys 6 cards from this box.
+1. **Determine the total number of nickels Alice receives:**
+   - Each quarter is worth $0.25.
+   - Alice has 20 quarters, so the total value in dollars is:
+     \[
+     20 \times 0.25 = 5 \text{ dollars}
+     \]
+   - Since each nickel is worth $0.05, the number of nickels she gets is:
+     \[
+     \frac{5}{0.05} = 100 \text{ nickels}
+     \]
 
-\[
-\text{Cost of cards from the first box} = 6 \times 1.25
-\]
+2. **Calculate the number of iron nickels:**
+   - 20% of the nickels are iron nickels.
+   - The number of iron nickels is:
+     \[
+     0.20 \times 100 = 20 \text{ iron nickels}
+     \]
 
-Performing the multiplication:
+3. **Calculate the number of regular nickels:**
+   - The remaining nickels are regular nickels.
+   - The number of regular nickels is:
+     \[
+     100 - 20 = 80 \text{ regular nickels}
+     \]
 
-\[
-6 \times 1.25 = 7.50
-\]
+4. **Calculate the total value of the iron nickels:**
+   - Each iron nickel is worth $3.
+   - The total value of the iron nickels is:
+     \[
+     20 \times 3 = 60 \text{ dollars}
+     \]
 
-So, the cost of the cards from the first box is $7.50.
+5. **Calculate the total value of the regular nickels:**
+   - Each regular nickel is worth $0.05.
+   - The total value of the regular nickels is:
+     \[
+     80 \times 0.05 = 4 \text{ dollars}
+     \]
 
-Next, let's calculate the cost of the cards from the second box:
-- Each card in the second box costs $1.75.
-- The boy buys 6 cards from this box.
+6. **Calculate the total value of all the nickels:**
+   - Add the value of the iron nickels and the regular nickels:
+     \[
+     60 + 4 = 64 \text{ dollars}
+     \]
 
-\[
-\text{Cost of cards from the second box} = 6 \times 1.75
-\]
+Therefore, the total value of Alice's money now is \(\boxed{64}\) dollars.","Alice has 20 quarters. She wants to exchange them for nickels and so she goes to the bank. After getting back from the bank, she discovers that 20% of the nickels are iron nickels worth $3 each. What is the total value of her money now?"
+98,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,,,45,39,39,45,,,"To solve this problem, we need to determine how many gumballs Hector initially purchased. Let's break down the information given and solve it step by step.
 
-Performing the multiplication:
+1. **Define Variables:**
+   - Let \( x \) be the total number of gumballs Hector initially purchased.
 
-\[
-6 \times 1.75 = 10.50
-\]
+2. **Gumballs Given Away:**
+   - Hector gave 4 gumballs to Todd.
+   - Hector gave twice as many gumballs to Alisha as he gave to Todd. Therefore, he gave \( 2 \times 4 = 8 \) gumballs to Alisha.
+   - Hector gave 5 less than four times as many gumballs to Bobby as he gave to Alisha. Therefore, he gave \( 4 \times 8 - 5 = 32 - 5 = 27 \) gumballs to Bobby.
 
-So, the cost of the cards from the second box is $10.50.
+3. **Total Gumballs Given Away:**
+   - The total number of gumballs given away is:
+     \[
+     4 + 8 + 27 = 39
+     \]
 
-Now, we add the costs from both boxes to find the total cost:
+4. **Remaining Gumballs:**
+   - Hector had 6 gumballs remaining after giving away the gumballs.
 
-\[
-\text{Total cost} = 7.50 + 10.50
-\]
+5. **Set Up the Equation:**
+   - The total number of gumballs Hector initially purchased minus the total number of gumballs given away equals the number of gumballs remaining:
+     \[
+     x - 39 = 6
+     \]
 
-Adding these amounts together:
+6. **Solve for \( x \):**
+   - Add 39 to both sides of the equation:
+     \[
+     x = 6 + 39
+     \]
+     \[
+     x = 45
+     \]
 
-\[
-7.50 +",,"The card shop has two boxes of cards. The first box contains cards that cost $1.25 each. The second box contains cards that cost $1.75 each. A boy then comes in and buys 6 cards from each box. What was the total cost, in dollars, of the cards he bought?"
-284,small_wrong_to_scheduled_wrong,False,,False,False,,,,,,,768000,2560,2560,,,,,"Matt buys a massager.  At the lowest setting, it vibrates at 1600 vibrations per second.  At the highest setting, it vibrates 60% faster.  Matt uses it for 5 minutes at the highest setting.  How many vibrations does he experience?"
+Therefore, the total number of gumballs Hector purchased is \(\boxed{45}\).","Hector purchased a container of gumballs.  He gave 4 to Todd, then he gave twice as many as he had given Todd to Alisha, and then he gave 5 less than four times as many to Bobby as he had given to Alisha.  If Hector had 6 gumballs remaining, what is the total number of gumballs that Hector purchased?"

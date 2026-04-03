@@ -1,4 +1,5 @@
 import argparse
+import copy
 import os
 import re
 
@@ -12,16 +13,20 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
 DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact_torch.pt")
 DEFAULT_TEST_SIZE = 0.2
+DEFAULT_VAL_SIZE = 0.2
 DEFAULT_RANDOM_STATE = 55
 DEFAULT_FEATURE_KEY = "boundary"
 DEFAULT_LABEL_KEY = "label"
-DEFAULT_HIDDEN_LAYERS = "512,128,32"
-DEFAULT_EPOCHS = 80
+DEFAULT_HIDDEN_LAYERS = "128,32"
+DEFAULT_DROPOUT = 0.1
+DEFAULT_EPOCHS = 60
 DEFAULT_BATCH_SIZE = 256
-DEFAULT_LEARNING_RATE = 1e-3
-DEFAULT_WEIGHT_DECAY = 1e-4
+DEFAULT_LEARNING_RATE = 5e-4
+DEFAULT_WEIGHT_DECAY = 1e-3
 DEFAULT_POS_WEIGHT = 1.0
 DEFAULT_LOW_ENTROPY_ERROR_WEIGHT = 4.0
+DEFAULT_EARLY_STOPPING_PATIENCE = 8
+DEFAULT_MIN_EPOCHS = 10
 
 
 def parse_args():
@@ -31,13 +36,17 @@ def parse_args():
     parser.add_argument("--feature-key", default=DEFAULT_FEATURE_KEY, help="Feature spec used by the probe.")
     parser.add_argument("--label-key", default=DEFAULT_LABEL_KEY, help="Label field to train on.")
     parser.add_argument("--test-size", type=float, default=DEFAULT_TEST_SIZE, help="Held-out question ratio.")
+    parser.add_argument("--val-size", type=float, default=DEFAULT_VAL_SIZE, help="Validation ratio within training questions.")
     parser.add_argument("--random-state", type=int, default=DEFAULT_RANDOM_STATE, help="Random seed for the split.")
     parser.add_argument("--hidden-layers", default=DEFAULT_HIDDEN_LAYERS, help="Comma-separated hidden layer sizes.")
+    parser.add_argument("--dropout", type=float, default=DEFAULT_DROPOUT, help="Dropout probability between hidden layers.")
     parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Training epochs.")
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE, help="Batch size.")
     parser.add_argument("--learning-rate", type=float, default=DEFAULT_LEARNING_RATE, help="Adam learning rate.")
     parser.add_argument("--weight-decay", type=float, default=DEFAULT_WEIGHT_DECAY, help="Adam weight decay.")
     parser.add_argument("--pos-weight", type=float, default=DEFAULT_POS_WEIGHT, help="Positive-class BCE weight.")
+    parser.add_argument("--early-stopping-patience", type=int, default=DEFAULT_EARLY_STOPPING_PATIENCE, help="Epochs to wait for validation improvement before stopping.")
+    parser.add_argument("--min-epochs", type=int, default=DEFAULT_MIN_EPOCHS, help="Minimum epochs before early stopping can trigger.")
     parser.add_argument(
         "--low-entropy-error-final-entropy-max",
         type=float,
@@ -239,13 +248,15 @@ def parse_hidden_layer_sizes(hidden_layers_text):
 
 
 class TorchMLPProbe(torch.nn.Module):
-    def __init__(self, input_dim, hidden_layers):
+    def __init__(self, input_dim, hidden_layers, dropout=0.0):
         super().__init__()
         dims = [input_dim, *hidden_layers, 1]
         layers = []
         for idx in range(len(dims) - 2):
             layers.append(torch.nn.Linear(dims[idx], dims[idx + 1]))
             layers.append(torch.nn.ReLU())
+            if dropout > 0:
+                layers.append(torch.nn.Dropout(dropout))
         layers.append(torch.nn.Linear(dims[-2], dims[-1]))
         self.network = torch.nn.Sequential(*layers)
 
@@ -272,6 +283,23 @@ def batch_indices(num_rows, batch_size, rng):
         yield indices[start:start + batch_size]
 
 
+def weighted_average_loss(model, criterion, X_tensor, y_tensor, weight_tensor, batch_size, device):
+    model.eval()
+    total_loss = 0.0
+    total_weight = 0.0
+    with torch.no_grad():
+        for start in range(0, X_tensor.shape[0], batch_size):
+            end = start + batch_size
+            batch_x = X_tensor[start:end].to(device)
+            batch_y = y_tensor[start:end].to(device)
+            batch_w = weight_tensor[start:end].to(device)
+            logits = model(batch_x)
+            loss_per_sample = criterion(logits, batch_y)
+            total_loss += float((loss_per_sample * batch_w).sum().item())
+            total_weight += float(batch_w.sum().item())
+    return total_loss / max(total_weight, 1e-8)
+
+
 def main():
     args = parse_args()
 
@@ -289,20 +317,31 @@ def main():
             f"Label {args.label_key!r} has only one class in the dataset: "
             f"labels={unique_labels.tolist()} counts={label_counts.tolist()}"
         )
-    if len(set(int(qid) for qid in groups)) < 2:
-        raise ValueError("Need at least two question groups to make a grouped train/test split.")
+    if len(set(int(qid) for qid in groups)) < 3:
+        raise ValueError("Need at least three question groups to make train/val/test grouped splits.")
 
-    splitter = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.random_state)
-    train_indices, test_indices = next(splitter.split(X, y, groups))
+    outer_splitter = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.random_state)
+    train_pool_indices, test_indices = next(outer_splitter.split(X, y, groups))
+
+    inner_groups = groups[train_pool_indices]
+    if len(set(int(qid) for qid in inner_groups)) < 2:
+        raise ValueError("Need at least two training question groups to make a validation split.")
+    inner_splitter = GroupShuffleSplit(n_splits=1, test_size=args.val_size, random_state=args.random_state + 1)
+    inner_train_rel, val_rel = next(inner_splitter.split(X[train_pool_indices], y[train_pool_indices], inner_groups))
+    inner_train_indices = train_pool_indices[inner_train_rel]
+    val_indices = train_pool_indices[val_rel]
 
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X[train_indices]).astype(np.float32)
-    y_train = y[train_indices].astype(np.float32)
-    train_sample_weights = sample_weights[train_indices].astype(np.float32)
+    X_train = scaler.fit_transform(X[inner_train_indices]).astype(np.float32)
+    X_val = scaler.transform(X[val_indices]).astype(np.float32)
+    y_train = y[inner_train_indices].astype(np.float32)
+    y_val = y[val_indices].astype(np.float32)
+    train_sample_weights = sample_weights[inner_train_indices].astype(np.float32)
+    val_sample_weights = sample_weights[val_indices].astype(np.float32)
 
     device = torch.device("cuda" if args.device == "cuda" and torch.cuda.is_available() else "cpu")
     hidden_layers = parse_hidden_layer_sizes(args.hidden_layers)
-    probe = TorchMLPProbe(input_dim=X.shape[1], hidden_layers=hidden_layers).to(device)
+    probe = TorchMLPProbe(input_dim=X.shape[1], hidden_layers=hidden_layers, dropout=args.dropout).to(device)
 
     optimizer = torch.optim.Adam(probe.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     pos_weight = torch.tensor([args.pos_weight], dtype=torch.float32, device=device)
@@ -311,7 +350,15 @@ def main():
 
     X_train_tensor = torch.from_numpy(X_train)
     y_train_tensor = torch.from_numpy(y_train)
-    weight_tensor = torch.from_numpy(train_sample_weights)
+    weight_train_tensor = torch.from_numpy(train_sample_weights)
+    X_val_tensor = torch.from_numpy(X_val)
+    y_val_tensor = torch.from_numpy(y_val)
+    weight_val_tensor = torch.from_numpy(val_sample_weights)
+
+    best_state_dict = copy.deepcopy(probe.state_dict())
+    best_val_loss = float("inf")
+    best_epoch = 0
+    epochs_without_improvement = 0
 
     for epoch in range(args.epochs):
         probe.train()
@@ -320,7 +367,7 @@ def main():
         for batch_idx in batch_indices(X_train.shape[0], args.batch_size, rng):
             batch_x = X_train_tensor[batch_idx].to(device)
             batch_y = y_train_tensor[batch_idx].to(device)
-            batch_w = weight_tensor[batch_idx].to(device)
+            batch_w = weight_train_tensor[batch_idx].to(device)
 
             optimizer.zero_grad()
             logits = probe(batch_x)
@@ -332,16 +379,36 @@ def main():
             epoch_loss += float((loss_per_sample * batch_w).sum().item())
             epoch_weight += float(batch_w.sum().item())
 
-        if (epoch + 1) % 10 == 0 or epoch == 0 or epoch + 1 == args.epochs:
-            avg_loss = epoch_loss / max(epoch_weight, 1e-8)
-            print(f"Epoch {epoch + 1:03d}/{args.epochs} | train_loss={avg_loss:.6f}")
+        train_loss = epoch_loss / max(epoch_weight, 1e-8)
+        val_loss = weighted_average_loss(probe, criterion, X_val_tensor, y_val_tensor, weight_val_tensor, args.batch_size, device)
 
-    train_question_ids = sorted(set(int(qid) for qid in groups[train_indices]))
+        if val_loss + 1e-6 < best_val_loss:
+            best_val_loss = val_loss
+            best_state_dict = copy.deepcopy(probe.state_dict())
+            best_epoch = epoch + 1
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
+
+        if (epoch + 1) % 5 == 0 or epoch == 0 or epoch + 1 == args.epochs:
+            print(f"Epoch {epoch + 1:03d}/{args.epochs} | train_loss={train_loss:.6f} | val_loss={val_loss:.6f} | best_epoch={best_epoch}")
+
+        if epoch + 1 >= args.min_epochs and epochs_without_improvement >= args.early_stopping_patience:
+            print(f"Early stopping at epoch {epoch + 1} | best_epoch={best_epoch} | best_val_loss={best_val_loss:.6f}")
+            break
+
+    probe.load_state_dict(best_state_dict)
+    probe = probe.cpu()
+
+    train_question_ids = sorted(set(int(qid) for qid in groups[train_pool_indices]))
+    train_inner_question_ids = sorted(set(int(qid) for qid in groups[inner_train_indices]))
+    val_question_ids = sorted(set(int(qid) for qid in groups[val_indices]))
     test_question_ids = sorted(set(int(qid) for qid in groups[test_indices]))
     low_entropy_train_count = int(np.sum(train_sample_weights > 1.0))
 
     artifact = {
-        "probe": probe.cpu(),
+        "probe": probe,
+        "probe_state_dict": probe.state_dict(),
         "scaler": scaler,
         "feature_key": args.feature_key,
         "feature_dim": int(X.shape[1]),
@@ -349,15 +416,23 @@ def main():
         "probe_type": "torch_mlp",
         "random_state": args.random_state,
         "test_size": args.test_size,
+        "val_size": args.val_size,
         "train_question_ids": train_question_ids,
+        "train_inner_question_ids": train_inner_question_ids,
+        "val_question_ids": val_question_ids,
         "test_question_ids": test_question_ids,
         "config": {
             "hidden_layers": args.hidden_layers,
+            "dropout": args.dropout,
             "epochs": args.epochs,
             "batch_size": args.batch_size,
             "learning_rate": args.learning_rate,
             "weight_decay": args.weight_decay,
             "pos_weight": args.pos_weight,
+            "early_stopping_patience": args.early_stopping_patience,
+            "min_epochs": args.min_epochs,
+            "best_epoch": best_epoch,
+            "best_val_loss": best_val_loss,
             "low_entropy_error_final_entropy_max": args.low_entropy_error_final_entropy_max,
             "low_entropy_error_final_top1_min": args.low_entropy_error_final_top1_min,
             "low_entropy_error_weight": args.low_entropy_error_weight,
@@ -373,8 +448,10 @@ def main():
         )
     print(f"Saved PyTorch probe artifact to: {args.output_path}")
     print(f"Feature dim: {artifact['feature_dim']}")
-    print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")
-
-
+    print(
+        f"Train questions: {len(train_question_ids)} | "
+        f"Train-inner questions: {len(train_inner_question_ids)} | "
+        f"Val questions: {len(val_question_ids)} | Test questions: {len(test_question_ids)}"
+    )
 if __name__ == "__main__":
     main()
