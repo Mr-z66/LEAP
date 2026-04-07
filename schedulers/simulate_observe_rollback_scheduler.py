@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 import json
 import os
 import re
@@ -19,7 +19,7 @@ DEFAULT_SMALL_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-1.5B")
 DEFAULT_LARGE_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_RANDOM_STATE = 55
-DEFAULT_FEATURE_KEY = "boundary"
+DEFAULT_FEATURE_KEY = "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob"
 DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
 DEFAULT_MLP_MAX_ITER = 300
 DEFAULT_MLP_ALPHA = 1e-4
