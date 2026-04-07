@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import json
 import os
 import re
@@ -25,7 +25,7 @@ DEFAULT_MLP_MAX_ITER = 300
 DEFAULT_MLP_ALPHA = 1e-4
 DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
 DEFAULT_THRESHOLDS = "0.15,0.20,0.25"
-DEFAULT_MAX_NEW_TOKENS = 384
+DEFAULT_MAX_NEW_TOKENS = 768
 DEFAULT_MIN_CHUNK_TOKENS = 5
 DEFAULT_MAX_CHUNK_TOKENS = 30
 DEFAULT_TAIL_BONUS_WEIGHT = 0.0
@@ -378,6 +378,10 @@ def build_generation_inputs(tokenizer, question, assistant_prefix):
     ), normalized_prefix
 
 
+def prompt_token_count(tokenizer, question):
+    inputs, _ = build_generation_inputs(tokenizer, question, assistant_prefix=None)
+    return int(inputs["input_ids"].shape[1])
+
 def decode_tokens(tokenizer, token_ids):
     if not token_ids:
         return ""
@@ -627,6 +631,7 @@ def to_jsonable(value):
 def simulate_question(record, small_model, small_tokenizer, large_model, large_tokenizer, probe, scaler, threshold, args, artifact=None):
     question = record["question"]
     ground_truth_final_answer = record["ground_truth_final_answer"]
+    question_prompt_token_count = prompt_token_count(small_tokenizer, question)
     prefix = None
     total_tokens = 0
     total_large_tokens = 0
@@ -750,6 +755,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         "scheduled_is_correct": scheduled_is_correct,
         "scheduled_final_answer": final_answer,
         "full_reasoning": final_reasoning,
+        "prompt_token_count": question_prompt_token_count,
         "triggered": triggered,
         "handoff_count": handoff_count,
         "large_generated_tokens": total_large_tokens,
@@ -807,6 +813,7 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
         per_question_rows.append(
             {
                 "question_id": record["question_id"],
+                "prompt_token_count": result["prompt_token_count"],
                 "small_is_correct": small_is_correct,
                 "scheduled_is_correct": result["scheduled_is_correct"],
                 "triggered": result["triggered"],
@@ -1000,4 +1007,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

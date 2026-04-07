@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH, help="Path to large model.")
     parser.add_argument("--artifact-path", default=DEFAULT_ARTIFACT_PATH, help="Optional artifact path to reuse held-out test_question_ids.")
     parser.add_argument("--trace-path", default=DEFAULT_TRACE_PATH, help="Optional routing trace JSON to recover the same held-out question ids safely.")
-    parser.add_argument("--max-new-tokens", type=int, default=384, help="Max new tokens for large-model generation.")
+    parser.add_argument("--max-new-tokens", type=int, default=768, help="Max new tokens for large-model generation.")
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on number of test questions.")
     parser.add_argument("--output-path", default=None, help="Optional JSON output path for per-question predictions.")
     return parser.parse_args()
