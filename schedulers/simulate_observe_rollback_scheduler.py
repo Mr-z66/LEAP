@@ -95,6 +95,11 @@ def parse_args():
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
     parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
     parser.add_argument("--trace-export-path", default=None, help="Optional JSON path to export per-question routing traces.")
+    parser.add_argument(
+        "--small-baseline-path",
+        default=None,
+        help="Optional JSON produced by analysis/evaluate_model_only_accuracy.py to override stored small-model correctness.",
+    )
     return parser.parse_args()
 
 
@@ -419,6 +424,25 @@ def build_question_records(dataset, feature_key):
     for record in question_records.values():
         record["chunks"] = sorted(record["chunks"], key=lambda chunk: int(chunk["chunk_id"]))
     return question_records
+
+
+def apply_small_baseline_overrides(question_records, baseline_path):
+    if not baseline_path or not os.path.exists(baseline_path):
+        return 0
+
+    with open(baseline_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    rows = payload.get("rows", [])
+    updated = 0
+    for row in rows:
+        qid = int(row["question_id"])
+        if qid not in question_records:
+            continue
+        question_records[qid]["small_final_answer"] = row.get("pred_final_answer")
+        question_records[qid]["small_is_correct"] = bool(row.get("is_correct", False))
+        updated += 1
+    return updated
 
 
 def build_feature_arrays(question_records, feature_key):
@@ -912,7 +936,10 @@ def main():
             print(f"Using artifact feature spec '{args.feature_key}' instead of requested '{requested_feature_key}'.")
 
     question_records = build_question_records(dataset, args.feature_key)
+    updated_small_records = apply_small_baseline_overrides(question_records, args.small_baseline_path)
     print(f"Loaded questions with {args.feature_key}: {len(question_records)}")
+    if updated_small_records:
+        print(f"Overrode stored small-model baseline for {updated_small_records} questions from: {args.small_baseline_path}")
     if artifact is not None:
         print(f"Loading fixed probe artifact from: {args.probe_artifact_path}")
         probe = artifact.get("probe")
