@@ -1,0 +1,910 @@
+{
+  "questions_total": 100,
+  "model_path": "models/Qwen2.5-32B",
+  "model_only_accuracy": 0.92,
+  "avg_generated_tokens": 306.66,
+  "eval_question_ids": [
+    4,
+    6,
+    13,
+    20,
+    25,
+    26,
+    27,
+    30,
+    33,
+    34,
+    38,
+    39,
+    41,
+    53,
+    63,
+    64,
+    69,
+    70,
+    72,
+    81,
+    84,
+    85,
+    86,
+    106,
+    119,
+    121,
+    128,
+    133,
+    139,
+    143,
+    145,
+    155,
+    157,
+    162,
+    168,
+    177,
+    181,
+    184,
+    185,
+    186,
+    189,
+    201,
+    205,
+    211,
+    215,
+    228,
+    230,
+    231,
+    234,
+    245,
+    254,
+    255,
+    258,
+    261,
+    264,
+    265,
+    267,
+    269,
+    273,
+    277,
+    283,
+    286,
+    294,
+    309,
+    315,
+    319,
+    321,
+    322,
+    323,
+    325,
+    338,
+    346,
+    352,
+    359,
+    366,
+    369,
+    370,
+    377,
+    379,
+    392,
+    397,
+    399,
+    410,
+    413,
+    416,
+    420,
+    423,
+    429,
+    434,
+    437,
+    440,
+    442,
+    453,
+    457,
+    463,
+    467,
+    472,
+    473,
+    475,
+    478
+  ],
+  "rows": [
+    {
+      "question_id": 4,
+      "pred_final_answer": "624",
+      "ground_truth_final_answer": "624",
+      "is_correct": true,
+      "generated_token_count": 309,
+      "reasoning": "To solve this problem, we need to break it down into smaller steps and calculate accordingly.\n\n1. **Determine the number of pages James writes per session:**\n   - James writes a 3-page letter to each friend.\n   - He has 2 different friends.\n   - Therefore, in one session, he writes \\(3 \\text{ pages} \\times 2 \\text{ friends} = 6 \\text{ pages}\\).\n\n2. **Determine the number of sessions per week:**\n   - James writes these letters twice a week.\n   - So, he writes \\(2 \\text{ sessions/week}\\).\n\n3. **Calculate the total number of pages written per week:**\n   - In one session, he writes 6 pages.\n   - Since he writes twice a week, he writes \\(6 \\text{ pages/session} \\times 2 \\text{ sessions/week} = 12 \\text{ pages/week}\\).\n\n4. **Calculate the total number of weeks in a year:**\n   - There are 52 weeks in a year.\n\n5. **Calculate the total number of pages written in a year:**\n   - He writes 12 pages per week.\n   - Over 52 weeks, he writes \\(12 \\text{ pages/week} \\times 52 \\text{ weeks/year} = 624 \\text{ pages/year}\\).\n\nTherefore, James writes a total of 624 pages in a year."
+    },
+    {
+      "question_id": 6,
+      "pred_final_answer": "48",
+      "ground_truth_final_answer": "48",
+      "is_correct": true,
+      "generated_token_count": 233,
+      "reasoning": "To determine how many pieces of pizza Albert eats in one day if he eats all the pizzas he bought, we need to follow these steps:\n\n1. **Calculate the total number of slices from the large pizzas:**\n   - Each large pizza has 16 slices.\n   - Albert buys 2 large pizzas.\n   - Total slices from large pizzas = \\( 2 \\times 16 = 32 \\) slices.\n\n2. **Calculate the total number of slices from the small pizzas:**\n   - Each small pizza has 8 slices.\n   - Albert buys 2 small pizzas.\n   - Total slices from small pizzas = \\( 2 \\times 8 = 16 \\) slices.\n\n3. **Add the slices from both types of pizzas to get the total number of slices:**\n   - Total slices from large pizzas = 32 slices.\n   - Total slices from small pizzas = 16 slices.\n   - Total slices = \\( 32 + 16 = 48 \\) slices.\n\nTherefore, if Albert eats all the pizzas, he will have eaten a total of 48 slices."
+    },
+    {
+      "question_id": 13,
+      "pred_final_answer": "35",
+      "ground_truth_final_answer": "35",
+      "is_correct": true,
+      "generated_token_count": 217,
+      "reasoning": "Let's break down the costs step by step:\n\n1. **Cheddar Cheese:**\n   - Jasper buys 2 pounds of cheddar cheese.\n   - The cost is $10.\n\n2. **Cream Cheese:**\n   - A pound of cream cheese costs half the price of the cheddar cheese.\n   - Since the cheddar cheese costs $10, the cream cheese costs \\( \\frac{10}{2} = \\$5 \\).\n\n3. **Cold Cuts:**\n   - The pack of cold cuts costs twice the price of the cheddar cheese.\n   - Since the cheddar cheese costs $10, the cold cuts cost \\( 2 \\times 10 = \\$20 \\).\n\nNow, let's add up all the costs:\n- Cheddar cheese: $10\n- Cream cheese: $5\n- Cold cuts: $20\n\nTotal cost:\n\\[ 10 + 5 + 20 = \\$35 \\]\n\nSo, Jasper spends a total of $35 on the ingredients."
+    },
+    {
+      "question_id": 20,
+      "pred_final_answer": "38",
+      "ground_truth_final_answer": "38",
+      "is_correct": true,
+      "generated_token_count": 369,
+      "reasoning": "To solve this problem, we will break it down into steps and calculate the number of each type of stamp Bella bought.\n\n1. **Snowflake Stamps:**\n   Bella bought 11 snowflake stamps.\n   \\[\n   \\text{Number of snowflake stamps} = 11\n   \\]\n\n2. **Truck Stamps:**\n   Bella bought 9 more truck stamps than snowflake stamps.\n   \\[\n   \\text{Number of truck stamps} = \\text{Number of snowflake stamps} + 9\n   \\]\n   Substituting the number of snowflake stamps:\n   \\[\n   \\text{Number of truck stamps} = 11 + 9 = 20\n   \\]\n\n3. **Rose Stamps:**\n   Bella bought 13 fewer rose stamps than truck stamps.\n   \\[\n   \\text{Number of rose stamps} = \\text{Number of truck stamps} - 13\n   \\]\n   Substituting the number of truck stamps:\n   \\[\n   \\text{Number of rose stamps} = 20 - 13 = 7\n   \\]\n\n4. **Total Number of Stamps:**\n   To find the total number of stamps Bella bought, we add the number of each type of stamp together.\n   \\[\n   \\text{Total number of stamps} = \\text{Number of snowflake stamps} + \\text{Number of truck stamps} + \\text{Number of rose stamps}\n   \\]\n   Substituting the numbers we have calculated:\n   \\[\n   \\text{Total number of stamps} = 11 + 20 + 7 = 38\n   \\]\n\nTherefore, Bella bought a total of 38 stamps."
+    },
+    {
+      "question_id": 25,
+      "pred_final_answer": "110",
+      "ground_truth_final_answer": "110",
+      "is_correct": true,
+      "generated_token_count": 379,
+      "reasoning": "To determine how many tennis balls Ralph did not hit, we need to follow these steps:\n\n1. Calculate the number of balls Ralph hit from the first 100 balls.\n2. Calculate the number of balls Ralph hit from the next 75 balls.\n3. Sum the total number of balls Ralph hit.\n4. Subtract the total number of balls hit from the initial number of balls to find the number of balls not hit.\n\nLet's go through each step in detail:\n\n### Step 1: Calculate the number of balls Ralph hit from the first 100 balls\nRalph hits \\( \\frac{2}{5} \\) of the first 100 balls:\n\\[\n\\text{Number of balls hit} = \\frac{2}{5} \\times 100 = 40\n\\]\n\n### Step 2: Calculate the number of balls Ralph hit from the next 75 balls\nRalph hits \\( \\frac{1}{3} \\) of the next 75 balls:\n\\[\n\\text{Number of balls hit} = \\frac{1}{3} \\times 75 = 25\n\\]\n\n### Step 3: Sum the total number of balls Ralph hit\nAdd the number of balls hit from both sets:\n\\[\n\\text{Total number of balls hit} = 40 + 25 = 65\n\\]\n\n### Step 4: Subtract the total number of balls hit from the initial number of balls\nRalph started with 175 balls. The number of balls not hit is:\n\\[\n\\text{Number of balls not hit} = 175 - 65 = 110\n\\]\n\nThus, the number of tennis balls Ralph did not hit is \\(\\boxed{110}\\)."
+    },
+    {
+      "question_id": 26,
+      "pred_final_answer": "400",
+      "ground_truth_final_answer": "400",
+      "is_correct": true,
+      "generated_token_count": 242,
+      "reasoning": "To solve this problem, we need to determine how much salt Jack will obtain from 2 liters of seawater that is 20% salt. Let's break it down step by step:\n\n1. **Convert liters to milliliters:**\n   - We know that 1 liter = 1000 milliliters.\n   - Therefore, 2 liters = 2 * 1000 = 2000 milliliters.\n\n2. **Calculate the amount of salt in the seawater:**\n   - The seawater is 20% salt.\n   - To find out how much of the 2000 milliliters is salt, we multiply the total volume by the percentage of salt (expressed as a decimal).\n   - 20% = 0.20 (as a decimal).\n\n3. **Perform the multiplication:**\n   - Amount of salt = 2000 milliliters * 0.20\n   - Amount of salt = 400 milliliters\n\nSo, when all the water evaporates, Jack will be left with 400 milliliters of salt."
+    },
+    {
+      "question_id": 27,
+      "pred_final_answer": "400",
+      "ground_truth_final_answer": "400",
+      "is_correct": true,
+      "generated_token_count": 336,
+      "reasoning": "Let's break down the problem step by step:\n\n1. **Initial Download:**\n   - Brennan downloaded 800 files initially.\n\n2. **First Deletion:**\n   - He deleted 70% of these files.\n   - The number of files deleted = \\( 70\\% \\) of 800 = \\( 0.70 \\times 800 = 560 \\).\n   - Therefore, the number of files remaining after the first deletion = \\( 800 - 560 = 240 \\).\n\n3. **Second Download:**\n   - Brennan then downloaded an additional 400 files.\n\n4. **Second Deletion:**\n   - He found that \\( \\frac{3}{5} \\) of these new files were irrelevant.\n   - The number of irrelevant files = \\( \\frac{3}{5} \\times 400 = 240 \\).\n   - Therefore, the number of relevant files from the second batch = \\( 400 - 240 = 160 \\).\n\n5. **Total Valuable Files:**\n   - The total number of valuable files Brennan is left with is the sum of the valuable files from both batches:\n     - From the first batch: 240 files.\n     - From the second batch: 160 files.\n   - Total valuable files = \\( 240 + 160 = 400 \\).\n\nThus, Brennan was left with 400 valuable files after deleting the unrelated files he downloaded in the second round."
+    },
+    {
+      "question_id": 30,
+      "pred_final_answer": "6",
+      "ground_truth_final_answer": "6",
+      "is_correct": true,
+      "generated_token_count": 442,
+      "reasoning": "To solve this problem, let's break it down step by step:\n\n1. **Determine the total number of pizza pieces:**\n   - Each person has a personal pan pizza cut into 4 pieces.\n   - There are 4 people (Ann, Bill, Cate, and Dale).\n   - Total number of pizza pieces = 4 people × 4 pieces/person = 16 pieces.\n\n2. **Calculate the number of pieces eaten by each person:**\n   - Bill eats 50% of his pizza:\n     \\[\n     50\\% \\text{ of 4 pieces} = 0.5 \\times 4 = 2 \\text{ pieces}\n     \\]\n   - Dale eats 50% of his pizza:\n     \\[\n     50\\% \\text{ of 4 pieces} = 0.5 \\times 4 = 2 \\text{ pieces}\n     \\]\n   - Ann eats 75% of her pizza:\n     \\[\n     75\\% \\text{ of 4 pieces} = 0.75 \\times 4 = 3 \\text{ pieces}\n     \\]\n   - Cate eats 75% of her pizza:\n     \\[\n     75\\% \\text{ of 4 pieces} = 0.75 \\times 4 = 3 \\text{ pieces}\n     \\]\n\n3. **Sum the total number of pieces eaten:**\n   - Pieces eaten by Bill = 2\n   - Pieces eaten by Dale = 2\n   - Pieces eaten by Ann = 3\n   - Pieces eaten by Cate = 3\n   - Total pieces eaten = 2 + 2 + 3 + 3 = 10 pieces\n\n4. **Calculate the number of uneaten pieces:**\n   - Total pieces = 16\n   - Pieces eaten = 10\n   - Uneaten pieces = Total pieces - Pieces eaten = 16 - 10 = 6 pieces\n\nTherefore, the number of pizza pieces that are left uneaten is 6."
+    },
+    {
+      "question_id": 33,
+      "pred_final_answer": "34",
+      "ground_truth_final_answer": "34",
+      "is_correct": true,
+      "generated_token_count": 277,
+      "reasoning": "Let's break down the problem step by step:\n\n1. **Water:**\n   - Kimber needs 10 cups of water.\n\n2. **Flour:**\n   - Kimber needs 16 cups of flour.\n\n3. **Salt:**\n   - The amount of salt needed is \\( \\frac{1}{2} \\) times the number of cups of flour.\n   - Since she needs 16 cups of flour, the amount of salt required is:\n     \\[\n     \\frac{1}{2} \\times 16 = 8 \\text{ teaspoons of salt}\n     \\]\n\n4. **Combined Total:**\n   - We need to add the quantities of water, flour, and salt.\n   - Water: 10 cups\n   - Flour: 16 cups\n   - Salt: 8 teaspoons\n\nSince we are asked for the combined total number of cups of water, flour, and teaspoons of salt, we sum these values:\n\n\\[\n10 \\text{ (cups of water)} + 16 \\text{ (cups of flour)} + 8 \\text{ (teaspoons of salt)} = 34\n\\]\n\nTherefore, the combined total number of cups of water, flour, and teaspoons of salt that Kimber needs to make the pizza is **34**."
+    },
+    {
+      "question_id": 34,
+      "pred_final_answer": "5250",
+      "ground_truth_final_answer": "5250",
+      "is_correct": true,
+      "generated_token_count": 167,
+      "reasoning": "To solve this problem, let's break it down into steps:\n\nStep 1: Identify what we know.\n- Ken received $1750.\n- Tony received twice as much as Ken.\n\nStep 2: Calculate how much Tony received.\n- Since Tony got twice as much as Ken, we multiply Ken's amount by 2:\n  Tony's amount = 2 × $1750 = $3500\n\nStep 3: Calculate the total amount shared.\n- The total amount is the sum of what Ken and Tony received:\n  Total amount = Ken's amount + Tony's amount\n                = $1750 + $3500\n                = $5250\n\nTherefore, the total amount of money shared between Ken and Tony was $5250."
+    },
+    {
+      "question_id": 38,
+      "pred_final_answer": "9",
+      "ground_truth_final_answer": "9",
+      "is_correct": true,
+      "generated_token_count": 440,
+      "reasoning": "To determine how many ounces of tea Artemis needs, we can follow these steps:\n\n1. **Understand the given ratio:**\n   - Her mom drinks an 8-ounce cup of tea using 1 ounce of tea.\n   - This means the ratio of tea to water is \\( \\frac{1 \\text{ ounce of tea}}{8 \\text{ ounces of water}} \\).\n\n2. **Calculate the amount of tea needed per person at the party:**\n   - Each person at the party wants a 6-ounce cup of tea.\n   - Using the same ratio, we need to find out how much tea is required for a 6-ounce cup.\n\n3. **Set up the proportion based on the ratio:**\n   - For 8 ounces of water, 1 ounce of tea is used.\n   - For 6 ounces of water, let \\( x \\) be the amount of tea needed.\n   - We set up the proportion: \n     \\[\n     \\frac{1 \\text{ ounce of tea}}{8 \\text{ ounces of water}} = \\frac{x \\text{ ounces of tea}}{6 \\text{ ounces of water}}\n     \\]\n\n4. **Solve for \\( x \\):**\n   - Cross-multiply to solve for \\( x \\):\n     \\[\n     1 \\times 6 = 8 \\times x\n     \\]\n     \\[\n     6 = 8x\n     \\]\n     \\[\n     x = \\frac{6}{8} = \\frac{3}{4} \\text{ ounces of tea}\n     \\]\n\n5. **Calculate the total amount of tea needed for all 12 people:**\n   - Each person needs \\( \\frac{3}{4} \\) ounces of tea.\n   - There are 12 people:\n     \\[\n     12 \\times \\frac{3}{4} = 12 \\times 0.75 = 9 \\text{ ounces of tea}\n     \\]\n\nTherefore, Artemis needs \\(\\boxed{9}\\) ounces of tea for the party."
+    },
+    {
+      "question_id": 39,
+      "pred_final_answer": "15",
+      "ground_truth_final_answer": "15",
+      "is_correct": true,
+      "generated_token_count": 288,
+      "reasoning": "To determine how many more pieces of candy Anna gets compared to Billy, we need to calculate the total number of candies each of them collects and then find the difference.\n\nFirst, let's calculate the total number of candies Anna collects:\n- Anna gets 14 pieces of candy per house.\n- The first subdivision has 60 houses.\n\n\\[\n\\text{Total candies for Anna} = 14 \\times 60\n\\]\n\nPerform the multiplication:\n\n\\[\n14 \\times 60 = 840\n\\]\n\nSo, Anna collects 840 pieces of candy.\n\nNext, let's calculate the total number of candies Billy collects:\n- Billy gets 11 pieces of candy per house.\n- The second subdivision has 75 houses.\n\n\\[\n\\text{Total candies for Billy} = 11 \\times 75\n\\]\n\nPerform the multiplication:\n\n\\[\n11 \\times 75 = 825\n\\]\n\nSo, Billy collects 825 pieces of candy.\n\nNow, we need to find out how many more pieces of candy Anna gets compared to Billy:\n\n\\[\n\\text{Difference} = 840 - 825\n\\]\n\nPerform the subtraction:\n\n\\[\n840 - 825 = 15\n\\]\n\nTherefore, Anna gets 15 more pieces of candy than Billy."
+    },
+    {
+      "question_id": 41,
+      "pred_final_answer": "500",
+      "ground_truth_final_answer": "500",
+      "is_correct": true,
+      "generated_token_count": 151,
+      "reasoning": "To determine how much Rachel should budget, we need to follow these steps:\n\n1. Calculate the total amount Sara spent.\n2. Determine how much Rachel should spend, which is twice the amount Sara spent.\n\nFirst, let's calculate the total amount Sara spent:\n- Cost of the pair of shoes: $50\n- Cost of the dress: $200\n\nTotal amount Sara spent:\n\\[ 50 + 200 = 250 \\]\n\nNext, we need to find out how much Rachel should budget, which is twice the amount Sara spent:\n\\[ 2 \\times 250 = 500 \\]\n\nTherefore, Rachel should budget:\n\\[\n\\boxed{500}\n\\]"
+    },
+    {
+      "question_id": 53,
+      "pred_final_answer": "36",
+      "ground_truth_final_answer": "36",
+      "is_correct": true,
+      "generated_token_count": 262,
+      "reasoning": "To find out how much more Caleb spent on ice cream than on frozen yogurt, we need to follow these steps:\n\n1. **Calculate the total cost of the ice cream:**\n   - Caleb bought 10 cartons of ice cream.\n   - Each carton of ice cream costs $4.\n   - Total cost for ice cream = Number of cartons × Cost per carton\n     \\[\n     10 \\text{ cartons} \\times \\$4/\\text{carton} = \\$40\n     \\]\n\n2. **Calculate the total cost of the frozen yogurt:**\n   - Caleb bought 4 cartons of frozen yogurt.\n   - Each carton of frozen yogurt costs $1.\n   - Total cost for frozen yogurt = Number of cartons × Cost per carton\n     \\[\n     4 \\text{ cartons} \\times \\$1/\\text{carton} = \\$4\n     \\]\n\n3. **Determine the difference in spending between ice cream and frozen yogurt:**\n   - Difference = Total cost of ice cream - Total cost of frozen yogurt\n     \\[\n     \\$40 - \\$4 = \\$36\n     \\]\n\nTherefore, Caleb spent \\$36 more on ice cream than on frozen yogurt."
+    },
+    {
+      "question_id": 63,
+      "pred_final_answer": "59",
+      "ground_truth_final_answer": "59",
+      "is_correct": true,
+      "generated_token_count": 314,
+      "reasoning": "To determine how many sit-ups Shawna needs to do on Wednesday to meet her goal, we need to follow these steps:\n\n1. **Identify Shawna's daily goal:**\n   Shawna's goal is to do 30 sit-ups each day.\n\n2. **Calculate the total number of sit-ups Shawna aimed to do from Monday to Wednesday:**\n   Since her goal is 30 sit-ups per day, over three days (Monday, Tuesday, and Wednesday), she aims to do:\n   \\[\n   30 \\text{ sit-ups/day} \\times 3 \\text{ days} = 90 \\text{ sit-ups}\n   \\]\n\n3. **Determine the number of sit-ups Shawna has already done:**\n   - On Monday, she did 12 sit-ups.\n   - On Tuesday, she did 19 sit-ups.\n   \n   Adding these together gives:\n   \\[\n   12 + 19 = 31 \\text{ sit-ups}\n   \\]\n\n4. **Calculate the remaining number of sit-ups needed to reach her goal:**\n   To find out how many more sit-ups Shawna needs to do to meet her goal of 90 sit-ups, subtract the number of sit-ups she has already done from her total goal:\n   \\[\n   90 - 31 = 59 \\text{ sit-ups}\n   \\]\n\nTherefore, Shawna needs to do 59 sit-ups on Wednesday to meet her goal."
+    },
+    {
+      "question_id": 64,
+      "pred_final_answer": "840",
+      "ground_truth_final_answer": "840",
+      "is_correct": true,
+      "generated_token_count": 403,
+      "reasoning": "To determine how much James earns per week, we need to calculate his earnings from both his main job and his second job separately, then sum them up.\n\n### Step 1: Calculate hourly wage for the second job\nJames earns 20% less at his second job compared to his main job. \n\n- Hourly wage at the main job: $20\n- 20% of $20 = \\( 0.20 \\times 20 = 4 \\)\n\nSo, his hourly wage at the second job is:\n\\[ 20 - 4 = 16 \\]\n\n### Step 2: Calculate hours worked at each job\n- Hours worked at the main job: 30 hours\n- Hours worked at the second job: half of 30 hours = \\( \\frac{30}{2} = 15 \\) hours\n\n### Step 3: Calculate weekly earnings from the main job\n\\[ \\text{Earnings from main job} = \\text{Hourly wage} \\times \\text{Hours worked} \\]\n\\[ \\text{Earnings from main job} = 20 \\times 30 = 600 \\]\n\n### Step 4: Calculate weekly earnings from the second job\n\\[ \\text{Earnings from second job} = \\text{Hourly wage} \\times \\text{Hours worked} \\]\n\\[ \\text{Earnings from second job} = 16 \\times 15 = 240 \\]\n\n### Step 5: Calculate total weekly earnings\n\\[ \\text{Total weekly earnings} = \\text{Earnings from main job} + \\text{Earnings from second job} \\]\n\\[ \\text{Total weekly earnings} = 600 + 240 = 840 \\]\n\nThus, James earns a total of \\( \\boxed{840} \\) dollars per week."
+    },
+    {
+      "question_id": 69,
+      "pred_final_answer": "49",
+      "ground_truth_final_answer": "49",
+      "is_correct": true,
+      "generated_token_count": 209,
+      "reasoning": "To find out how many arms the animals Carly collected have in total, we can break this problem into two parts: calculating the total number of arms for the starfish and then adding the number of arms from the seastar.\n\nStep 1: Calculate the total number of arms for the starfish.\n- Carly collected 7 starfish.\n- Each starfish has 5 arms.\n- Therefore, the total number of arms for the starfish is \\( 7 \\times 5 = 35 \\) arms.\n\nStep 2: Add the number of arms from the seastar.\n- The seastar has 14 arms.\n\nStep 3: Sum the arms from both the starfish and the seastar.\n- Total arms from starfish: 35\n- Arms from seastar: 14\n- Combined total: \\( 35 + 14 = 49 \\)\n\nTherefore, the total number of arms that the animals Carly collected have is 49."
+    },
+    {
+      "question_id": 70,
+      "pred_final_answer": "19",
+      "ground_truth_final_answer": "19",
+      "is_correct": true,
+      "generated_token_count": 156,
+      "reasoning": "Let's break down the problem step by step:\n\n1. **Identify the number of apples Martha has:**\n   - Martha has 68 apples.\n\n2. **Determine the number of apples Tim has:**\n   - Tim has 30 less apples than Martha.\n   - Therefore, Tim's apples = Martha's apples - 30\n   - Tim's apples = 68 - 30 = 38\n\n3. **Calculate the number of apples Harry has:**\n   - Harry has half as many apples as Tim.\n   - Therefore, Harry's apples = Tim's apples / 2\n   - Harry's apples = 38 / 2 = 19\n\nSo, Harry has 19 apples."
+    },
+    {
+      "question_id": 72,
+      "pred_final_answer": "54",
+      "ground_truth_final_answer": "54",
+      "is_correct": true,
+      "generated_token_count": 371,
+      "reasoning": "To solve this problem, we need to follow the steps described and calculate the volume of water in the aquarium at each stage.\n\n1. **Calculate the total volume of the aquarium:**\n   The dimensions of the aquarium are:\n   - Length (L) = 4 feet\n   - Width (W) = 6 feet\n   - Height (H) = 3 feet\n\n   The volume \\( V \\) of the aquarium can be calculated using the formula for the volume of a rectangular prism:\n   \\[\n   V = L \\times W \\times H\n   \\]\n   Substituting the given values:\n   \\[\n   V = 4 \\text{ ft} \\times 6 \\text{ ft} \\times 3 \\text{ ft} = 72 \\text{ cubic feet}\n   \\]\n\n2. **Nancy fills the aquarium halfway:**\n   Half of the total volume is:\n   \\[\n   \\frac{72}{2} = 36 \\text{ cubic feet}\n   \\]\n\n3. **The cat knocks the aquarium over and spills half the water:**\n   Half of the water that was in the aquarium (36 cubic feet) is spilled:\n   \\[\n   \\frac{36}{2} = 18 \\text{ cubic feet}\n   \\]\n   So, after the spill, there are 18 cubic feet of water left in the aquarium.\n\n4. **Nancy triples the amount of water in the aquarium:**\n   Tripling the remaining water:\n   \\[\n   18 \\times 3 = 54 \\text{ cubic feet}\n   \\]\n\nTherefore, the final amount of water in the aquarium is:\n\\[\n\\boxed{54} \\text{ cubic feet}\n\\]"
+    },
+    {
+      "question_id": 81,
+      "pred_final_answer": "14",
+      "ground_truth_final_answer": "14",
+      "is_correct": true,
+      "generated_token_count": 370,
+      "reasoning": "To find the average number of skips per round completed by Jeff, we need to determine how many skips Jeff made in each round and then calculate the average.\n\nFirst, let's summarize the information given:\n- Sam skipped 16 times in each round.\n- In the first round, Sam completed 1 more skip than Jeff.\n- In the second round, Jeff skipped 3 fewer times than Sam.\n- In the third round, Jeff skipped 4 more times than Sam.\n- In the fourth round, Jeff completed half the number of skips as Sam.\n\nNow, let's calculate the number of skips Jeff made in each round:\n\n1. **First Round:**\n   - Sam skipped 16 times.\n   - Jeff skipped \\(16 - 1 = 15\\) times.\n\n2. **Second Round:**\n   - Sam skipped 16 times.\n   - Jeff skipped \\(16 - 3 = 13\\) times.\n\n3. **Third Round:**\n   - Sam skipped 16 times.\n   - Jeff skipped \\(16 + 4 = 20\\) times.\n\n4. **Fourth Round:**\n   - Sam skipped 16 times.\n   - Jeff skipped \\(\\frac{16}{2} = 8\\) times.\n\nNext, we sum up the total number of skips Jeff made over all four rounds:\n\\[\n15 + 13 + 20 + 8 = 56\n\\]\n\nTo find the average number of skips per round for Jeff, we divide the total number of skips by the number of rounds:\n\\[\n\\text{Average} = \\frac{56}{4} = 14\n\\]\n\nThus, the average number of skips per round completed by Jeff is \\(\\boxed{14}\\)."
+    },
+    {
+      "question_id": 84,
+      "pred_final_answer": "90",
+      "ground_truth_final_answer": "90",
+      "is_correct": true,
+      "generated_token_count": 240,
+      "reasoning": "To determine the number of different rooms Hans could be checked into, let's break down the problem step by step:\n\n1. **Total Floors and Rooms:**\n   - The hotel has a total of 10 floors.\n   - Each floor has 10 identical rooms.\n\n2. **Unavailable Floor:**\n   - The last floor (the 10th floor) is unavailable due to an accident.\n\n3. **Available Floors:**\n   - Since the 10th floor is unavailable, only the first 9 floors are available for guests.\n\n4. **Rooms per Available Floor:**\n   - Each of these 9 floors still has 10 rooms.\n\n5. **Total Available Rooms:**\n   - To find the total number of available rooms, we multiply the number of available floors by the number of rooms per floor:\n     \\[\n     9 \\text{ floors} \\times 10 \\text{ rooms per floor} = 90 \\text{ rooms}\n     \\]\n\nTherefore, Hans could be checked into any one of the 90 available rooms. \n\nThe final answer is:\n\\[\n\\boxed{90}\n\\]"
+    },
+    {
+      "question_id": 85,
+      "pred_final_answer": "5",
+      "ground_truth_final_answer": "5",
+      "is_correct": true,
+      "generated_token_count": 351,
+      "reasoning": "To determine how much older Jolyn is than Leon in months, we need to establish the age differences between each pair of classmates and then combine these differences appropriately.\n\nLet's denote the ages of the classmates as follows:\n- \\( J \\) for Jolyn\n- \\( T \\) for Therese\n- \\( A \\) for Aivo\n- \\( L \\) for Leon\n\nWe are given the following information:\n1. Jolyn is 2 months older than Therese: \n   \\[\n   J = T + 2\n   \\]\n2. Therese is 5 months older than Aivo:\n   \\[\n   T = A + 5\n   \\]\n3. Leon is 2 months older than Aivo:\n   \\[\n   L = A + 2\n   \\]\n\nFirst, let's express Jolyn's age in terms of Aivo's age using the given relationships:\n\\[\nJ = T + 2\n\\]\nSubstitute \\( T \\) from the second equation:\n\\[\nT = A + 5\n\\]\nThus,\n\\[\nJ = (A + 5) + 2 = A + 7\n\\]\n\nNext, we know Leon's age in terms of Aivo's age:\n\\[\nL = A + 2\n\\]\n\nNow, we want to find the difference in age between Jolyn and Leon:\n\\[\nJ - L = (A + 7) - (A + 2)\n\\]\n\nSimplify the expression:\n\\[\nJ - L = A + 7 - A - 2 = 5\n\\]\n\nTherefore, Jolyn is 5 months older than Leon."
+    },
+    {
+      "question_id": 86,
+      "pred_final_answer": "6",
+      "ground_truth_final_answer": "6",
+      "is_correct": true,
+      "generated_token_count": 168,
+      "reasoning": "Let's break down the problem step by step:\n\n1. **Determine how much money Peter spent:**\n   - Peter started with $2.\n   - He left the store with $0.50.\n   - Therefore, the amount of money he spent is:\n     \\[\n     2.00 - 0.50 = 1.50\n     \\]\n\n2. **Calculate the number of ounces of soda he bought:**\n   - The cost of soda is $0.25 per ounce.\n   - To find out how many ounces he bought, we divide the total amount he spent by the cost per ounce:\n     \\[\n     \\frac{1.50}{0.25} = 6\n     \\]\n\nSo, Peter bought 6 ounces of soda."
+    },
+    {
+      "question_id": 106,
+      "pred_final_answer": "50",
+      "ground_truth_final_answer": "50",
+      "is_correct": true,
+      "generated_token_count": 304,
+      "reasoning": "To find out how many uncommon cards John got, we can break down the problem into smaller steps:\n\n1. **Determine the total number of cards John bought:**\n   - John buys 10 packs.\n   - Each pack contains 20 cards.\n   - Therefore, the total number of cards is:\n     \\[\n     10 \\text{ packs} \\times 20 \\text{ cards/pack} = 200 \\text{ cards}\n     \\]\n\n2. **Calculate the fraction of uncommon cards in each pack:**\n   - We know that \\( \\frac{1}{4} \\) of the cards in each pack are uncommon.\n\n3. **Find the number of uncommon cards per pack:**\n   - Each pack has 20 cards.\n   - The number of uncommon cards in one pack is:\n     \\[\n     \\frac{1}{4} \\times 20 \\text{ cards} = 5 \\text{ uncommon cards}\n     \\]\n\n4. **Calculate the total number of uncommon cards across all packs:**\n   - John has 10 packs.\n   - Each pack has 5 uncommon cards.\n   - Therefore, the total number of uncommon cards is:\n     \\[\n     10 \\text{ packs} \\times 5 \\text{ uncommon cards/pack} = 50 \\text{ uncommon cards}\n     \\]\n\nSo, John got a total of 50 uncommon cards."
+    },
+    {
+      "question_id": 119,
+      "pred_final_answer": "140",
+      "ground_truth_final_answer": "140",
+      "is_correct": true,
+      "generated_token_count": 238,
+      "reasoning": "To determine the total number of cupcakes Jessa needs to make, we can break down the problem into smaller steps:\n\n1. **Calculate the number of cupcakes needed for the fourth-grade classes:**\n   - There are 3 fourth-grade classes.\n   - Each class has 30 students.\n   - Therefore, the total number of students in the fourth-grade classes is:\n     \\[\n     3 \\text{ classes} \\times 30 \\text{ students per class} = 90 \\text{ students}\n     \\]\n\n2. **Calculate the number of cupcakes needed for the P.E. class:**\n   - The P.E. class has 50 students.\n\n3. **Add the number of cupcakes needed for all the classes together:**\n   - Total number of cupcakes for the fourth-grade classes: 90\n   - Total number of cupcakes for the P.E. class: 50\n   - Therefore, the total number of cupcakes needed is:\n     \\[\n     90 + 50 = 140\n     \\]\n\nSo, Jessa needs to make a total of 140 cupcakes."
+    },
+    {
+      "question_id": 121,
+      "pred_final_answer": "6",
+      "ground_truth_final_answer": "6",
+      "is_correct": true,
+      "generated_token_count": 428,
+      "reasoning": "To solve this problem, we need to break it down into steps and calculate the total time taken to fill the truck.\n\n1. **Calculate the number of blocks filled by Stella and Twinkle in the first 4 hours:**\n   - Each person fills 250 blocks per hour.\n   - There are 2 people (Stella and Twinkle).\n   - Total blocks filled per hour by both = \\( 2 \\times 250 = 500 \\) blocks/hour.\n   - Over 4 hours, they fill \\( 500 \\times 4 = 2000 \\) blocks.\n\n2. **Determine the remaining blocks needed to fill the truck:**\n   - The truck's capacity is 6000 blocks.\n   - Blocks already filled = 2000 blocks.\n   - Remaining blocks = \\( 6000 - 2000 = 4000 \\) blocks.\n\n3. **Calculate the new combined rate after 6 more people join:**\n   - Initially, there were 2 people working.\n   - Now, 6 more people join, making a total of \\( 2 + 6 = 8 \\) people.\n   - Each person fills 250 blocks per hour.\n   - Combined rate of 8 people = \\( 8 \\times 250 = 2000 \\) blocks/hour.\n\n4. **Determine the time required to fill the remaining 4000 blocks:**\n   - Remaining blocks = 4000 blocks.\n   - Rate of 8 people = 2000 blocks/hour.\n   - Time required = \\( \\frac{4000}{2000} = 2 \\) hours.\n\n5. **Calculate the total time taken:**\n   - Initial 4 hours + additional 2 hours = \\( 4 + 2 = 6 \\) hours.\n\nThus, the total time taken to fill the truck is \\(\\boxed{6}\\) hours."
+    },
+    {
+      "question_id": 128,
+      "pred_final_answer": "30",
+      "ground_truth_final_answer": "6",
+      "is_correct": false,
+      "generated_token_count": 227,
+      "reasoning": "To determine how many rooms the principal needs to book, we'll first calculate the total capacity of each room and then figure out how many rooms are needed to accommodate all 30 students.\n\n1. **Calculate the capacity of one room:**\n   - Each room has two queen-size beds.\n   - Each queen-size bed can fit 2 students.\n   - Therefore, the two beds together can fit \\(2 \\times 2 = 4\\) students.\n   - Additionally, each room has a pull-out couch that can fit 1 student.\n   - So, the total capacity of one room is \\(4 + 1 = 5\\) students.\n\n2. **Determine the number of rooms needed:**\n   - We have 30 students to accommodate.\n   - Each room can hold 5 students.\n   - To find the number of rooms required, divide the total number of students by the capacity of one room:\n     \\[\n     \\frac{30}{5} = 6\n     \\]\n\nTherefore, the principal needs to book 6 rooms to fit all 30 students."
+    },
+    {
+      "question_id": 133,
+      "pred_final_answer": "9",
+      "ground_truth_final_answer": "9",
+      "is_correct": true,
+      "generated_token_count": 296,
+      "reasoning": "To solve this problem, we'll break it down into steps:\n\n### Step 1: Calculate the number of absent students.\n- There are 40 students in total.\n- 1/10 of the students are absent.\n\n\\[ \\text{Number of absent students} = \\frac{1}{10} \\times 40 = 4 \\]\n\n### Step 2: Calculate the number of present students.\n- Total students = 40\n- Absent students = 4\n\n\\[ \\text{Number of present students} = 40 - 4 = 36 \\]\n\n### Step 3: Determine how many of the present students are in the classroom.\n- 3/4 of the present students are in the classroom.\n\n\\[ \\text{Number of students in the classroom} = \\frac{3}{4} \\times 36 = 27 \\]\n\n### Step 4: Calculate the number of students in the canteen.\n- The remaining students (those not in the classroom) are in the canteen.\n\n\\[ \\text{Number of students in the canteen} = \\text{Number of present students} - \\text{Number of students in the classroom} \\]\n\\[ \\text{Number of students in the canteen} = 36 - 27 = 9 \\]\n\nTherefore, there are **9 students** in the canteen."
+    },
+    {
+      "question_id": 139,
+      "pred_final_answer": "24",
+      "ground_truth_final_answer": "24",
+      "is_correct": true,
+      "generated_token_count": 197,
+      "reasoning": "To determine how many flights of stairs Janice walks in a single day, we need to break down the problem into smaller steps.\n\n1. **Calculate the total number of trips Janice makes:**\n   - Janice goes up the stairs 5 times.\n   - Janice goes down the stairs 3 times.\n   - Total trips = Trips up + Trips down = 5 + 3 = 8 trips.\n\n2. **Determine the number of flights of stairs per trip:**\n   - Each trip involves walking 3 flights of stairs.\n\n3. **Calculate the total number of flights of stairs walked:**\n   - For each trip up or down, Janice walks 3 flights of stairs.\n   - Total flights of stairs = Number of trips × Flights per trip = 8 trips × 3 flights/trip = 24 flights.\n\nThus, Janice walks a total of 24 flights of stairs in a single day."
+    },
+    {
+      "question_id": 143,
+      "pred_final_answer": "45",
+      "ground_truth_final_answer": "45",
+      "is_correct": true,
+      "generated_token_count": 301,
+      "reasoning": "To solve this problem, we need to determine the total number of goldfish in the pond and then find out how many are below the surface.\n\nStep 1: Understand the given information.\n- Toby counts 15 goldfish at the surface.\n- Only 25% of the goldfish are at the surface.\n- The remaining 75% of the goldfish are below the surface.\n\nStep 2: Calculate the total number of goldfish.\nSince 25% of the goldfish are at the surface, and Toby counted 15 goldfish at the surface, we can set up the following equation:\n\\[ 0.25 \\times \\text{Total number of goldfish} = 15 \\]\n\nLet \\( T \\) represent the total number of goldfish. Then:\n\\[ 0.25T = 15 \\]\n\nSolve for \\( T \\):\n\\[ T = \\frac{15}{0.25} \\]\n\\[ T = 60 \\]\n\nSo, the total number of goldfish in the pond is 60.\n\nStep 3: Determine the number of goldfish below the surface.\nSince 75% of the goldfish are below the surface, we calculate:\n\\[ 0.75 \\times 60 = 45 \\]\n\nTherefore, there are 45 goldfish below the surface.\n\nFinal Answer: There are 45 goldfish below the surface."
+    },
+    {
+      "question_id": 145,
+      "pred_final_answer": "2",
+      "ground_truth_final_answer": "2",
+      "is_correct": true,
+      "generated_token_count": 366,
+      "reasoning": "To solve this problem, let's break it down step by step:\n\n1. **Determine the length of each show:**\n   - Each episode of Jeopardy is 20 minutes long.\n   - Each episode of Wheel of Fortune is twice as long as Jeopardy, so:\n     \\[\n     \\text{Length of Wheel of Fortune} = 2 \\times 20 \\text{ minutes} = 40 \\text{ minutes}\n     \\]\n\n2. **Calculate the total time spent watching each show:**\n   - James watched 2 episodes of Jeopardy:\n     \\[\n     \\text{Total time for Jeopardy} = 2 \\times 20 \\text{ minutes} = 40 \\text{ minutes}\n     \\]\n   - James watched 2 episodes of Wheel of Fortune:\n     \\[\n     \\text{Total time for Wheel of Fortune} = 2 \\times 40 \\text{ minutes} = 80 \\text{ minutes}\n     \\]\n\n3. **Add the total times together to find the overall time spent watching TV:**\n   \\[\n   \\text{Total time} = 40 \\text{ minutes (Jeopardy)} + 80 \\text{ minutes (Wheel of Fortune)} = 120 \\text{ minutes}\n   \\]\n\n4. **Convert the total time from minutes to hours:**\n   - There are 60 minutes in an hour, so:\n     \\[\n     \\text{Total time in hours} = \\frac{120 \\text{ minutes}}{60 \\text{ minutes per hour}} = 2 \\text{ hours}\n     \\]\n\nTherefore, James watched TV for a total of 2 hours."
+    },
+    {
+      "question_id": 155,
+      "pred_final_answer": "160",
+      "ground_truth_final_answer": "160",
+      "is_correct": true,
+      "generated_token_count": 340,
+      "reasoning": "To solve this problem, we need to follow these steps:\n\n1. **Determine the total weight of mangoes Colby has after selling to the market:**\n   - Colby initially harvested 60 kilograms of mangoes.\n   - He sold 20 kilograms to the market.\n   - Therefore, the remaining weight of mangoes is:\n     \\[\n     60 \\text{ kg} - 20 \\text{ kg} = 40 \\text{ kg}\n     \\]\n\n2. **Calculate the weight of mangoes sold to the community:**\n   - Colby sold half of the remaining mangoes to his community.\n   - Half of 40 kilograms is:\n     \\[\n     \\frac{40 \\text{ kg}}{2} = 20 \\text{ kg}\n     \\]\n\n3. **Determine the weight of mangoes Colby still has:**\n   - After selling 20 kilograms to the community, the remaining weight of mangoes is:\n     \\[\n     40 \\text{ kg} - 20 \\text{ kg} = 20 \\text{ kg}\n     \\]\n\n4. **Convert the remaining weight into the number of mangoes:**\n   - Each kilogram contains 8 mangoes.\n   - Therefore, the number of mangoes in 20 kilograms is:\n     \\[\n     20 \\text{ kg} \\times 8 \\text{ mangoes/kg} = 160 \\text{ mangoes}\n     \\]\n\nThus, Colby still has \\(\\boxed{160}\\) mangoes."
+    },
+    {
+      "question_id": 157,
+      "pred_final_answer": "10",
+      "ground_truth_final_answer": "10",
+      "is_correct": true,
+      "generated_token_count": 302,
+      "reasoning": "Let's break down the problem step by step.\n\n1. **Calculate the total number of beads:**\n   The girl has 23 blue beads and 16 yellow beads.\n   \\[\n   \\text{Total beads} = 23 + 16 = 39\n   \\]\n\n2. **Divide the total number of beads into 3 equal parts:**\n   \\[\n   \\text{Beads per part} = \\frac{39}{3} = 13\n   \\]\n   So, each part initially contains 13 beads.\n\n3. **Determine the number of beads left after removal:**\n   After removing some beads from each part, she doubles the remaining beads to get 6 beads in each part.\n   Let \\( x \\) be the number of beads left in each part before doubling.\n   \\[\n   2x = 6 \\implies x = 3\n   \\]\n   This means that after removing some beads, there are 3 beads left in each part.\n\n4. **Calculate the number of beads removed from each part:**\n   Initially, each part had 13 beads. After removing some beads, 3 beads remain.\n   \\[\n   \\text{Beads removed from each part} = 13 - 3 = 10\n   \\]\n\nTherefore, the number of beads removed from each part is \\(\\boxed{10}\\)."
+    },
+    {
+      "question_id": 162,
+      "pred_final_answer": "2290",
+      "ground_truth_final_answer": "2290",
+      "is_correct": true,
+      "generated_token_count": 453,
+      "reasoning": "To find out how much Daniel spent on all the games in his collection, we need to break down the costs based on the information given and calculate accordingly.\n\nFirst, let's summarize the information:\n- Total number of video games: 346\n- Number of games bought for $12 each: 80\n- The remaining games (346 - 80 = 266) are split into two categories:\n  - 50% of these remaining games were bought for $7 each.\n  - The other 50% were bought for $3 each.\n\nLet's calculate the number of games in each category:\n\n1. **Games bought for $12 each:**\n   \\[\n   80 \\text{ games} \\times \\$12/\\text{game} = \\$960\n   \\]\n\n2. **Remaining games:**\n   \\[\n   346 - 80 = 266 \\text{ games}\n   \\]\n\n3. **50% of the remaining games bought for $7 each:**\n   \\[\n   50\\% \\text{ of } 266 = \\frac{266}{2} = 133 \\text{ games}\n   \\]\n   \\[\n   133 \\text{ games} \\times \\$7/\\text{game} = \\$931\n   \\]\n\n4. **The other 50% of the remaining games bought for $3 each:**\n   \\[\n   50\\% \\text{ of } 266 = \\frac{266}{2} = 133 \\text{ games}\n   \\]\n   \\[\n   133 \\text{ games} \\times \\$3/\\text{game} = \\$399\n   \\]\n\nNow, sum up all the amounts spent on the games:\n\\[\n\\$960 + \\$931 + \\$399 = \\$2290\n\\]\n\nTherefore, Daniel spent a total of \\(\\boxed{2290}\\) dollars on all the games in his collection."
+    },
+    {
+      "question_id": 168,
+      "pred_final_answer": "54",
+      "ground_truth_final_answer": "54",
+      "is_correct": true,
+      "generated_token_count": 322,
+      "reasoning": "To determine the total cost of Silvia's order with the discount applied, we need to follow these steps:\n\n1. **Calculate the cost of each item:**\n   - Quiches: \\(2 \\times \\$15.00 = \\$30.00\\)\n   - Croissants: \\(6 \\times \\$3.00 = \\$18.00\\)\n   - Buttermilk biscuits: \\(6 \\times \\$2.00 = \\$12.00\\)\n\n2. **Sum the costs to find the total order amount:**\n   \\[\n   \\$30.00 + \\$18.00 + \\$12.00 = \\$60.00\n   \\]\n\n3. **Determine if the discount applies:**\n   - The total order amount is \\$60.00, which is more than \\$50.00.\n   - Therefore, the 10% discount applies.\n\n4. **Calculate the discount amount:**\n   \\[\n   10\\% \\text{ of } \\$60.00 = 0.10 \\times \\$60.00 = \\$6.00\n   \\]\n\n5. **Subtract the discount from the total order amount:**\n   \\[\n   \\$60.00 - \\$6.00 = \\$54.00\n   \\]\n\nThus, the total cost of Silvia's order with the discount applied is \\(\\boxed{54}\\)."
+    },
+    {
+      "question_id": 177,
+      "pred_final_answer": "11000",
+      "ground_truth_final_answer": "11000",
+      "is_correct": true,
+      "generated_token_count": 301,
+      "reasoning": "To determine how much James was out of pocket, we need to calculate the amount he received from selling his old car and the amount he paid for the new car. Then, we'll find the difference between these two amounts.\n\n1. **Calculate the sale price of the old car:**\n   - The original value of the old car is $20,000.\n   - He sold it for 80% of its value.\n   \\[\n   \\text{Sale price} = 20,000 \\times 0.80 = 16,000\n   \\]\n\n2. **Calculate the purchase price of the new car:**\n   - The sticker price of the new car is $30,000.\n   - He bought it for 90% of its value.\n   \\[\n   \\text{Purchase price} = 30,000 \\times 0.90 = 27,000\n   \\]\n\n3. **Determine the net out-of-pocket expense:**\n   - Subtract the amount received from selling the old car from the amount paid for the new car.\n   \\[\n   \\text{Out of pocket} = 27,000 - 16,000 = 11,000\n   \\]\n\nThus, James was out of pocket \\(\\boxed{11,000}\\)."
+    },
+    {
+      "question_id": 181,
+      "pred_final_answer": "2019",
+      "ground_truth_final_answer": "21",
+      "is_correct": false,
+      "generated_token_count": 426,
+      "reasoning": "To determine how much the tree has grown from the end of 2017 to the end of 2019, we need to calculate its height at the end of each year and then find the difference between the initial height and the final height.\n\nLet's break it down step-by-step:\n\n1. **Initial Height (End of 2017):**\n   - The tree is 100 meters tall.\n\n2. **Height at the End of 2018:**\n   - The tree grows by 10% each year.\n   - Growth in 2018 = 10% of 100 meters = \\( 0.10 \\times 100 = 10 \\) meters.\n   - New height at the end of 2018 = Initial height + Growth = \\( 100 + 10 = 110 \\) meters.\n\n3. **Height at the End of 2019:**\n   - The tree grows by 10% again.\n   - Growth in 2019 = 10% of 110 meters = \\( 0.10 \\times 110 = 11 \\) meters.\n   - New height at the end of 2019 = Height at the end of 2018 + Growth = \\( 110 + 11 = 121 \\) meters.\n\n4. **Total Growth from 2017 to 2019:**\n   - Initial height at the end of 2017 = 100 meters.\n   - Final height at the end of 2019 = 121 meters.\n   - Total growth = Final height - Initial height = \\( 121 - 100 = 21 \\) meters.\n\nTherefore, the tree has grown 21 meters from the end of 2017 until the end of 2019."
+    },
+    {
+      "question_id": 184,
+      "pred_final_answer": "3750",
+      "ground_truth_final_answer": "3750",
+      "is_correct": true,
+      "generated_token_count": 276,
+      "reasoning": "To find the total number of positive cases after the third day, we need to account for both the new cases and the recoveries each day. Let's break it down step by step.\n\n### Initial Condition:\n- Total positive cases on Day 1: 2000\n\n### Day 2:\n- New cases: 500\n- Recoveries: 50\n\nTotal positive cases at the end of Day 2:\n\\[ \\text{Total cases} = \\text{Initial cases} + \\text{New cases} - \\text{Recoveries} \\]\n\\[ \\text{Total cases} = 2000 + 500 - 50 = 2450 \\]\n\n### Day 3:\n- New cases: 1500\n- Recoveries: 200\n\nTotal positive cases at the end of Day 3:\n\\[ \\text{Total cases} = \\text{Cases at the end of Day 2} + \\text{New cases} - \\text{Recoveries} \\]\n\\[ \\text{Total cases} = 2450 + 1500 - 200 = 3750 \\]\n\nThus, the total number of positive cases after the third day is **3750**."
+    },
+    {
+      "question_id": 185,
+      "pred_final_answer": "4",
+      "ground_truth_final_answer": "4",
+      "is_correct": true,
+      "generated_token_count": 146,
+      "reasoning": "To solve this problem, let's break it down into steps:\n\nStep 1: Determine how many trouts Caleb caught.\n- Caleb caught 2 trouts.\n\nStep 2: Calculate how many trouts Caleb's dad caught.\n- Caleb's dad caught three times as many trouts as Caleb.\n- So, Caleb's dad caught 3 * 2 = 6 trouts.\n\nStep 3: Find out how many more trouts Caleb's dad caught compared to Caleb.\n- Caleb's dad caught 6 trouts.\n- Caleb caught 2 trouts.\n- The difference is 6 - 2 = 4 trouts.\n\nTherefore, Caleb's dad caught 4 more trouts than Caleb."
+    },
+    {
+      "question_id": 186,
+      "pred_final_answer": "50",
+      "ground_truth_final_answer": "50",
+      "is_correct": true,
+      "generated_token_count": 206,
+      "reasoning": "To solve this problem, we need to convert all measurements to the same unit (inches) and then add them together.\n\nStep 1: Convert the length of the first snake from feet to inches.\n- We know that 1 foot = 12 inches.\n- The first snake is 2 feet long.\n- Therefore, 2 feet * 12 inches/foot = 24 inches.\n\nStep 2: Note the lengths of the other two snakes in inches.\n- The second snake is already given as 16 inches.\n- The third snake is also given as 10 inches.\n\nStep 3: Add up the lengths of all three snakes.\n- First snake: 24 inches\n- Second snake: 16 inches\n- Third snake: 10 inches\n\nTotal length = 24 inches + 16 inches + 10 inches = 50 inches\n\nTherefore, the total length of all of Christina's snakes combined is 50 inches."
+    },
+    {
+      "question_id": 189,
+      "pred_final_answer": "48",
+      "ground_truth_final_answer": "48",
+      "is_correct": true,
+      "generated_token_count": 417,
+      "reasoning": "To solve this problem, we need to establish the relationships between the ages of Thor, Captain America, Peter Parker, and Ironman based on the given information. Let's break it down step by step.\n\n1. **Define Variables:**\n   - Let \\( T \\) be the age of Thor.\n   - Let \\( C \\) be the age of Captain America.\n   - Let \\( P \\) be the age of Peter Parker.\n   - Let \\( I \\) be the age of Ironman.\n\n2. **Given Information:**\n   - Thor is 13 times older than Captain America: \\( T = 13C \\)\n   - Captain America is 7 times older than Peter Parker: \\( C = 7P \\)\n   - Ironman is 32 years older than Peter Parker: \\( I = P + 32 \\)\n   - Thor is 1456 years old: \\( T = 1456 \\)\n\n3. **Substitute Known Values:**\n   - Since \\( T = 1456 \\), we can substitute this into the first equation:\n     \\[\n     1456 = 13C\n     \\]\n\n4. **Solve for Captain America's Age:**\n   - To find \\( C \\):\n     \\[\n     C = \\frac{1456}{13} = 112\n     \\]\n\n5. **Find Peter Parker's Age:**\n   - Using the second equation \\( C = 7P \\):\n     \\[\n     112 = 7P\n     \\]\n     \\[\n     P = \\frac{112}{7} = 16\n     \\]\n\n6. **Determine Ironman's Age:**\n   - Using the third equation \\( I = P + 32 \\):\n     \\[\n     I = 16 + 32 = 48\n     \\]\n\nTherefore, Ironman is 48 years old."
+    },
+    {
+      "question_id": 201,
+      "pred_final_answer": "7",
+      "ground_truth_final_answer": "10",
+      "is_correct": false,
+      "generated_token_count": 429,
+      "reasoning": "To find out how many apples Archibald averages per week over the 7-week period, we need to break down his apple consumption and then calculate the average.\n\n### Step-by-Step Calculation:\n\n1. **First Two Weeks:**\n   - Archibald eats 1 apple per day.\n   - Number of days in two weeks = \\(2 \\times 7 = 14\\) days.\n   - Total apples eaten in the first two weeks = \\(1 \\text{ apple/day} \\times 14 \\text{ days} = 14 \\text{ apples}\\).\n\n2. **Next Three Weeks:**\n   - He eats the same number of apples as the total from the first two weeks.\n   - Total apples eaten in the next three weeks = \\(14 \\text{ apples}\\).\n\n3. **Following Two Weeks:**\n   - Archibald eats 3 apples per day.\n   - Number of days in two weeks = \\(2 \\times 7 = 14\\) days.\n   - Total apples eaten in the following two weeks = \\(3 \\text{ apples/day} \\times 14 \\text{ days} = 42 \\text{ apples}\\).\n\n4. **Total Apples Eaten Over 7 Weeks:**\n   - Sum of apples eaten in all periods:\n     \\[\n     14 \\text{ apples (first two weeks)} + 14 \\text{ apples (next three weeks)} + 42 \\text{ apples (following two weeks)} = 70 \\text{ apples}\n     \\]\n\n5. **Average Apples Per Week:**\n   - Total number of weeks = 7 weeks.\n   - Average apples per week = \\(\\frac{\\text{Total apples}}{\\text{Number of weeks}}\\)\n   - Average apples per week = \\(\\frac{70 \\text{ apples}}{7 \\text{ weeks}} = 10 \\text{ apples/week}\\)\n\nTherefore, Archibald averages 10 apples per week over the 7-week period."
+    },
+    {
+      "question_id": 205,
+      "pred_final_answer": "135",
+      "ground_truth_final_answer": "135",
+      "is_correct": true,
+      "generated_token_count": 260,
+      "reasoning": "To determine the total number of plates Wickham needs for his Christmas party, we can break down the problem into several steps:\n\n1. **Calculate the total number of guests:**\n   - Wickham initially invites 30 people.\n   - Half of these guests bring a plus one.\n   - Number of guests bringing a plus one: \\( \\frac{30}{2} = 15 \\)\n   - Total additional guests (plus ones): 15\n\n2. **Calculate the total number of attendees:**\n   - Initial guests: 30\n   - Plus ones: 15\n   - Total attendees: \\( 30 + 15 = 45 \\)\n\n3. **Determine the number of plates needed per guest:**\n   - Each guest will have a 3-course meal.\n   - Each course requires a new plate.\n   - Therefore, each guest needs 3 plates.\n\n4. **Calculate the total number of plates required:**\n   - Total attendees: 45\n   - Plates per attendee: 3\n   - Total plates needed: \\( 45 \\times 3 = 135 \\)\n\nThus, Wickham needs a total of 135 plates for his Christmas party."
+    },
+    {
+      "question_id": 211,
+      "pred_final_answer": "7200",
+      "ground_truth_final_answer": "7200",
+      "is_correct": true,
+      "generated_token_count": 492,
+      "reasoning": "To determine how much more Jessica pays for her expenses this year compared to last year, we need to calculate her total monthly expenses for both years and then find the difference over the course of a year.\n\n### Step-by-Step Calculation:\n\n#### Last Year's Monthly Expenses:\n1. **Rent**: $1000 per month\n2. **Food**: $200 per month\n3. **Car Insurance**: $100 per month\n\nTotal monthly expenses last year:\n\\[ \\text{Total Monthly Expenses (Last Year)} = 1000 + 200 + 100 = 1300 \\]\n\nTotal annual expenses last year:\n\\[ \\text{Total Annual Expenses (Last Year)} = 1300 \\times 12 = 15600 \\]\n\n#### This Year's Monthly Expenses:\n1. **Rent**: Increased by 30%\n   \\[ \\text{New Rent} = 1000 + (0.30 \\times 1000) = 1000 + 300 = 1300 \\]\n\n2. **Food**: Increased by 50%\n   \\[ \\text{New Food Cost} = 200 + (0.50 \\times 200) = 200 + 100 = 300 \\]\n\n3. **Car Insurance**: Tripled\n   \\[ \\text{New Car Insurance} = 3 \\times 100 = 300 \\]\n\nTotal monthly expenses this year:\n\\[ \\text{Total Monthly Expenses (This Year)} = 1300 + 300 + 300 = 1900 \\]\n\nTotal annual expenses this year:\n\\[ \\text{Total Annual Expenses (This Year)} = 1900 \\times 12 = 22800 \\]\n\n#### Difference in Annual Expenses:\n\\[ \\text{Difference} = \\text{Total Annual Expenses (This Year)} - \\text{Total Annual Expenses (Last Year)} \\]\n\\[ \\text{Difference} = 22800 - 15600 = 7200 \\]\n\nThus, Jessica pays **$7200 more** for her expenses this year compared to last year."
+    },
+    {
+      "question_id": 215,
+      "pred_final_answer": "24",
+      "ground_truth_final_answer": "24",
+      "is_correct": true,
+      "generated_token_count": 180,
+      "reasoning": "To solve this problem, we'll break it down into steps:\n\nStep 1: Calculate the number of adults.\n- We know that 40% of the church members are adults.\n- To find the number of adults, we calculate 40% of 120:\n  0.40 * 120 = 48 adults\n\nStep 2: Calculate the number of children.\n- Since the rest of the members are children, we subtract the number of adults from the total number of members:\n  120 - 48 = 72 children\n\nStep 3: Find the difference between the number of children and adults.\n- We subtract the number of adults from the number of children:\n  72 - 48 = 24\n\nTherefore, there are 24 more children than adults in the church."
+    },
+    {
+      "question_id": 228,
+      "pred_final_answer": "80",
+      "ground_truth_final_answer": "40",
+      "is_correct": false,
+      "generated_token_count": 215,
+      "reasoning": "To solve this problem, we'll break it down into steps:\n\nStep 1: Calculate the number of employees who drive to work.\n- 60% of 200 employees drive to work.\n- 0.60 * 200 = 120 employees drive to work.\n\nStep 2: Calculate the number of employees who don't drive to work.\n- Total employees - Employees who drive = Employees who don't drive\n- 200 - 120 = 80 employees don't drive to work.\n\nStep 3: Calculate the number of employees who take public transportation.\n- Half of the employees who don't drive take public transportation.\n- 80 / 2 = 40 employees take public transportation.\n\nStep 4: Calculate how many more employees drive to work than take public transportation.\n- Employees who drive - Employees who take public transportation\n- 120 - 40 = 80\n\nTherefore, 80 more employees drive to work than take public transportation."
+    },
+    {
+      "question_id": 230,
+      "pred_final_answer": "60",
+      "ground_truth_final_answer": "60",
+      "is_correct": true,
+      "generated_token_count": 306,
+      "reasoning": "To find the average number of days it takes for both Emery and Serena to read the book, we need to follow these steps:\n\n1. **Determine how long it takes Serena to read the book:**\n   - We know that Emery reads five times as fast as Serena.\n   - If Emery takes 20 days to read the book, then Serena will take \\(5 \\times 20\\) days because she reads at one-fifth the speed of Emery.\n\n   \\[\n   \\text{Days for Serena} = 5 \\times 20 = 100 \\text{ days}\n   \\]\n\n2. **Calculate the total number of days taken by both:**\n   - Emery takes 20 days.\n   - Serena takes 100 days.\n\n   \\[\n   \\text{Total days} = 20 + 100 = 120 \\text{ days}\n   \\]\n\n3. **Find the average number of days:**\n   - To find the average, divide the total number of days by the number of people (which is 2).\n\n   \\[\n   \\text{Average days} = \\frac{\\text{Total days}}{2} = \\frac{120}{2} = 60 \\text{ days}\n   \\]\n\nTherefore, the average number of days it takes for Emery and Serena to read the book is \\(\\boxed{60}\\) days."
+    },
+    {
+      "question_id": 231,
+      "pred_final_answer": "7",
+      "ground_truth_final_answer": "7",
+      "is_correct": true,
+      "generated_token_count": 341,
+      "reasoning": "To solve this problem, we need to determine how many beakers without copper ions were tested before all 8 beakers with copper ions were identified. Let's break it down step by step.\n\n1. **Total Beakers and Copper Ions:**\n   - Total beakers: 22\n   - Beakers with copper ions: 8\n\n2. **Drops Used:**\n   - Drops used per beaker: 3\n   - Total drops used: 45\n\n3. **Calculate Number of Beakers Tested:**\n   Since each beaker requires 3 drops, we can find the number of beakers tested by dividing the total drops used by the drops per beaker:\n   \\[\n   \\text{Number of beakers tested} = \\frac{45 \\text{ drops}}{3 \\text{ drops/beaker}} = 15 \\text{ beakers}\n   \\]\n\n4. **Beakers with Copper Ions Found:**\n   We know that all 8 beakers with copper ions were found within these 15 tests.\n\n5. **Beakers Without Copper Ions Tested:**\n   To find the number of beakers without copper ions that were tested, we subtract the number of beakers with copper ions from the total number of beakers tested:\n   \\[\n   \\text{Beakers without copper ions tested} = 15 \\text{ beakers tested} - 8 \\text{ beakers with copper ions} = 7 \\text{ beakers}\n   \\]\n\nThus, the number of beakers without copper ions that were tested is \\( \\boxed{7} \\)."
+    },
+    {
+      "question_id": 234,
+      "pred_final_answer": "8",
+      "ground_truth_final_answer": "8",
+      "is_correct": true,
+      "generated_token_count": 423,
+      "reasoning": "To determine how many nickels Mark gets in his change, we need to follow these steps:\n\n1. **Calculate the total cost of the items:**\n   - Cost of the loaf of bread: \\( \\$4.20 \\)\n   - Cost of the cheese: \\( \\$2.05 \\)\n\n   Total cost:\n   \\[\n   4.20 + 2.05 = 6.25\n   \\]\n\n2. **Determine the amount of money Mark gave to the cashier:**\n   - Amount given: \\( \\$7.00 \\)\n\n3. **Calculate the change Mark should receive:**\n   \\[\n   7.00 - 6.25 = 0.75\n   \\]\n   So, Mark should receive \\( \\$0.75 \\) in change.\n\n4. **Identify the denominations available for change:**\n   - The cashier has 1 quarter (\\( \\$0.25 \\))\n   - The cashier has 1 dime (\\( \\$0.10 \\))\n   - The cashier has a bunch of nickels (\\( \\$0.05 \\))\n\n5. **Use the largest denominations first to make up the change:**\n   - Use 1 quarter: \\( \\$0.25 \\)\n   - Remaining change needed: \n     \\[\n     0.75 - 0.25 = 0.50\n     \\]\n\n   - Use 1 dime: \\( \\$0.10 \\)\n   - Remaining change needed:\n     \\[\n     0.50 - 0.10 = 0.40\n     \\]\n\n6. **Use nickels to make up the remaining change:**\n   - Each nickel is worth \\( \\$0.05 \\)\n   - Number of nickels needed:\n     \\[\n     \\frac{0.40}{0.05} = 8\n     \\]\n\nTherefore, Mark will receive 8 nickels in his change."
+    },
+    {
+      "question_id": 245,
+      "pred_final_answer": "2280",
+      "ground_truth_final_answer": "2280",
+      "is_correct": true,
+      "generated_token_count": 300,
+      "reasoning": "To find the total number of pieces of fruit, we need to calculate the total number of oranges and the total number of nectarines separately, then add these two totals together.\n\nStep 1: Calculate the total number of oranges.\n- Each crate contains 150 oranges.\n- There are 12 crates.\n- Total number of oranges = Number of crates × Oranges per crate\n\\[ \\text{Total oranges} = 12 \\times 150 \\]\n\n\\[ \\text{Total oranges} = 1800 \\]\n\nStep 2: Calculate the total number of nectarines.\n- Each box holds 30 nectarines.\n- There are 16 boxes.\n- Total number of nectarines = Number of boxes × Nectarines per box\n\\[ \\text{Total nectarines} = 16 \\times 30 \\]\n\n\\[ \\text{Total nectarines} = 480 \\]\n\nStep 3: Add the total number of oranges and nectarines to get the total number of pieces of fruit.\n\\[ \\text{Total fruit} = \\text{Total oranges} + \\text{Total nectarines} \\]\n\n\\[ \\text{Total fruit} = 1800 + 480 \\]\n\n\\[ \\text{Total fruit} = 2280 \\]\n\nTherefore, there are 2280 pieces of fruit in total."
+    },
+    {
+      "question_id": 254,
+      "pred_final_answer": "30",
+      "ground_truth_final_answer": "30",
+      "is_correct": true,
+      "generated_token_count": 268,
+      "reasoning": "To solve this problem, we need to calculate the total number of cars Nate walked past and then determine how long it took him based on his walking speed.\n\nStep 1: Calculate the total number of cars in Section G.\n- Section G has 15 rows.\n- Each row holds 10 cars.\n- Total cars in Section G = 15 rows * 10 cars/row = 150 cars.\n\nStep 2: Calculate the total number of cars in Section H.\n- Section H has 20 rows.\n- Each row holds 9 cars.\n- Total cars in Section H = 20 rows * 9 cars/row = 180 cars.\n\nStep 3: Calculate the total number of cars Nate walked past.\n- Total cars = Cars in Section G + Cars in Section H\n- Total cars = 150 cars + 180 cars = 330 cars.\n\nStep 4: Determine how long it took Nate to walk past all these cars.\n- Nate walks past 11 cars per minute.\n- Time spent = Total cars / Cars per minute\n- Time spent = 330 cars / 11 cars/minute = 30 minutes.\n\nTherefore, Nate spent 30 minutes searching the parking lot."
+    },
+    {
+      "question_id": 255,
+      "pred_final_answer": "25",
+      "ground_truth_final_answer": "25",
+      "is_correct": true,
+      "generated_token_count": 171,
+      "reasoning": "To determine Matt's age 10 years from now, we can follow these steps:\n\n1. **Determine Bush's current age:**\n   - According to the problem, Bush is currently 12 years old.\n\n2. **Find out Matt's current age:**\n   - The problem states that Bush is younger than Matt by 3 years.\n   - Therefore, Matt's current age is \\( 12 + 3 = 15 \\) years old.\n\n3. **Calculate Matt's age 10 years from now:**\n   - If Matt is currently 15 years old, then in 10 years, he will be \\( 15 + 10 = 25 \\) years old.\n\nThus, Matt's age 10 years from now will be 25 years old."
+    },
+    {
+      "question_id": 258,
+      "pred_final_answer": "200",
+      "ground_truth_final_answer": "200",
+      "is_correct": true,
+      "generated_token_count": 423,
+      "reasoning": "To solve this problem, we need to find the heights of Anne's sister and Bella based on the given information, and then calculate the height difference between Bella and Anne's sister.\n\n1. **Determine Anne's sister's height:**\n   - We know that Anne is 2 times as tall as her sister.\n   - Let \\( h_s \\) be the height of Anne's sister.\n   - Given that Anne's height (\\( h_A \\)) is 80 cm, we can write:\n     \\[\n     h_A = 2 \\times h_s\n     \\]\n   - Substituting the value of \\( h_A \\):\n     \\[\n     80 = 2 \\times h_s\n     \\]\n   - Solving for \\( h_s \\):\n     \\[\n     h_s = \\frac{80}{2} = 40 \\text{ cm}\n     \\]\n\n2. **Determine Bella's height:**\n   - We know that Bella is 3 times as tall as Anne.\n   - Let \\( h_B \\) be the height of Bella.\n   - Given that Anne's height (\\( h_A \\)) is 80 cm, we can write:\n     \\[\n     h_B = 3 \\times h_A\n     \\]\n   - Substituting the value of \\( h_A \\):\n     \\[\n     h_B = 3 \\times 80 = 240 \\text{ cm}\n     \\]\n\n3. **Calculate the height difference between Bella and Anne's sister:**\n   - Bella's height (\\( h_B \\)) is 240 cm.\n   - Anne's sister's height (\\( h_s \\)) is 40 cm.\n   - The height difference is:\n     \\[\n     \\text{Height difference} = h_B - h_s = 240 - 40 = 200 \\text{ cm}\n     \\]\n\nTherefore, the height difference between Bella and Anne's sister is 200 cm."
+    },
+    {
+      "question_id": 261,
+      "pred_final_answer": "1",
+      "ground_truth_final_answer": "1",
+      "is_correct": true,
+      "generated_token_count": 480,
+      "reasoning": "To solve this problem, we need to determine the cost of one apple given the conditions provided. Let's break it down step by step.\n\n### Step 1: Define Variables\nLet:\n- \\( A \\) be the cost of one apple.\n- \\( W \\) be the cost of one watermelon.\n- \\( O \\) be the cost of one orange, which is given as $0.50.\n\n### Step 2: Understand the Relationship Between Apples and Watermelons\nWe know that 4 apples cost the same as 1 watermelon:\n\\[ 4A = W \\]\n\n### Step 3: Determine the Number of Each Type of Fruit\nYou bought 36 fruits evenly split between oranges, apples, and watermelons. Therefore:\n\\[ \\text{Number of each type of fruit} = \\frac{36}{3} = 12 \\]\nSo, you bought 12 oranges, 12 apples, and 12 watermelons.\n\n### Step 4: Write the Total Cost Equation\nThe total cost of all the fruits is $66. We can write the equation for the total cost as follows:\n\\[ 12O + 12A + 12W = 66 \\]\n\n### Step 5: Substitute Known Values\nWe know \\( O = 0.50 \\):\n\\[ 12(0.50) + 12A + 12W = 66 \\]\n\\[ 6 + 12A + 12W = 66 \\]\n\nSubtract 6 from both sides:\n\\[ 12A + 12W = 60 \\]\n\n### Step 6: Use the Relationship Between Apples and Watermelons\nFrom the relationship \\( 4A = W \\), substitute \\( W \\) in the equation:\n\\[ 12A + 12(4A) = 60 \\]\n\\[ 12A + 48A = 60 \\]\n\\[ 60A = 60 \\]\n\n### Step 7: Solve for \\( A \\)\n\\[ A = \\frac{60}{60} = 1 \\]\n\nThus, the cost of one apple is:\n\\[ \\boxed{1} \\]"
+    },
+    {
+      "question_id": 264,
+      "pred_final_answer": "21600",
+      "ground_truth_final_answer": "21600",
+      "is_correct": true,
+      "generated_token_count": 266,
+      "reasoning": "To solve this problem, we need to break down the earnings into weekdays and weekends, then calculate the total for a month.\n\n### Step 1: Calculate daily earnings\n- Weekday earnings: $600 per day\n- Weekend earnings: Twice as much as weekdays, so $600 * 2 = $1200 per day\n\n### Step 2: Calculate weekly earnings\n- There are 5 weekdays in a week.\n- There are 2 weekend days in a week.\n\n#### Weekday earnings per week:\n\\[ 5 \\text{ days} \\times \\$600/\\text{day} = \\$3000 \\]\n\n#### Weekend earnings per week:\n\\[ 2 \\text{ days} \\times \\$1200/\\text{day} = \\$2400 \\]\n\n#### Total weekly earnings:\n\\[ \\$3000 + \\$2400 = \\$5400 \\]\n\n### Step 3: Calculate monthly earnings\nAssuming a month has approximately 4 weeks:\n\n\\[ 4 \\text{ weeks} \\times \\$5400/\\text{week} = \\$21600 \\]\n\nTherefore, the restaurant earns **$21,600** by the end of the month."
+    },
+    {
+      "question_id": 265,
+      "pred_final_answer": "9",
+      "ground_truth_final_answer": "9",
+      "is_correct": true,
+      "generated_token_count": 279,
+      "reasoning": "To solve this problem, we need to determine the total height Barry can reach when standing on Larry's shoulders. Let's break it down step by step.\n\n1. **Determine Larry's shoulder height:**\n   - Larry's full height is 5 feet.\n   - His shoulder height is 20% less than his full height.\n   - Calculate 20% of Larry's full height:\n     \\[\n     0.20 \\times 5 \\text{ feet} = 1 \\text{ foot}\n     \\]\n   - Subtract this from Larry's full height to find his shoulder height:\n     \\[\n     5 \\text{ feet} - 1 \\text{ foot} = 4 \\text{ feet}\n     \\]\n\n2. **Calculate the combined height when Barry stands on Larry's shoulders:**\n   - Barry can reach up to 5 feet from the ground.\n   - When Barry stands on Larry's shoulders, he adds his reach to Larry's shoulder height.\n   - Add Barry's reach to Larry's shoulder height:\n     \\[\n     4 \\text{ feet (Larry's shoulder height)} + 5 \\text{ feet (Barry's reach)} = 9 \\text{ feet}\n     \\]\n\nTherefore, when Barry stands on Larry's shoulders, they can reach up to 9 feet high."
+    },
+    {
+      "question_id": 267,
+      "pred_final_answer": "2",
+      "ground_truth_final_answer": "2",
+      "is_correct": true,
+      "generated_token_count": 325,
+      "reasoning": "To solve this problem, we need to follow these steps:\n\n### Step 1: Calculate the total number of pizzas Jimmy can make during the 7-hour period.\n- There are 60 minutes in an hour.\n- Jimmy has 7 hours to make pizzas.\n\n\\[ \\text{Total minutes available} = 7 \\times 60 = 420 \\text{ minutes} \\]\n\n- It takes Jimmy 10 minutes to make one pizza.\n\n\\[ \\text{Number of pizzas Jimmy can make} = \\frac{420}{10} = 42 \\text{ pizzas} \\]\n\n### Step 2: Calculate the amount of flour used to make these 42 pizzas.\n- Each pizza requires 0.5 kg of flour.\n\n\\[ \\text{Flour used} = 42 \\times 0.5 = 21 \\text{ kg} \\]\n\n### Step 3: Determine the amount of flour left after making 42 pizzas.\n- Jimmy started with a 22 kg sack of flour.\n\n\\[ \\text{Flour left} = 22 - 21 = 1 \\text{ kg} \\]\n\n### Step 4: Calculate how many additional pizzas Jimmy can make with the remaining 1 kg of flour.\n- Each pizza requires 0.5 kg of flour.\n\n\\[ \\text{Additional pizzas} = \\frac{1}{0.5} = 2 \\text{ pizzas} \\]\n\nTherefore, Jimmy can make **2 more pizzas** to bring home with the flour left."
+    },
+    {
+      "question_id": 269,
+      "pred_final_answer": "13",
+      "ground_truth_final_answer": "13",
+      "is_correct": true,
+      "generated_token_count": 288,
+      "reasoning": "Let's break down John's earnings and the amount he needs step by step.\n\n1. **Earnings on Saturday:**\n   John earned $18 on Saturday.\n\n2. **Earnings on Sunday:**\n   John earned half of what he earned on Saturday.\n   \\[\n   \\text{Sunday earnings} = \\frac{1}{2} \\times 18 = 9\n   \\]\n\n3. **Total earnings for this weekend:**\n   Add the earnings from Saturday and Sunday.\n   \\[\n   \\text{Total earnings this weekend} = 18 + 9 = 27\n   \\]\n\n4. **Earnings from the previous weekend:**\n   John earned $20 the previous weekend.\n\n5. **Total earnings over both weekends:**\n   Add the earnings from both weekends.\n   \\[\n   \\text{Total earnings} = 27 + 20 = 47\n   \\]\n\n6. **Amount needed for the pogo stick:**\n   John needs $60 to buy the pogo stick.\n\n7. **Amount still needed:**\n   Subtract the total earnings from the amount needed.\n   \\[\n   \\text{Amount still needed} = 60 - 47 = 13\n   \\]\n\nTherefore, John needs to earn an additional $13 to have enough money to buy the pogo stick."
+    },
+    {
+      "question_id": 273,
+      "pred_final_answer": "21",
+      "ground_truth_final_answer": "21",
+      "is_correct": true,
+      "generated_token_count": 283,
+      "reasoning": "To determine the new length of Ursula's commercial after shortening it by 30%, we can follow these steps:\n\n1. **Identify the original length of the commercial:**\n   The original length of the commercial is 30 seconds.\n\n2. **Calculate 30% of the original length:**\n   To find 30% of 30 seconds, we use the formula:\n   \\[\n   \\text{Percentage} = \\left(\\frac{\\text{Percentage Value}}{100}\\right) \\times \\text{Original Length}\n   \\]\n   Plugging in the values:\n   \\[\n   30\\% \\text{ of } 30 \\text{ seconds} = \\left(\\frac{30}{100}\\right) \\times 30 = 0.30 \\times 30 = 9 \\text{ seconds}\n   \\]\n\n3. **Subtract the calculated percentage from the original length:**\n   We need to subtract the 9 seconds from the original 30 seconds:\n   \\[\n   30 \\text{ seconds} - 9 \\text{ seconds} = 21 \\text{ seconds}\n   \\]\n\nTherefore, after Ursula shortens the commercial by 30%, the new length of the commercial will be 21 seconds."
+    },
+    {
+      "question_id": 277,
+      "pred_final_answer": "175",
+      "ground_truth_final_answer": "175",
+      "is_correct": true,
+      "generated_token_count": 233,
+      "reasoning": "To solve this problem, let's break it down into steps:\n\n### Step 1: Calculate the total cost of the three puppies on sale.\n- Each of the three puppies costs $150.\n- Therefore, the total cost for these three puppies is:\n  \\[\n  3 \\times 150 = 450\n  \\]\n\n### Step 2: Determine the remaining amount spent on the other two puppies.\n- The total cost for all five puppies is $800.\n- Subtract the cost of the three puppies from the total cost to find out how much was spent on the other two puppies:\n  \\[\n  800 - 450 = 350\n  \\]\n\n### Step 3: Calculate the cost per puppy for the remaining two puppies.\n- Since the remaining two puppies cost the same amount and together they cost $350, we divide $350 by 2:\n  \\[\n  \\frac{350}{2} = 175\n  \\]\n\nTherefore, each of the two other puppies costs $175."
+    },
+    {
+      "question_id": 283,
+      "pred_final_answer": "11",
+      "ground_truth_final_answer": "11",
+      "is_correct": true,
+      "generated_token_count": 249,
+      "reasoning": "To determine how much money the winner of the lottery will receive, we need to follow these steps:\n\n1. **Calculate the total revenue from selling the tickets:**\n   - The first ticket is sold for $1.\n   - The second ticket is sold for $2 (which is $1 more than the first).\n   - The third ticket is sold for $3 (which is $1 more than the second).\n   - The fourth ticket is sold for $4 (which is $1 more than the third).\n   - The fifth ticket is sold for $5 (which is $1 more than the fourth).\n\n   We can sum these amounts to find the total revenue:\n   \\[\n   1 + 2 + 3 + 4 + 5 = 15\n   \\]\n\n2. **Determine Lily's profit:**\n   - Lily plans to keep a $4 profit.\n\n3. **Calculate the amount given as the prize:**\n   - Subtract Lily's profit from the total revenue to find the prize money:\n   \\[\n   15 - 4 = 11\n   \\]\n\nThus, the winner of the lottery will receive \\(\\boxed{11}\\) dollars."
+    },
+    {
+      "question_id": 286,
+      "pred_final_answer": "2",
+      "ground_truth_final_answer": "2",
+      "is_correct": true,
+      "generated_token_count": 479,
+      "reasoning": "Let's break down the problem step by step:\n\n1. **Total Students Assigned:**\n   - There were 18 students assigned to the minibus.\n\n2. **Number of Boys:**\n   - Out of these 18 students, 8 were boys.\n\n3. **Number of Girls:**\n   - The remaining students were girls.\n   - Number of girls = Total students - Number of boys\n   - Number of girls = 18 - 8 = 10\n\n4. **On the Day of the Field Trip:**\n   - The number of boys and girls who joined the trip was the same.\n\n5. **Determine the Number of Boys and Girls Who Joined:**\n   - Since the number of boys and girls who joined is the same, let's denote this number as \\( x \\).\n   - Therefore, \\( x \\) boys and \\( x \\) girls joined the trip.\n\n6. **Calculate the Number of Girls Who Did Not Join:**\n   - Initially, there were 10 girls.\n   - If \\( x \\) girls joined the trip, then the number of girls who did not join is:\n     \\[\n     10 - x\n     \\]\n\n7. **Find the Value of \\( x \\):**\n   - We know that the total number of students who joined the trip is \\( x \\) boys + \\( x \\) girls.\n   - This means \\( 2x \\) students joined the trip.\n   - Since the total number of students assigned was 18, and the number of boys who joined is 8 (which is less than or equal to the total number of boys), we can infer that \\( x \\leq 8 \\).\n\n8. **Solve for \\( x \\):**\n   - Given that the number of boys and girls who joined is the same, and there were initially 8 boys, it follows that \\( x = 8 \\).\n\n9. **Calculate the Number of Girls Who Did Not Join:**\n   - Number of girls who did not join = Initial number of girls - Number of girls who joined\n   - Number of girls who did not join = 10 - 8 = 2\n\nTherefore, the number of girls who were not able to join the field trip is \\( \\boxed{2} \\)."
+    },
+    {
+      "question_id": 294,
+      "pred_final_answer": "50",
+      "ground_truth_final_answer": "50",
+      "is_correct": true,
+      "generated_token_count": 194,
+      "reasoning": "To find out how much money Phillip has left after his purchases, we need to follow these steps:\n\n1. **Determine the total amount of money given to Phillip:**\n   - Phillip was given $95.\n\n2. **Calculate the total amount spent:**\n   - Phillip spent $14 on oranges.\n   - He spent $25 on apples.\n   - He spent $6 on candy.\n   \n   To find the total amount spent, add these amounts together:\n   \\[\n   14 + 25 + 6 = 45\n   \\]\n\n3. **Subtract the total amount spent from the initial amount given:**\n   - Initial amount: $95\n   - Total amount spent: $45\n\n   Subtract the total amount spent from the initial amount:\n   \\[\n   95 - 45 = 50\n   \\]\n\nTherefore, Phillip has $50 left."
+    },
+    {
+      "question_id": 309,
+      "pred_final_answer": "84000",
+      "ground_truth_final_answer": "84000",
+      "is_correct": true,
+      "generated_token_count": 278,
+      "reasoning": "To determine how many words Carl can type in 7 days, we need to break down the problem into smaller steps and solve it systematically.\n\n1. **Calculate the number of minutes Carl types each day:**\n   - Carl types for 4 hours each day.\n   - There are 60 minutes in an hour.\n   \\[\n   4 \\text{ hours/day} \\times 60 \\text{ minutes/hour} = 240 \\text{ minutes/day}\n   \\]\n\n2. **Determine the number of words Carl types each day:**\n   - Carl types at a speed of 50 words per minute.\n   \\[\n   240 \\text{ minutes/day} \\times 50 \\text{ words/minute} = 12000 \\text{ words/day}\n   \\]\n\n3. **Calculate the total number of words Carl types in 7 days:**\n   - We know he types 12000 words each day.\n   \\[\n   12000 \\text{ words/day} \\times 7 \\text{ days} = 84000 \\text{ words}\n   \\]\n\nThus, the total number of words Carl can type in 7 days is:\n\\[\n\\boxed{84000}\n\\]"
+    },
+    {
+      "question_id": 315,
+      "pred_final_answer": "90",
+      "ground_truth_final_answer": "90",
+      "is_correct": true,
+      "generated_token_count": 435,
+      "reasoning": "To solve this problem, we need to determine how long the remaining food will last after 100 people leave the castle.\n\nLet's break it down step-by-step:\n\n1. **Initial Setup:**\n   - The castle has enough provisions to feed 300 people for 90 days.\n   - This means the total amount of food available is sufficient for \\(300 \\times 90 = 27000\\) person-days (where one person-day is the amount of food needed for one person for one day).\n\n2. **Food Consumption in the First 30 Days:**\n   - For the first 30 days, there are 300 people consuming the food.\n   - The total food consumed in these 30 days is \\(300 \\times 30 = 9000\\) person-days.\n\n3. **Remaining Food After 30 Days:**\n   - The initial total food was 27000 person-days.\n   - After 30 days, 9000 person-days have been consumed.\n   - Therefore, the remaining food is \\(27000 - 9000 = 18000\\) person-days.\n\n4. **Number of People Remaining:**\n   - After 30 days, 100 people leave the castle.\n   - So, the number of people remaining is \\(300 - 100 = 200\\) people.\n\n5. **Duration Until All Food Runs Out:**\n   - We now have 18000 person-days of food left.\n   - There are 200 people remaining.\n   - The number of days the remaining food will last is given by dividing the remaining food by the number of people:\n     \\[\n     \\text{Number of days} = \\frac{18000 \\text{ person-days}}{200 \\text{ people}} = 90 \\text{ days}\n     \\]\n\nTherefore, the remaining food will last for 90 more days."
+    },
+    {
+      "question_id": 319,
+      "pred_final_answer": "18",
+      "ground_truth_final_answer": "18",
+      "is_correct": true,
+      "generated_token_count": 231,
+      "reasoning": "Let's break down the problem step by step:\n\n1. **Initial Number of Diaries:**\n   - Natalie's sister initially had 8 diaries.\n\n2. **Buying Double the Number of Diaries:**\n   - She bought double the number of diaries she already had.\n   - Double of 8 is \\( 8 \\times 2 = 16 \\).\n   - So, after buying more diaries, she had \\( 8 + 16 = 24 \\) diaries.\n\n3. **Losing 1/4 of Her Diaries:**\n   - She lost 1/4 of the total number of diaries she had at that point.\n   - 1/4 of 24 is \\( \\frac{24}{4} = 6 \\).\n   - Therefore, she lost 6 diaries.\n\n4. **Final Number of Diaries:**\n   - After losing 6 diaries, the remaining number of diaries is \\( 24 - 6 = 18 \\).\n\nSo, Natalie's sister has 18 diaries now."
+    },
+    {
+      "question_id": 321,
+      "pred_final_answer": "14000",
+      "ground_truth_final_answer": "15400",
+      "is_correct": false,
+      "generated_token_count": 260,
+      "reasoning": "To solve this problem, we need to follow these steps:\n\n1. **Determine Fred's salary five months ago:**\n   - Given that Fred's salary five months ago was $1000.\n\n2. **Calculate Mike's salary five months ago:**\n   - Mike earned 10 times more than Fred.\n   - Therefore, Mike's salary five months ago = \\( 10 \\times \\$1000 = \\$10,000 \\).\n\n3. **Calculate the increase in Mike's salary:**\n   - Mike's salary has increased by 40%.\n   - To find the new salary, we first calculate 40% of his original salary:\n     \\[\n     40\\% \\text{ of } \\$10,000 = 0.40 \\times \\$10,000 = \\$4,000\n     \\]\n\n4. **Determine Mike's current salary:**\n   - Add the increase to his original salary:\n     \\[\n     \\$10,000 + \\$4,000 = \\$14,000\n     \\]\n\nTherefore, Mike's current salary is \\(\\boxed{14000}\\)."
+    },
+    {
+      "question_id": 322,
+      "pred_final_answer": "41",
+      "ground_truth_final_answer": "41",
+      "is_correct": true,
+      "generated_token_count": 261,
+      "reasoning": "To determine how much the shady restaurant charged you for gratuities, we need to break down the bill step-by-step.\n\n### Step 1: Calculate the subtotal before tax\nThe items you ordered were:\n- NY Striploin: $80\n- Glass of wine: $10\n\nSubtotal = $80 + $10 = $90\n\n### Step 2: Calculate the sales tax\nThe sales tax rate is 10%. Therefore, the tax on the subtotal is:\nTax = Subtotal * Tax Rate\nTax = $90 * 0.10 = $9\n\n### Step 3: Calculate the total bill before gratuities\nTotal before gratuities = Subtotal + Tax\nTotal before gratuities = $90 + $9 = $99\n\n### Step 4: Determine the amount charged for gratuities\nYour actual total bill was $140. The difference between this and the total before gratuities is the amount charged for gratuities.\nGratuities = Total bill - Total before gratuities\nGratuities = $140 - $99 = $41\n\nTherefore, the shady restaurant charged you **$41** for gratuities."
+    },
+    {
+      "question_id": 323,
+      "pred_final_answer": "12",
+      "ground_truth_final_answer": "12",
+      "is_correct": true,
+      "generated_token_count": 308,
+      "reasoning": "To determine how much Jay and Gloria will spend at the craft store, we need to follow these steps:\n\n1. **Calculate the total number of people who need flags:**\n   - Jay invited 22 people.\n   - Gloria invited 36 people.\n   - Jay and Gloria also want a flag each.\n\n   Total number of people = 22 (Jay's guests) + 36 (Gloria's guests) + 2 (Jay and Gloria) = 60 people.\n\n2. **Determine the number of flags needed:**\n   Since each person needs one flag, they need 60 flags in total.\n\n3. **Calculate the cost of the flags:**\n   - The craft store sells flags in packs of 5 for $1.00.\n   - To find out how many packs they need, divide the total number of flags by the number of flags per pack:\n     \\[\n     \\frac{60 \\text{ flags}}{5 \\text{ flags/pack}} = 12 \\text{ packs}\n     \\]\n\n4. **Calculate the total cost:**\n   - Each pack costs $1.00.\n   - Therefore, the total cost is:\n     \\[\n     12 \\text{ packs} \\times \\$1.00/\\text{pack} = \\$12.00\n     \\]\n\nThus, Jay and Gloria will spend \\(\\boxed{12}\\) dollars at the craft store."
+    },
+    {
+      "question_id": 325,
+      "pred_final_answer": "91",
+      "ground_truth_final_answer": "91",
+      "is_correct": true,
+      "generated_token_count": 230,
+      "reasoning": "To solve this problem, we need to calculate the number of questions Bob created each hour and then sum them up.\n\n1. **First Hour:**\n   - Bob created 13 questions in the first hour.\n   \n2. **Second Hour:**\n   - Bob doubled his rate from the first hour.\n   - Therefore, the rate for the second hour is \\( 13 \\times 2 = 26 \\) questions per hour.\n   \n3. **Third Hour:**\n   - Bob doubled his rate from the second hour.\n   - Therefore, the rate for the third hour is \\( 26 \\times 2 = 52 \\) questions per hour.\n\nNow, let's sum the total number of questions created over the three hours:\n\n\\[\n13 \\text{ (first hour)} + 26 \\text{ (second hour)} + 52 \\text{ (third hour)}\n\\]\n\nAdding these together:\n\n\\[\n13 + 26 + 52 = 91\n\\]\n\nThus, Bob created a total of 91 questions in the three hours."
+    },
+    {
+      "question_id": 338,
+      "pred_final_answer": "2",
+      "ground_truth_final_answer": "2",
+      "is_correct": true,
+      "generated_token_count": 332,
+      "reasoning": "To determine the rate of gasoline consumption for Bobby's truck, we need to calculate the total distance traveled and the total amount of gasoline used.\n\n### Step-by-Step Calculation:\n\n1. **Trip to the Supermarket:**\n   - Distance to the supermarket: 5 miles.\n   - Distance back home: 5 miles.\n   - Total distance for this trip: \\(5 + 5 = 10\\) miles.\n\n2. **Trip to the Farm:**\n   - Distance driven towards the farm before turning around: 2 miles.\n   - Distance back home after turning around: 2 miles.\n   - Distance from home to the farm (after retrieving tools): 6 miles.\n   - Total distance for this trip: \\(2 + 2 + 6 = 10\\) miles.\n\n3. **Total Distance Traveled:**\n   - Sum of distances from both trips: \\(10 + 10 = 20\\) miles.\n\n4. **Gasoline Used:**\n   - Initial amount of gasoline: 12 gallons.\n   - Final amount of gasoline: 2 gallons.\n   - Gasoline used: \\(12 - 2 = 10\\) gallons.\n\n5. **Rate of Consumption:**\n   - Rate of consumption is calculated as the total distance traveled divided by the total gasoline used.\n   - Rate: \\(\\frac{20 \\text{ miles}}{10 \\text{ gallons}} = 2 \\text{ miles per gallon}\\).\n\nThus, the rate at which Bobby's truck has been consuming gasoline is \\(\\boxed{2}\\) miles per gallon."
+    },
+    {
+      "question_id": 346,
+      "pred_final_answer": "15",
+      "ground_truth_final_answer": "15",
+      "is_correct": true,
+      "generated_token_count": 476,
+      "reasoning": "To determine how many cans of paint Lucille needs, we'll follow these steps:\n\n1. **Calculate the area of each wall:**\n   - For the first two walls (each 3 meters wide and 2 meters tall):\n     \\[\n     \\text{Area of one wall} = 3 \\, \\text{meters} \\times 2 \\, \\text{meters} = 6 \\, \\text{square meters}\n     \\]\n     Since there are two such walls:\n     \\[\n     \\text{Total area for two walls} = 2 \\times 6 \\, \\text{square meters} = 12 \\, \\text{square meters}\n     \\]\n\n   - For the third wall (5 meters wide and 2 meters tall):\n     \\[\n     \\text{Area of the third wall} = 5 \\, \\text{meters} \\times 2 \\, \\text{meters} = 10 \\, \\text{square meters}\n     \\]\n\n   - For the fourth wall (4 meters wide and 2 meters tall):\n     \\[\n     \\text{Area of the fourth wall} = 4 \\, \\text{meters} \\times 2 \\, \\text{meters} = 8 \\, \\text{square meters}\n     \\]\n\n2. **Sum the areas of all the walls:**\n   \\[\n   \\text{Total area} = 12 \\, \\text{square meters} + 10 \\, \\text{square meters} + 8 \\, \\text{square meters} = 30 \\, \\text{square meters}\n   \\]\n\n3. **Determine the number of cans of paint needed:**\n   Each can of paint covers 2 square meters. Therefore, the number of cans required is:\n   \\[\n   \\text{Number of cans} = \\frac{\\text{Total area}}{\\text{Coverage per can}} = \\frac{30 \\, \\text{square meters}}{2 \\, \\text{square meters per can}} = 15 \\, \\text{cans}\n   \\]\n\nThus, Lucille needs **15 cans of paint** to cover all the walls in her room."
+    },
+    {
+      "question_id": 352,
+      "pred_final_answer": "42",
+      "ground_truth_final_answer": "42",
+      "is_correct": true,
+      "generated_token_count": 203,
+      "reasoning": "To determine how many pages Punger needs to buy, we'll follow these steps:\n\n1. **Calculate the total number of cards:**\n   - Punger buys 60 packs.\n   - Each pack contains 7 cards.\n   - Total number of cards = Number of packs × Cards per pack\n   \\[\n   60 \\text{ packs} \\times 7 \\text{ cards/pack} = 420 \\text{ cards}\n   \\]\n\n2. **Determine the number of pages needed:**\n   - Each page can hold 10 cards.\n   - To find out how many pages are needed, divide the total number of cards by the number of cards each page can hold.\n   \\[\n   \\frac{420 \\text{ cards}}{10 \\text{ cards/page}} = 42 \\text{ pages}\n   \\]\n\nTherefore, Punger needs to buy 42 pages to store all his baseball cards."
+    },
+    {
+      "question_id": 359,
+      "pred_final_answer": "328",
+      "ground_truth_final_answer": "328",
+      "is_correct": true,
+      "generated_token_count": 515,
+      "reasoning": "To solve this problem, we need to calculate the total number of pages each person has read over 240 minutes and then sum these totals.\n\n1. **Determine the reading rate per minute for each person:**\n   - Rene reads 30 pages in 60 minutes.\n     \\[\n     \\text{Rene's rate} = \\frac{30 \\text{ pages}}{60 \\text{ minutes}} = 0.5 \\text{ pages per minute}\n     \\]\n   - Lulu reads 27 pages in 60 minutes.\n     \\[\n     \\text{Lulu's rate} = \\frac{27 \\text{ pages}}{60 \\text{ minutes}} = 0.45 \\text{ pages per minute}\n     \\]\n   - Cherry reads 25 pages in 60 minutes.\n     \\[\n     \\text{Cherry's rate} = \\frac{25 \\text{ pages}}{60 \\text{ minutes}} = 0.4167 \\text{ pages per minute}\n     \\]\n\n2. **Calculate the total number of pages each person reads in 240 minutes:**\n   - Rene:\n     \\[\n     \\text{Total pages by Rene} = 0.5 \\text{ pages/minute} \\times 240 \\text{ minutes} = 120 \\text{ pages}\n     \\]\n   - Lulu:\n     \\[\n     \\text{Total pages by Lulu} = 0.45 \\text{ pages/minute} \\times 240 \\text{ minutes} = 108 \\text{ pages}\n     \\]\n   - Cherry:\n     \\[\n     \\text{Total pages by Cherry} = 0.4167 \\text{ pages/minute} \\times 240 \\text{ minutes} = 100 \\text{ pages}\n     \\]\n\n3. **Sum the total number of pages read by all three:**\n   \\[\n   \\text{Total pages} = 120 \\text{ (Rene)} + 108 \\text{ (Lulu)} + 100 \\text{ (Cherry)} = 328 \\text{ pages}\n   \\]\n\nTherefore, the total number of pages they have finished reading in 240 minutes is \\( \\boxed{328} \\)."
+    },
+    {
+      "question_id": 366,
+      "pred_final_answer": "11880",
+      "ground_truth_final_answer": "11880",
+      "is_correct": true,
+      "generated_token_count": 369,
+      "reasoning": "To solve this problem, we need to calculate the total length of the ladders climbed by both Keaton and Reece, then convert the total length from feet to inches.\n\n### Step-by-Step Solution:\n\n1. **Determine the height of each ladder:**\n   - Keaton's ladder height = 30 feet.\n   - Reece's ladder height = 30 feet - 4 feet = 26 feet.\n\n2. **Calculate the total distance climbed by each worker:**\n   - Keaton climbed his ladder 20 times:\n     \\[\n     \\text{Total distance climbed by Keaton} = 30 \\text{ feet} \\times 20 = 600 \\text{ feet}\n     \\]\n   - Reece climbed his ladder 15 times:\n     \\[\n     \\text{Total distance climbed by Reece} = 26 \\text{ feet} \\times 15 = 390 \\text{ feet}\n     \\]\n\n3. **Find the combined total distance climbed by both workers:**\n   \\[\n   \\text{Combined total distance} = 600 \\text{ feet} + 390 \\text{ feet} = 990 \\text{ feet}\n   \\]\n\n4. **Convert the total distance from feet to inches:**\n   - There are 12 inches in a foot.\n   \\[\n   \\text{Total distance in inches} = 990 \\text{ feet} \\times 12 \\text{ inches/foot} = 11880 \\text{ inches}\n   \\]\n\nThus, the total length of the ladders that both workers climbed is \\( \\boxed{11880} \\) inches."
+    },
+    {
+      "question_id": 369,
+      "pred_final_answer": "347",
+      "ground_truth_final_answer": "347",
+      "is_correct": true,
+      "generated_token_count": 233,
+      "reasoning": "To find out how much money Monika spent throughout her day, we need to add up all her expenses. Let's break it down step by step:\n\n1. **Mall Expenses:**\n   - Monika spent $250 at the mall.\n\n2. **Movies Expenses:**\n   - Each movie costs $24.\n   - She watched 3 movies.\n   - Total cost for movies = \\( 3 \\times 24 = 72 \\) dollars.\n\n3. **Farmer's Market Expenses:**\n   - Each bag of beans costs $1.25.\n   - She bought 20 bags.\n   - Total cost for beans = \\( 20 \\times 1.25 = 25 \\) dollars.\n\nNow, let's sum up all these expenses:\n\n- Mall: $250\n- Movies: $72\n- Farmer's Market: $25\n\nTotal expenses = \\( 250 + 72 + 25 = 347 \\) dollars.\n\nTherefore, Monika spent a total of $347 throughout her day."
+    },
+    {
+      "question_id": 370,
+      "pred_final_answer": "64",
+      "ground_truth_final_answer": "64",
+      "is_correct": true,
+      "generated_token_count": 390,
+      "reasoning": "To solve this problem, we need to break it down into steps and calculate the total time required to serve all patients.\n\n### Step 1: Determine the number of patients with special dietary requirements.\nMissy has 12 patients in total. One-third of these patients have special dietary requirements:\n\\[\n\\frac{1}{3} \\times 12 = 4 \\text{ patients}\n\\]\n\n### Step 2: Determine the number of standard care patients.\nThe remaining patients are standard care patients:\n\\[\n12 - 4 = 8 \\text{ patients}\n\\]\n\n### Step 3: Calculate the serving time for standard care patients.\nEach standard care patient takes 5 minutes to serve. Therefore, the total time to serve all standard care patients is:\n\\[\n8 \\times 5 = 40 \\text{ minutes}\n\\]\n\n### Step 4: Calculate the serving time for patients with special dietary requirements.\nPatients with special dietary requirements take 20% more time than standard care patients. First, find 20% of 5 minutes:\n\\[\n0.20 \\times 5 = 1 \\text{ minute}\n\\]\nSo, the serving time for each patient with special dietary requirements is:\n\\[\n5 + 1 = 6 \\text{ minutes}\n\\]\nTherefore, the total time to serve all patients with special dietary requirements is:\n\\[\n4 \\times 6 = 24 \\text{ minutes}\n\\]\n\n### Step 5: Calculate the total serving time for all patients.\nAdd the time taken to serve both groups of patients:\n\\[\n40 \\text{ minutes} + 24 \\text{ minutes} = 64 \\text{ minutes}\n\\]\n\nThus, the total time it takes for Missy to serve dinner to all of her patients is:\n\\[\n\\boxed{64}\n\\]"
+    },
+    {
+      "question_id": 377,
+      "pred_final_answer": "6",
+      "ground_truth_final_answer": "6",
+      "is_correct": true,
+      "generated_token_count": 242,
+      "reasoning": "To find the combined length of the CDs, we need to follow these steps:\n\n1. **Identify the lengths of the individual CDs:**\n   - James buys two CDs that are each 1.5 hours long.\n   - He also buys one CD that is twice as long as the other two.\n\n2. **Calculate the length of the third CD:**\n   - Since the third CD is twice as long as the others, its length is:\n     \\[\n     2 \\times 1.5 \\text{ hours} = 3 \\text{ hours}\n     \\]\n\n3. **Sum the lengths of all three CDs:**\n   - The total length is the sum of the lengths of the three CDs:\n     \\[\n     1.5 \\text{ hours} + 1.5 \\text{ hours} + 3 \\text{ hours}\n     \\]\n\n4. **Perform the addition:**\n   - Adding these together:\n     \\[\n     1.5 + 1.5 + 3 = 6 \\text{ hours}\n     \\]\n\nTherefore, the combined length of the CDs is \\(\\boxed{6}\\) hours."
+    },
+    {
+      "question_id": 379,
+      "pred_final_answer": "1100",
+      "ground_truth_final_answer": "1100",
+      "is_correct": true,
+      "generated_token_count": 289,
+      "reasoning": "To find out the total cost of John's piano and lessons, we need to break down the expenses step by step.\n\n1. **Cost of the Piano:**\n   - The piano costs $500.\n\n2. **Cost of Lessons Before Discount:**\n   - John hires a teacher for 20 lessons.\n   - Each lesson costs $40.\n   - Total cost before discount = \\( 20 \\times 40 = 800 \\) dollars.\n\n3. **Discount on Lessons:**\n   - John gets a 25% discount on the lessons.\n   - Discount amount = \\( 25\\% \\) of $800.\n   - To calculate 25%, we use \\( 0.25 \\times 800 = 200 \\) dollars.\n\n4. **Cost of Lessons After Discount:**\n   - Cost after discount = Total cost before discount - Discount amount.\n   - Cost after discount = \\( 800 - 200 = 600 \\) dollars.\n\n5. **Total Cost:**\n   - Total cost = Cost of the piano + Cost of lessons after discount.\n   - Total cost = \\( 500 + 600 = 1100 \\) dollars.\n\nTherefore, the total cost for John is \\(\\boxed{1100}\\) dollars."
+    },
+    {
+      "question_id": 392,
+      "pred_final_answer": "135",
+      "ground_truth_final_answer": "135",
+      "is_correct": true,
+      "generated_token_count": 340,
+      "reasoning": "To solve this problem, we'll break down the washing times for each type of laundry and then sum them up.\n\n1. **Clothes Washing Time:**\n   - Given: The clothes take 30 minutes to wash.\n   \\[\n   \\text{Time for clothes} = 30 \\text{ minutes}\n   \\]\n\n2. **Towels Washing Time:**\n   - Given: The towels take twice as long as the clothes to wash.\n   \\[\n   \\text{Time for towels} = 2 \\times 30 \\text{ minutes} = 60 \\text{ minutes}\n   \\]\n\n3. **Sheets Washing Time:**\n   - Given: The sheets take 15 minutes less time to wash than the towels.\n   \\[\n   \\text{Time for sheets} = 60 \\text{ minutes} - 15 \\text{ minutes} = 45 \\text{ minutes}\n   \\]\n\n4. **Total Washing Time:**\n   - Sum the washing times for all three types of laundry:\n   \\[\n   \\text{Total time} = \\text{Time for clothes} + \\text{Time for towels} + \\text{Time for sheets}\n   \\]\n   \\[\n   \\text{Total time} = 30 \\text{ minutes} + 60 \\text{ minutes} + 45 \\text{ minutes}\n   \\]\n   \\[\n   \\text{Total time} = 135 \\text{ minutes}\n   \\]\n\nTherefore, it will take Naomi a total of 135 minutes to wash everything."
+    },
+    {
+      "question_id": 397,
+      "pred_final_answer": "120",
+      "ground_truth_final_answer": "120",
+      "is_correct": true,
+      "generated_token_count": 343,
+      "reasoning": "Let's denote the total cost of the gift as \\( C \\).\n\nInitially, there were 10 friends who planned to split the cost equally. Therefore, each friend was supposed to pay:\n\\[ \\frac{C}{10} \\]\n\nHowever, 4 friends dropped out, leaving only 6 friends to split the cost. Now, each of these 6 friends has to pay:\n\\[ \\frac{C}{6} \\]\n\nAccording to the problem, each of the remaining friends now pays $8 more than they initially planned. This can be expressed as:\n\\[ \\frac{C}{6} = \\frac{C}{10} + 8 \\]\n\nTo solve for \\( C \\), we first find a common denominator for the fractions on the right-hand side. The common denominator of 6 and 10 is 30. We rewrite the equation with this common denominator:\n\\[ \\frac{C}{6} = \\frac{C}{10} + 8 \\]\n\\[ \\frac{5C}{30} = \\frac{3C}{30} + 8 \\]\n\nNext, we eliminate the denominators by multiplying every term by 30:\n\\[ 5C = 3C + 240 \\]\n\nSubtract \\( 3C \\) from both sides to isolate \\( C \\):\n\\[ 5C - 3C = 240 \\]\n\\[ 2C = 240 \\]\n\nDivide both sides by 2:\n\\[ C = 120 \\]\n\nThus, the total cost of the gift is:\n\\[ \\boxed{120} \\]"
+    },
+    {
+      "question_id": 399,
+      "pred_final_answer": "480",
+      "ground_truth_final_answer": "30",
+      "is_correct": false,
+      "generated_token_count": 557,
+      "reasoning": "To determine how long it takes Tony to assemble a widget, we need to break down the contributions of each worker and use the total number of widgets assembled to find Tony's rate.\n\n### Step-by-Step Solution:\n\n1. **Calculate Sam's contribution:**\n   - Sam works for 6 hours.\n   - Sam assembles 1 widget every 10 minutes.\n   - There are 60 minutes in an hour, so in 6 hours, Sam works for \\(6 \\times 60 = 360\\) minutes.\n   - The number of widgets Sam assembles is:\n     \\[\n     \\frac{360 \\text{ minutes}}{10 \\text{ minutes/widget}} = 36 \\text{ widgets}\n     \\]\n\n2. **Calculate Jack's contribution:**\n   - Jack works for 4 hours.\n   - Jack and Sam together assemble 2 widgets every 15 minutes.\n   - In 4 hours, Jack works for \\(4 \\times 60 = 240\\) minutes.\n   - The number of 15-minute intervals in 240 minutes is:\n     \\[\n     \\frac{240 \\text{ minutes}}{15 \\text{ minutes/interval}} = 16 \\text{ intervals}\n     \\]\n   - Therefore, the number of widgets Jack and Sam assemble together is:\n     \\[\n     16 \\text{ intervals} \\times 2 \\text{ widgets/interval} = 32 \\text{ widgets}\n     \\]\n\n3. **Calculate the combined contribution of Sam and Jack:**\n   - Sam's contribution: 36 widgets\n   - Jack's contribution (with Sam): 32 widgets\n   - Total contribution of Sam and Jack:\n     \\[\n     36 + 32 = 68 \\text{ widgets}\n     \\]\n\n4. **Determine Tony's contribution:**\n   - The total number of widgets assembled by the end of the day is 68.\n   - Since Sam and Jack together already account for 68 widgets, this means Tony did not contribute any additional widgets.\n\n5. **Conclusion:**\n   - Given that Tony worked the entire 8-hour shift but did not contribute to the total number of widgets, it implies that Tony's rate of assembly is such that he did not complete even one widget during his 8-hour shift.\n   - Therefore, Tony's time to assemble one widget must be greater than 480 minutes (since 8 hours = 480 minutes).\n\nThus, based on the given information, Tony's time to assemble one widget is more than 480 minutes."
+    },
+    {
+      "question_id": 410,
+      "pred_final_answer": "54000",
+      "ground_truth_final_answer": "5",
+      "is_correct": false,
+      "generated_token_count": 288,
+      "reasoning": "To determine how many hours Mark would need to jump rope to break the record of 54,000 consecutive jumps, we'll follow these steps:\n\n1. **Calculate the total number of seconds needed:**\n   - Mark needs to make 54,000 jumps.\n   - He can jump 3 times per second.\n\n   \\[\n   \\text{Total seconds} = \\frac{\\text{Total jumps}}{\\text{Jumps per second}} = \\frac{54,000}{3} = 18,000 \\text{ seconds}\n   \\]\n\n2. **Convert seconds to minutes:**\n   - There are 60 seconds in a minute.\n\n   \\[\n   \\text{Total minutes} = \\frac{\\text{Total seconds}}{60} = \\frac{18,000}{60} = 300 \\text{ minutes}\n   \\]\n\n3. **Convert minutes to hours:**\n   - There are 60 minutes in an hour.\n\n   \\[\n   \\text{Total hours} = \\frac{\\text{Total minutes}}{60} = \\frac{300}{60} = 5 \\text{ hours}\n   \\]\n\nTherefore, Mark would need to jump rope for 5 hours to achieve 54,000 consecutive jumps."
+    },
+    {
+      "question_id": 413,
+      "pred_final_answer": "7",
+      "ground_truth_final_answer": "7",
+      "is_correct": true,
+      "generated_token_count": 277,
+      "reasoning": "Let's break down the problem step by step:\n\n1. **Total number of balls**: Ryan has 40 balls in total.\n\n2. **Number of blue balls**: It is given that there are 11 blue balls.\n\n3. **Relationship between red and blue balls**: There are twice as many red balls as blue balls.\n   - Since there are 11 blue balls, the number of red balls is \\( 2 \\times 11 = 22 \\).\n\n4. **Calculate the number of green balls**:\n   - The total number of balls is the sum of red, blue, and green balls.\n   - We know the total number of balls (40), the number of blue balls (11), and the number of red balls (22).\n   - Therefore, the number of green balls can be found by subtracting the number of red and blue balls from the total number of balls:\n     \\[\n     \\text{Number of green balls} = 40 - (\\text{number of red balls} + \\text{number of blue balls})\n     \\]\n     \\[\n     \\text{Number of green balls} = 40 - (22 + 11) = 40 - 33 = 7\n     \\]\n\nSo, there are 7 green balls."
+    },
+    {
+      "question_id": 416,
+      "pred_final_answer": "45",
+      "ground_truth_final_answer": "45",
+      "is_correct": true,
+      "generated_token_count": 284,
+      "reasoning": "To solve this problem, we will break it down into steps and calculate the depth of the river at each given time.\n\n1. **Depth in mid-May:**\n   The river is 5 feet deep.\n\n2. **Depth in mid-June:**\n   By mid-June, the river is 10 feet deeper than it was in mid-May.\n   \\[\n   \\text{Depth in mid-June} = \\text{Depth in mid-May} + 10 \\text{ feet}\n   \\]\n   Substituting the known value:\n   \\[\n   \\text{Depth in mid-June} = 5 \\text{ feet} + 10 \\text{ feet} = 15 \\text{ feet}\n   \\]\n\n3. **Depth in mid-July:**\n   By mid-July, the river is three times deeper than it was in mid-June.\n   \\[\n   \\text{Depth in mid-July} = 3 \\times \\text{Depth in mid-June}\n   \\]\n   Substituting the known value:\n   \\[\n   \\text{Depth in mid-July} = 3 \\times 15 \\text{ feet} = 45 \\text{ feet}\n   \\]\n\nThus, the depth of the river by mid-July is \\boxed{45} feet."
+    },
+    {
+      "question_id": 420,
+      "pred_final_answer": "35",
+      "ground_truth_final_answer": "35",
+      "is_correct": true,
+      "generated_token_count": 214,
+      "reasoning": "To find out how long Miriam spent cleaning her room, we need to follow these steps:\n\n1. **Convert the total time spent into minutes:**\n   - Two hours is equal to \\(2 \\times 60 = 120\\) minutes.\n\n2. **Sum up the known times:**\n   - Laundry: 30 minutes\n   - Cleaning the bathroom: 15 minutes\n   - Doing homework: 40 minutes\n\n   Adding these together:\n   \\[\n   30 + 15 + 40 = 85 \\text{ minutes}\n   \\]\n\n3. **Determine the remaining time for cleaning her room:**\n   - Total time spent on all tasks: 120 minutes\n   - Time spent on known tasks: 85 minutes\n\n   The time spent cleaning her room is:\n   \\[\n   120 - 85 = 35 \\text{ minutes}\n   \\]\n\nTherefore, Miriam spent 35 minutes cleaning her room."
+    },
+    {
+      "question_id": 423,
+      "pred_final_answer": "28",
+      "ground_truth_final_answer": "28",
+      "is_correct": true,
+      "generated_token_count": 251,
+      "reasoning": "Let's break down the expenses and calculate how much money Mom has left step by step.\n\n1. **Initial amount**: Mom started with €55.\n   \n2. **Cost of bananas**: \n   - Each pack costs €4.\n   - She bought 2 packs.\n   - Total cost for bananas: \\( 2 \\times 4 = €8 \\).\n\n3. **Cost of pears**: \n   - The pears cost €2.\n\n4. **Cost of asparagus**: \n   - The asparagus cost €6.\n\n5. **Cost of chicken**: \n   - The chicken cost €11.\n\nNow, let's sum up all the expenses:\n- Bananas: €8\n- Pears: €2\n- Asparagus: €6\n- Chicken: €11\n\nTotal expenses: \\( 8 + 2 + 6 + 11 = €27 \\).\n\nFinally, subtract the total expenses from the initial amount to find out how much money Mom has left:\n- Initial amount: €55\n- Total expenses: €27\n\nMoney left: \\( 55 - 27 = €28 \\).\n\nSo, Mom has €28 left."
+    },
+    {
+      "question_id": 429,
+      "pred_final_answer": "736",
+      "ground_truth_final_answer": "736",
+      "is_correct": true,
+      "generated_token_count": 338,
+      "reasoning": "To solve this problem, we'll break it down into steps:\n\n### Step 1: Calculate the total number of English-language books.\n- We know that 80% of all the books are in English.\n- The total number of books is 2300.\n\n\\[ \\text{Number of English-language books} = 2300 \\times 0.80 \\]\n\n\\[ \\text{Number of English-language books} = 1840 \\]\n\nSo, there are 1840 English-language books.\n\n### Step 2: Determine how many of these English-language books were published in the country.\n- We know that 60% of the English-language books were published in the country.\n\n\\[ \\text{Number of English-language books published in the country} = 1840 \\times 0.60 \\]\n\n\\[ \\text{Number of English-language books published in the country} = 1104 \\]\n\nSo, 1104 English-language books were published in the country.\n\n### Step 3: Calculate the number of English-language books published outside the country.\n- To find the number of English-language books published outside the country, subtract the number of books published in the country from the total number of English-language books.\n\n\\[ \\text{Number of English-language books published outside the country} = 1840 - 1104 \\]\n\n\\[ \\text{Number of English-language books published outside the country} = 736 \\]\n\nTherefore, the number of English-language books that have been published outside the country is **736**."
+    },
+    {
+      "question_id": 434,
+      "pred_final_answer": "80",
+      "ground_truth_final_answer": "80",
+      "is_correct": true,
+      "generated_token_count": 209,
+      "reasoning": "To determine what percentage Calvin is towards his goal, we need to follow these steps:\n\n1. **Identify the total number of haircuts needed:**\n   - Calvin has already had 8 haircuts.\n   - He needs 2 more haircuts to reach his goal.\n\n   Therefore, the total number of haircuts required is:\n   \\[\n   8 + 2 = 10\n   \\]\n\n2. **Calculate the fraction of the goal achieved:**\n   - Calvin has completed 8 out of the 10 haircuts needed.\n\n   The fraction of the goal achieved is:\n   \\[\n   \\frac{8}{10}\n   \\]\n\n3. **Convert the fraction to a percentage:**\n   - To convert a fraction to a percentage, multiply by 100.\n\n   So,\n   \\[\n   \\frac{8}{10} \\times 100 = 80\\%\n   \\]\n\nTherefore, Calvin is 80% towards his goal."
+    },
+    {
+      "question_id": 437,
+      "pred_final_answer": "50",
+      "ground_truth_final_answer": "50",
+      "is_correct": true,
+      "generated_token_count": 288,
+      "reasoning": "To solve this problem, we'll break it down into steps:\n\n### Step 1: Calculate the cost per chicken\nEach chicken needs 2 pounds of feed.\nA 20-pound bag of feed costs $2.\n\nSo, the cost of feed per pound is:\n\\[ \\frac{\\$2}{20 \\text{ pounds}} = \\$0.10 \\text{ per pound} \\]\n\nSince each chicken needs 2 pounds of feed:\n\\[ 2 \\text{ pounds} \\times \\$0.10 \\text{ per pound} = \\$0.20 \\text{ per chicken} \\]\n\n### Step 2: Determine the revenue and profit per chicken\nLao sells each chicken for $1.50.\nThe cost per chicken is $0.20.\n\nTherefore, the profit per chicken is:\n\\[ \\$1.50 - \\$0.20 = \\$1.30 \\text{ per chicken} \\]\n\n### Step 3: Calculate the number of chickens sold\nLao made a total profit of $65.\n\nIf each chicken gives him a profit of $1.30, then the number of chickens he sold is:\n\\[ \\frac{\\$65}{\\$1.30 \\text{ per chicken}} = 50 \\text{ chickens} \\]\n\n### Final Answer:\nLao sold **50 chickens**."
+    },
+    {
+      "question_id": 440,
+      "pred_final_answer": "19",
+      "ground_truth_final_answer": "19",
+      "is_correct": true,
+      "generated_token_count": 304,
+      "reasoning": "To solve this problem, let's break it down step by step.\n\n1. **Identify Cori's current age and future age:**\n   - Cori is currently 3 years old.\n   - In 5 years, Cori will be \\(3 + 5 = 8\\) years old.\n\n2. **Set up the relationship between Cori's future age and her aunt's future age:**\n   - According to the problem, in 5 years, Cori will be one-third the age of her aunt.\n   - Let \\(A\\) represent the aunt's age in 5 years.\n\n3. **Formulate the equation based on the given relationship:**\n   - Since Cori will be one-third the age of her aunt in 5 years, we can write:\n     \\[\n     8 = \\frac{1}{3} A\n     \\]\n\n4. **Solve for \\(A\\):**\n   - To find \\(A\\), multiply both sides of the equation by 3:\n     \\[\n     8 \\times 3 = A\n     \\]\n     \\[\n     A = 24\n     \\]\n\n5. **Determine the aunt's current age:**\n   - The aunt's age in 5 years is 24, so her current age is:\n     \\[\n     24 - 5 = 19\n     \\]\n\nTherefore, Cori's aunt is currently 19 years old."
+    },
+    {
+      "question_id": 442,
+      "pred_final_answer": "13",
+      "ground_truth_final_answer": "13",
+      "is_correct": true,
+      "generated_token_count": 471,
+      "reasoning": "To find the average percentage by which the cranes are taller than the buildings they are constructing, we need to follow these steps:\n\n1. **Calculate the difference in height between each crane and its corresponding building:**\n\n   - For the first crane:\n     \\[\n     \\text{Difference} = 228 \\text{ feet} - 200 \\text{ feet} = 28 \\text{ feet}\n     \\]\n\n   - For the second crane:\n     \\[\n     \\text{Difference} = 120 \\text{ feet} - 100 \\text{ feet} = 20 \\text{ feet}\n     \\]\n\n   - For the third crane:\n     \\[\n     \\text{Difference} = 147 \\text{ feet} - 140 \\text{ feet} = 7 \\text{ feet}\n     \\]\n\n2. **Calculate the percentage increase for each crane:**\n\n   - For the first crane:\n     \\[\n     \\text{Percentage Increase} = \\left( \\frac{28}{200} \\right) \\times 100\\% = 14\\%\n     \\]\n\n   - For the second crane:\n     \\[\n     \\text{Percentage Increase} = \\left( \\frac{20}{100} \\right) \\times 100\\% = 20\\%\n     \\]\n\n   - For the third crane:\n     \\[\n     \\text{Percentage Increase} = \\left( \\frac{7}{140} \\right) \\times 100\\% = 5\\%\n     \\]\n\n3. **Find the average of these percentages:**\n\n   - Sum of the percentages:\n     \\[\n     14\\% + 20\\% + 5\\% = 39\\%\n     \\]\n\n   - Number of cranes:\n     \\[\n     3\n     \\]\n\n   - Average percentage:\n     \\[\n     \\text{Average Percentage} = \\frac{39\\%}{3} = 13\\%\n     \\]\n\nTherefore, on average, the cranes are **13%** taller than the buildings they are constructing."
+    },
+    {
+      "question_id": 453,
+      "pred_final_answer": "27",
+      "ground_truth_final_answer": "27",
+      "is_correct": true,
+      "generated_token_count": 160,
+      "reasoning": "To solve this problem, we need to follow these steps:\n\n1. **Calculate the total number of shells collected:**\n   - Jillian collected 29 shells.\n   - Savannah collected 17 shells.\n   - Clayton collected 8 shells.\n\n   Adding these together:\n   \\[\n   29 + 17 + 8 = 54\n   \\]\n\n2. **Distribute the total number of shells evenly between the two friends:**\n   - The total number of shells is 54.\n   - We need to divide this total by 2 (since there are two friends).\n\n   Performing the division:\n   \\[\n   54 \\div 2 = 27\n   \\]\n\nTherefore, each friend gets 27 shells."
+    },
+    {
+      "question_id": 457,
+      "pred_final_answer": "324",
+      "ground_truth_final_answer": "324",
+      "is_correct": true,
+      "generated_token_count": 335,
+      "reasoning": "Let's break down the problem step by step.\n\n1. **Determine the number of questions each girl completed in one hour:**\n   - Fiona completed 36 math questions.\n   - Shirley completed twice as many as Fiona:\n     \\[\n     \\text{Shirley's questions} = 2 \\times 36 = 72\n     \\]\n   - Kiana completed half of the sum of Fiona and Shirley's questions:\n     \\[\n     \\text{Sum of Fiona and Shirley's questions} = 36 + 72 = 108\n     \\]\n     \\[\n     \\text{Kiana's questions} = \\frac{108}{2} = 54\n     \\]\n\n2. **Calculate the total number of questions each girl completed in one hour:**\n   - Fiona: 36 questions\n   - Shirley: 72 questions\n   - Kiana: 54 questions\n\n3. **Calculate the total number of questions all three girls completed in one hour:**\n   \\[\n   \\text{Total questions in one hour} = 36 + 72 + 54 = 162\n   \\]\n\n4. **Since they each did the same number of questions the following hour, calculate the total for two hours:**\n   \\[\n   \\text{Total questions in two hours} = 2 \\times 162 = 324\n   \\]\n\nTherefore, the total number of math questions completed by all three girls in 2 hours is \\( \\boxed{324} \\)."
+    },
+    {
+      "question_id": 463,
+      "pred_final_answer": "12",
+      "ground_truth_final_answer": "5",
+      "is_correct": false,
+      "generated_token_count": 502,
+      "reasoning": "To determine how long it will take Camilla to make 12 pizzas, we need to break down the process into its components and calculate the total time required.\n\n### Step-by-Step Calculation:\n\n1. **Determine the number of batches of dough needed:**\n   - One batch of dough makes 3 pizzas.\n   - To make 12 pizzas, Camilla needs:\n     \\[\n     \\frac{12 \\text{ pizzas}}{3 \\text{ pizzas per batch}} = 4 \\text{ batches of dough}\n     \\]\n\n2. **Calculate the time to prepare the dough:**\n   - Each batch of dough takes 30 minutes to prepare.\n   - For 4 batches, the total preparation time is:\n     \\[\n     4 \\text{ batches} \\times 30 \\text{ minutes per batch} = 120 \\text{ minutes}\n     \\]\n\n3. **Determine the number of baking sessions needed:**\n   - The oven can fit 2 pizzas at a time.\n   - To bake 12 pizzas, Camilla needs:\n     \\[\n     \\frac{12 \\text{ pizzas}}{2 \\text{ pizzas per session}} = 6 \\text{ baking sessions}\n     \\]\n\n4. **Calculate the total baking time:**\n   - Each baking session takes 30 minutes.\n   - For 6 sessions, the total baking time is:\n     \\[\n     6 \\text{ sessions} \\times 30 \\text{ minutes per session} = 180 \\text{ minutes}\n     \\]\n\n5. **Combine the preparation and baking times:**\n   - Total preparation time: 120 minutes\n   - Total baking time: 180 minutes\n   - Combined total time:\n     \\[\n     120 \\text{ minutes} + 180 \\text{ minutes} = 300 \\text{ minutes}\n     \\]\n\n6. **Convert the total time from minutes to hours:**\n   - There are 60 minutes in an hour.\n   - Therefore, the total time in hours is:\n     \\[\n     \\frac{300 \\text{ minutes}}{60 \\text{ minutes per hour}} = 5 \\text{ hours}\n     \\]\n\nThus, it would take Camilla **5 hours** to finish making 12 pizzas."
+    },
+    {
+      "question_id": 467,
+      "pred_final_answer": "6",
+      "ground_truth_final_answer": "6",
+      "is_correct": true,
+      "generated_token_count": 221,
+      "reasoning": "To solve this problem, we need to add up all the distances Hadley walked in his boots. Let's break it down step by step:\n\n1. **Distance to the grocery store:**\n   - Hadley walked 2 miles to the grocery store.\n\n2. **Distance to the pet store:**\n   - The problem states that he walked \"1 less than two miles\" to the pet store.\n   - This means he walked \\(2 - 1 = 1\\) mile to the pet store.\n\n3. **Distance back home:**\n   - The problem states that he walked \"one less than four miles\" back home.\n   - This means he walked \\(4 - 1 = 3\\) miles back home.\n\nNow, let's sum these distances:\n- Distance to the grocery store: 2 miles\n- Distance to the pet store: 1 mile\n- Distance back home: 3 miles\n\nAdding these together:\n\\[ 2 + 1 + 3 = 6 \\]\n\nTherefore, Hadley walked a total of 6 miles in his boots."
+    },
+    {
+      "question_id": 472,
+      "pred_final_answer": "11",
+      "ground_truth_final_answer": "11",
+      "is_correct": true,
+      "generated_token_count": 225,
+      "reasoning": "To solve this problem, let's break it down into steps:\n\n1. Determine how long Lydia has had the apple tree:\n   - Lydia planted the tree when she was 4 years old.\n   - She is currently 9 years old.\n   - Therefore, the tree has been growing for \\( 9 - 4 = 5 \\) years.\n\n2. Determine how many more years the tree needs to bear fruit:\n   - It takes 7 years for an apple tree to bear fruit.\n   - The tree has already been growing for 5 years.\n   - Therefore, it needs \\( 7 - 5 = 2 \\) more years to bear fruit.\n\n3. Calculate Lydia's age when the tree bears fruit:\n   - Lydia is currently 9 years old.\n   - The tree will bear fruit in 2 more years.\n   - Therefore, Lydia will be \\( 9 + 2 = 11 \\) years old when the tree bears fruit.\n\nThus, Lydia would be 11 years old when she gets to eat an apple from her tree for the first time."
+    },
+    {
+      "question_id": 473,
+      "pred_final_answer": "145",
+      "ground_truth_final_answer": "145",
+      "is_correct": true,
+      "generated_token_count": 270,
+      "reasoning": "To solve this problem, we can set up an equation based on the information given.\n\nLet's denote:\n- The amount of money owned by Ali as \\( A \\).\n- The amount of money owned by James as \\( J \\).\n\nFrom the problem, we have two key pieces of information:\n1. Together, they own $250.\n2. James owns $40 more than Ali.\n\nWe can translate these into equations:\n1. \\( J + A = 250 \\)\n2. \\( J = A + 40 \\)\n\nNow, we can substitute the second equation into the first equation to solve for \\( A \\):\n\n\\[\n(A + 40) + A = 250\n\\]\n\nCombine like terms:\n\n\\[\n2A + 40 = 250\n\\]\n\nSubtract 40 from both sides:\n\n\\[\n2A = 210\n\\]\n\nDivide both sides by 2:\n\n\\[\nA = 105\n\\]\n\nSo, Ali owns $105. Now, we can find out how much James owns using the second equation:\n\n\\[\nJ = A + 40 = 105 + 40 = 145\n\\]\n\nTherefore, James owns $145."
+    },
+    {
+      "question_id": 475,
+      "pred_final_answer": "22",
+      "ground_truth_final_answer": "22",
+      "is_correct": true,
+      "generated_token_count": 342,
+      "reasoning": "To solve this problem, we need to find out how many apples Layla picked. We know the average number of apples picked by Maggie, Kelsey, and Layla is 30.\n\nLet's break it down step-by-step:\n\n1. **Calculate the total number of apples picked by all three:**\n   - Since the average number of apples picked is 30, and there are 3 people, the total number of apples picked can be calculated as:\n     \\[\n     \\text{Total apples} = \\text{Average} \\times \\text{Number of people} = 30 \\times 3 = 90\n     \\]\n\n2. **Determine the sum of apples picked by Maggie and Kelsey:**\n   - Maggie picked 40 apples.\n   - Kelsey picked 28 apples.\n   - Therefore, the total number of apples picked by Maggie and Kelsey is:\n     \\[\n     40 + 28 = 68\n     \\]\n\n3. **Find out how many apples Layla picked:**\n   - Let \\( L \\) represent the number of apples Layla picked.\n   - We know the total number of apples picked by all three is 90, so:\n     \\[\n     40 + 28 + L = 90\n     \\]\n   - Simplify the equation:\n     \\[\n     68 + L = 90\n     \\]\n   - Solve for \\( L \\):\n     \\[\n     L = 90 - 68 = 22\n     \\]\n\nTherefore, Layla picked 22 apples."
+    },
+    {
+      "question_id": 478,
+      "pred_final_answer": "319",
+      "ground_truth_final_answer": "319",
+      "is_correct": true,
+      "generated_token_count": 271,
+      "reasoning": "To solve this problem, we need to determine the weights of Stan, Steve, and Jim, then add them together.\n\nStep 1: Identify Jim's weight.\n- Given: Jim weighs 110 pounds.\n\nStep 2: Determine Steve's weight.\n- Given: Steve is eight pounds lighter than Jim.\n- Calculation: Steve's weight = Jim's weight - 8 pounds\n- Steve's weight = 110 pounds - 8 pounds = 102 pounds\n\nStep 3: Determine Stan's weight.\n- Given: Stan weighs 5 more pounds than Steve.\n- Calculation: Stan's weight = Steve's weight + 5 pounds\n- Stan's weight = 102 pounds + 5 pounds = 107 pounds\n\nStep 4: Calculate the total weight of all three individuals.\n- Total weight = Jim's weight + Steve's weight + Stan's weight\n- Total weight = 110 pounds + 102 pounds + 107 pounds\n\nStep 5: Perform the addition.\n- Total weight = 110 + 102 + 107 = 319 pounds\n\nTherefore, the total weight of Stan, Steve, and Jim when they crowd onto the scale at the same time is 319 pounds."
+    }
+  ]
+}
