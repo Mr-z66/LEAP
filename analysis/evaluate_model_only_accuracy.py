@@ -13,6 +13,21 @@ DEFAULT_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "probe_artifact_torch.pt")
 DEFAULT_TRACE_PATH = os.path.join(PROJECT_ROOT, "observe_rollback_traces_768.json")
 DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
 
+class TorchMLPProbe(torch.nn.Module):
+    def __init__(self, input_dim, hidden_layers, dropout=0.0):
+        super().__init__()
+        dims = [input_dim, *hidden_layers, 1]
+        layers = []
+        for idx in range(len(dims) - 2):
+            layers.append(torch.nn.Linear(dims[idx], dims[idx + 1]))
+            layers.append(torch.nn.ReLU())
+            if dropout > 0:
+                layers.append(torch.nn.Dropout(dropout))
+        layers.append(torch.nn.Linear(dims[-2], dims[-1]))
+        self.network = torch.nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x).squeeze(-1)
 
 def parse_args():
     parser = argparse.ArgumentParser(
