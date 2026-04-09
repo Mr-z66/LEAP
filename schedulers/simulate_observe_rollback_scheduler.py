@@ -12,6 +12,8 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from schedulers.repair_handoff_prompt import DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT
+
 # ================= Default Configuration =================
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
@@ -347,9 +349,9 @@ def summarize_confidence(token_confidences):
     }
 
 
-def build_generation_messages(question, assistant_prefix=None):
+def build_generation_messages(question, assistant_prefix=None, system_prompt=DEFAULT_SYSTEM_PROMPT):
     messages = [
-        {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": question},
     ]
     if assistant_prefix is not None:
@@ -357,14 +359,14 @@ def build_generation_messages(question, assistant_prefix=None):
     return messages
 
 
-def build_generation_inputs(tokenizer, question, assistant_prefix):
+def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT):
     normalized_prefix = None
     if assistant_prefix is not None:
         normalized_prefix = assistant_prefix.rstrip()
         if not normalized_prefix:
             normalized_prefix = None
 
-    messages = build_generation_messages(question, assistant_prefix=normalized_prefix)
+    messages = build_generation_messages(question, assistant_prefix=normalized_prefix, system_prompt=system_prompt)
     if normalized_prefix is None:
         return tokenizer.apply_chat_template(
             messages,
@@ -384,7 +386,7 @@ def build_generation_inputs(tokenizer, question, assistant_prefix):
 
 
 def prompt_token_count(tokenizer, question):
-    inputs, _ = build_generation_inputs(tokenizer, question, assistant_prefix=None)
+    inputs, _ = build_generation_inputs(tokenizer, question, assistant_prefix=None, system_prompt=DEFAULT_SYSTEM_PROMPT)
     return int(inputs["input_ids"].shape[1])
 
 def decode_tokens(tokenizer, token_ids):
@@ -504,8 +506,8 @@ def load_probe_artifact(args):
     return artifact
 
 
-def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_chunk_tokens, max_chunk_tokens):
-    inputs, normalized_prefix = build_generation_inputs(tokenizer, question, assistant_prefix)
+def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_chunk_tokens, max_chunk_tokens, system_prompt=DEFAULT_SYSTEM_PROMPT):
+    inputs, normalized_prefix = build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=system_prompt)
     input_ids = inputs.input_ids.to(model.device)
     past_key_values = None
 
@@ -610,6 +612,7 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
             max_new_tokens=remaining_budget,
             min_chunk_tokens=args.min_chunk_tokens,
             max_chunk_tokens=args.max_chunk_tokens,
+            system_prompt=DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT,
         )
         prefix = chunk_result["full_reasoning"]
         total_generated_tokens += chunk_result["generated_token_count"]
