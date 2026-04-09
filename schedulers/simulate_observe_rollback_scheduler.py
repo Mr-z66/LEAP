@@ -12,7 +12,10 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from schedulers.repair_handoff_prompt import DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT
+try:
+    from schedulers.repair_handoff_prompt import DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT
+except ModuleNotFoundError:
+    from repair_handoff_prompt import DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT
 
 # ================= Default Configuration =================
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
