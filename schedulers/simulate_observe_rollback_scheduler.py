@@ -11,6 +11,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from answer_extraction import extract_final_answer
 
 try:
     from schedulers.repair_handoff_prompt import DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT
@@ -267,41 +268,6 @@ def build_probe(args):
         n_iter_no_change=15,
         random_state=args.random_state,
     )
-
-
-def extract_last_number(text):
-    matches = re.findall(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
-    return matches[-1] if matches else None
-
-
-def normalize_numeric_text(text):
-    return text.replace(",", "").strip().rstrip(".")
-
-
-def extract_final_answer(text):
-    if not text:
-        return None
-
-    boxed_matches = re.findall(r"\\boxed\{([^}]*)\}", text)
-    if boxed_matches:
-        boxed_value = extract_last_number(boxed_matches[-1])
-        if boxed_value is not None:
-            return boxed_value
-
-    explicit_patterns = [
-        r"(?i)final answer\s*[:?]\s*([^\n]+)",
-        r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:?]\s*([^\n]+)",
-        r"####\s*([^\n]+)",
-    ]
-    for pattern in explicit_patterns:
-        matches = re.findall(pattern, text)
-        if matches:
-            explicit_value = extract_last_number(matches[-1])
-            if explicit_value is not None:
-                return explicit_value
-
-    return extract_last_number(normalize_numeric_text(text))
 
 
 def compute_token_confidence(logits):

@@ -1,11 +1,11 @@
 import argparse
 import json
 import os
-import re
 from typing import Dict, List, Optional
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from answer_extraction import extract_final_answer
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
@@ -25,41 +25,6 @@ def parse_args():
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on number of test questions.")
     parser.add_argument("--output-path", default=None, help="Optional JSON output path for per-question predictions.")
     return parser.parse_args()
-
-
-def extract_last_number(text: str):
-    matches = re.findall(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
-    return matches[-1] if matches else None
-
-
-def normalize_numeric_text(text: str):
-    return text.replace(",", "").strip().rstrip(".")
-
-
-def extract_final_answer(text: str):
-    if not text:
-        return None
-
-    boxed_matches = re.findall(r"\\boxed\{([^}]*)\}", text)
-    if boxed_matches:
-        boxed_value = extract_last_number(boxed_matches[-1])
-        if boxed_value is not None:
-            return boxed_value
-
-    explicit_patterns = [
-        r"(?i)final answer\s*[:?]\s*([^\n]+)",
-        r"(?i)the answer is\s*([^\n]+)",
-        r"(?i)answer\s*[:?]\s*([^\n]+)",
-        r"####\s*([^\n]+)",
-    ]
-    for pattern in explicit_patterns:
-        matches = re.findall(pattern, text)
-        if matches:
-            explicit_value = extract_last_number(matches[-1])
-            if explicit_value is not None:
-                return explicit_value
-
-    return extract_last_number(normalize_numeric_text(text))
 
 
 def build_inputs(tokenizer, question: str):
