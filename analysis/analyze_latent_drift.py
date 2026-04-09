@@ -205,6 +205,7 @@ def aggregate_question_analyses(
     rollback_anchor_counter = Counter()
     local_anchor_counter = Counter()
     local_peak_examples = []
+    local_peak_records = []
     local_anchor_abs_distances = []
     local_anchor_signed_distances = []
     local_anchor_exact_hits = 0
@@ -259,6 +260,20 @@ def aggregate_question_analyses(
                 if abs_distance <= 1:
                     local_anchor_within_one += 1
                 local_peak_examples.append(
+                    {
+                        "question_id": analysis["question_id"],
+                        "first_error_chunk_id": first_error_chunk_id,
+                        "local_window_start": window_start,
+                        "local_window_end": window_end,
+                        "suggested_local_anchor_chunk_id": local_anchor["chunk_id"],
+                        "signed_distance_to_first_error": signed_distance,
+                        "abs_distance_to_first_error": abs_distance,
+                        "drift": local_anchor["drift"],
+                        "chunk_text": local_anchor["chunk_text"],
+                        "question": analysis["question"],
+                    }
+                )
+                local_peak_records.append(
                     {
                         "question_id": analysis["question_id"],
                         "first_error_chunk_id": first_error_chunk_id,
@@ -340,6 +355,7 @@ def aggregate_question_analyses(
         "top_max_drift_questions": per_question_max_drift[:top_k_hard_cases],
         "top_spike_examples": spike_examples[:top_k_hard_cases],
         "top_local_peak_examples": local_peak_examples[:top_k_hard_cases],
+        "all_local_peak_records": local_peak_records,
     }
 
 
