@@ -4,6 +4,7 @@ from modelscope import snapshot_download
 base_dir = os.path.join(os.getcwd(), "models")
 models_to_download = {
     "Qwen2.5-1.5B": "qwen/Qwen2.5-1.5B-Instruct",
+    "Qwen2.5-7B": "qwen/Qwen2.5-7B-Instruct",
     "Qwen2.5-32B": "qwen/Qwen2.5-32B-Instruct"
 }
 
