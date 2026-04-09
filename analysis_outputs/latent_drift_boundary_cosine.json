@@ -1,0 +1,292 @@
+{
+  "label_path": "gsm8k_labeled_training_data_strict.pt",
+  "feature_name": "boundary_hidden_state",
+  "metric": "cosine",
+  "spike_std_scale": 2.0,
+  "summary": {
+    "num_questions": 500,
+    "questions_with_error": 180,
+    "drift_metric": {
+      "global": {
+        "count": 7107,
+        "mean": 0.5286732198522874,
+        "median": 0.5068585872650146,
+        "std": 0.2794894771265404,
+        "min": 0.01168888807296753,
+        "max": 1.1561553627252579
+      },
+      "correct_prefix": {
+        "count": 1481,
+        "mean": 0.5141933673985207,
+        "median": 0.4838904142379761,
+        "std": 0.2737435514013956,
+        "min": 0.012900292873382568,
+        "max": 1.101348452270031
+      },
+      "error_chunk": {
+        "count": 239,
+        "mean": 0.5683338210360774,
+        "median": 0.6808944940567017,
+        "std": 0.269793844784935,
+        "min": 0.01168888807296753,
+        "max": 0.9780850913375616
+      },
+      "pre_error": {
+        "count": 1197,
+        "mean": 0.49848609653191833,
+        "median": 0.4190780520439148,
+        "std": 0.27566780803119734,
+        "min": 0.012900292873382568,
+        "max": 1.101348452270031
+      },
+      "post_error": {
+        "count": 350,
+        "mean": 0.5772048260803734,
+        "median": 0.642433375120163,
+        "std": 0.25585009862055974,
+        "min": 0.0320591926574707,
+        "max": 1.0342345722019672
+      },
+      "first_error_transition": {
+        "count": 173,
+        "mean": 0.5701885183121083,
+        "median": 0.6924234926700592,
+        "std": 0.27386247750235515,
+        "min": 0.01168888807296753,
+        "max": 0.9451294355094433
+      }
+    },
+    "spike_analysis": {
+      "global_spike_threshold": 1.0876521741053682,
+      "global_spike_count": 14,
+      "first_error_spike_count": 0,
+      "first_error_spike_rate": 0.0,
+      "rollback_anchor_counter": {
+        "1": 11,
+        "12": 1,
+        "2": 1,
+        "9": 1
+      }
+    },
+    "top_max_drift_questions": [
+      {
+        "question_id": 429,
+        "max_drift": 1.1561553627252579,
+        "first_error_chunk_id": null,
+        "question": "In the school's library, there are 2300 different books. 80% of all the books are in English, but only 60% of these books were published in the country. How many English-language books have been published outside the country?"
+      },
+      {
+        "question_id": 240,
+        "max_drift": 1.1439597308635712,
+        "first_error_chunk_id": null,
+        "question": "Kate bought 7 packs of red bouncy balls and 6 packs of yellow bouncy balls. Each pack contained 18 bouncy balls. How many more red bouncy balls than yellow bouncy balls did Kate buy?"
+      },
+      {
+        "question_id": 494,
+        "max_drift": 1.1392565071582794,
+        "first_error_chunk_id": null,
+        "question": "There is a 5,200 sq. ft. house and a 7,300 sq. ft. house next to each other. The smaller house is being expanded. If the new total square footage of both houses is 16,000 sq. ft., how much is the smaller house being expanded by, in sq. ft.?"
+      },
+      {
+        "question_id": 169,
+        "max_drift": 1.1350972652435303,
+        "first_error_chunk_id": null,
+        "question": "Borris liquor store uses 90 kilograms of grapes every 6 months. He is thinking of increasing his production by twenty percent. How many grapes does he need in a year after increasing his production?"
+      },
+      {
+        "question_id": 363,
+        "max_drift": 1.1296627968549728,
+        "first_error_chunk_id": null,
+        "question": "Tony paid $7 for 2 dozen apples and 1 bunch of bananas. Arnold paid $5 for 1 dozen apples and 1 bunch of bananas. How much does a bunch of bananas cost?"
+      },
+      {
+        "question_id": 126,
+        "max_drift": 1.109499990940094,
+        "first_error_chunk_id": null,
+        "question": "John has five more roommates than twice as many as Bob. If Bob has 10 roommates, how many roommates does John have?"
+      },
+      {
+        "question_id": 366,
+        "max_drift": 1.1086424514651299,
+        "first_error_chunk_id": null,
+        "question": "Keaton climbed a 30 feet ladder twenty times while working at the construction site. Reece, also working at the same site, climbed a ladder 4 feet shorter than Keaton's ladder 15 times. What's the total length of the ladders that both workers climbed in inches?"
+      },
+      {
+        "question_id": 381,
+        "max_drift": 1.101348452270031,
+        "first_error_chunk_id": 12,
+        "question": "On Monday, Matt worked for 450 minutes in his office.  On Tuesday, he worked half the number of minutes he worked on Monday.  On Wednesday, he worked for 300 minutes.  How many more minutes did he work on Wednesday than on Tuesday."
+      },
+      {
+        "question_id": 438,
+        "max_drift": 1.0986310467123985,
+        "first_error_chunk_id": null,
+        "question": "While Greg was camping with his family for a week, it rained for 3 days. When he looked at the weather records, he saw that the amount of rain was 3 mm, 6 mm, and 5 mm on the three days. During the same week, it rained 26 mm at his house. How much less rain did Greg experience while camping?"
+      },
+      {
+        "question_id": 269,
+        "max_drift": 1.0967749878764153,
+        "first_error_chunk_id": null,
+        "question": "John earned $18 on Saturday but he only managed to earn half that amount on Sunday. He earned $20 the previous weekend. How much more money does he need to earn to give him the $60 he needs to buy a new pogo stick?"
+      },
+      {
+        "question_id": 450,
+        "max_drift": 1.0941324010491371,
+        "first_error_chunk_id": null,
+        "question": "Flora has been experiencing frequent fractures. Dr. Juan has asked her to strengthen her bones by drinking 105 gallons of milk within 3 weeks. Flora thinks that drinking 3 gallons of milk daily will be enough, but her brother says she'll still need to drink more. To fulfill Dr. Juan’s requirement, how many more gallons must Flora drink daily?"
+      },
+      {
+        "question_id": 481,
+        "max_drift": 1.0904143303632736,
+        "first_error_chunk_id": 5,
+        "question": "Julia is performing in her high school musical this weekend and her family wants to come to the show. Tickets are $12 for adults and $10 for children. If her mom, dad, grandma, and three little sisters come to the show, how much will the total be for their tickets?"
+      },
+      {
+        "question_id": 329,
+        "max_drift": 1.0838671177625656,
+        "first_error_chunk_id": null,
+        "question": "Samuel bought 2 dozen doughnuts and Cathy bought 3 dozen doughnuts. They planned to share the doughnuts evenly with their 8 other friends. How many doughnuts will each of them receive?"
+      },
+      {
+        "question_id": 274,
+        "max_drift": 1.081236258149147,
+        "first_error_chunk_id": null,
+        "question": "Amanda needs 12 more marbles to have twice as many marbles as Katrina, and Mabel has 5 times as many marbles as Katrina. If Mabel has 85 marbles, how many more marbles does Mabel have than Amanda?"
+      },
+      {
+        "question_id": 420,
+        "max_drift": 1.0804308280348778,
+        "first_error_chunk_id": null,
+        "question": "Miriam spent 30 minutes doing laundry, 15 minutes cleaning the bathroom, a certain amount of time cleaning her room, and 40 minutes doing homework. If she spent a total of two hours on these tasks, how long, in minutes, did she spend cleaning her room?"
+      }
+    ],
+    "top_spike_examples": [
+      {
+        "question_id": 168,
+        "first_error_chunk_id": 17,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.8739931136369705,
+        "local_spike_threshold": 0.8479971710011697,
+        "chunk_text": "we need to follow these steps:",
+        "question": "Silvia’s bakery is offering 10% on advanced orders over $50.00.  She orders 2 quiches for $15.00 each, 6 croissants at $3.00 each and 6 buttermilk biscuits for $2.00 each.  How much will her order be with the discount?"
+      },
+      {
+        "question_id": 245,
+        "first_error_chunk_id": 17,
+        "suggested_rollback_chunk_id": 2,
+        "drift": 0.8677641749382019,
+        "local_spike_threshold": 0.6743275688130862,
+        "chunk_text": "and then add them together.",
+        "question": "There are 12 crates that each contain 150 oranges. There are 16 boxes that each hold 30 nectarines. How many pieces of fruit are in the crates and the boxes in total?"
+      },
+      {
+        "question_id": 160,
+        "first_error_chunk_id": 15,
+        "suggested_rollback_chunk_id": 12,
+        "drift": 0.8581702709197998,
+        "local_spike_threshold": 0.8579277478668779,
+        "chunk_text": "- John splits the cost with 3 other people,",
+        "question": "John throws a block party and splits the cost with 3 other people.  They buy 100 pounds of burgers at $3 per pound.  They also buy $80 of condiments and propane to cook everything.  John also buys all the alcohol which costs $200. How much did John spend altogether"
+      },
+      {
+        "question_id": 483,
+        "first_error_chunk_id": 10,
+        "suggested_rollback_chunk_id": 9,
+        "drift": 0.83949114382267,
+        "local_spike_threshold": 0.818647054897086,
+        "chunk_text": "- Over 3 months,",
+        "question": "Andy started out the year weighing 156 pounds. He then grew 3 inches and gained 36 pounds. Andy wasn't happy with his weight and decided to exercise. Over the next 3 months, he lost an eighth of his weight every month. How much less does Andy weigh now than at the beginning of the year?"
+      },
+      {
+        "question_id": 138,
+        "first_error_chunk_id": 11,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.8319386392831802,
+        "local_spike_threshold": 0.6170394410421605,
+        "chunk_text": "we need to calculate the total savings for each item and then sum them up.",
+        "question": "A gallon of whole milk that normally costs $3 is now sold at $2. A box of cereal was sold at a discount of $1. How much will you save via discounts if you buy 3 gallons of whole milk and 5 boxes of cereal?"
+      },
+      {
+        "question_id": 287,
+        "first_error_chunk_id": 10,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.8230531960725784,
+        "local_spike_threshold": 0.8187329393561198,
+        "chunk_text": "we need to follow these steps:",
+        "question": "Bran's tuition fee is $90. He does a part-time job that pays him $15 per month and he has a scholarship that takes care of 30% of his tuition fee. If he needs to pay his tuition fee within 3 months, how much does Bran still need to pay?"
+      },
+      {
+        "question_id": 304,
+        "first_error_chunk_id": 7,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.8202763497829437,
+        "local_spike_threshold": 0.7499346703121512,
+        "chunk_text": "we need to follow these steps:",
+        "question": "Cary is an engineer in charge of designing an irrigation system for three farmers. Farmer Bob grows 3 acres of corn, 9 acres of cotton, and 12 acres of beans. Farmer Brenda grows 6 acres of corn, 7 acres of cotton, and 14 acres of beans. Farmer Bernie grows 2 acres of corn and 12 acres of cotton. If corn takes 20 gallons of water an acre, cotton takes 80 gallons of water an acre, and beans take twice as much water as corn, what percentage of the total water used will go to Farmer Bob's farm?"
+      },
+      {
+        "question_id": 310,
+        "first_error_chunk_id": 9,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.8052953332662582,
+        "local_spike_threshold": 0.6545766104521248,
+        "chunk_text": "we need to follow these steps:",
+        "question": "Janet hires six employees. Four of them are warehouse workers who make $15/hour, and the other two are managers who make $20/hour. Janet has to pay 10% of her workers' salaries in FICA taxes. If everyone works 25 days a month and 8 hours a day, how much does Janet owe total for their wages and taxes for one month?"
+      },
+      {
+        "question_id": 232,
+        "first_error_chunk_id": 7,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.7879925072193146,
+        "local_spike_threshold": 0.7440212077052573,
+        "chunk_text": "we need to follow the sequence of their children's births and calculate the age of each child step by step.",
+        "question": "Jolene and Phil have four children, each with the same birthday.  They gave birth to their first child exactly 15 years ago.  They gave birth to their second child exactly one year after the birth of their first child.  They gave birth to their third child on the fourth birthday of their second child. Two years after the birth of their third child, they gave birth to their fourth child.  How old, in years, is their fourth child?"
+      },
+      {
+        "question_id": 356,
+        "first_error_chunk_id": 8,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.7872799932956696,
+        "local_spike_threshold": 0.7157812658604754,
+        "chunk_text": "we need to break down the problem step by step.",
+        "question": "Students at Highridge High earn 2 points for each correct answer during a quiz bowl If a student correctly answers all the questions in a round, the student is awarded an additional 4 point bonus. They played a total of five rounds each consisting of five questions. If James only missed one question, how many points did he get?"
+      },
+      {
+        "question_id": 55,
+        "first_error_chunk_id": 4,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.7773789763450623,
+        "local_spike_threshold": 0.7438689982542799,
+        "chunk_text": "we need to follow these steps:",
+        "question": "There are 25 roses in a garden. There are 40 tulips. There are 35 daisies. What percentage of flowers are not roses?"
+      },
+      {
+        "question_id": 107,
+        "first_error_chunk_id": 20,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.7619374841451645,
+        "local_spike_threshold": 0.7562791947335159,
+        "chunk_text": "we need to determine the number of cars for each day and then sum them up.",
+        "question": "There is very little car traffic on Happy Street. During the week, most cars pass it on Tuesday - 25. On Monday, 20% less than on Tuesday, and on Wednesday, 2 more cars than on Monday. On Thursday and Friday, it is about 10 cars each day. On the weekend, traffic drops to 5 cars per day. How many cars travel down Happy Street from Monday through Sunday?"
+      },
+      {
+        "question_id": 365,
+        "first_error_chunk_id": 10,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.7341653108596802,
+        "local_spike_threshold": 0.6361159802549765,
+        "chunk_text": "we need to consider the time each group of runners took to complete the race and then sum these times.",
+        "question": "In a race, there are eight runners. The first five runners finish the race in 8 hours, while the rest of the runners finish the race 2 hours later. Calculate the total time the eight runners took to finish the race."
+      },
+      {
+        "question_id": 497,
+        "first_error_chunk_id": 6,
+        "suggested_rollback_chunk_id": 1,
+        "drift": 0.7049815058708191,
+        "local_spike_threshold": 0.6669967132486475,
+        "chunk_text": "we need to calculate his average points per game and then apply the corresponding payment based on that average.",
+        "question": "James's favorite basketball player got paid based on how many points he averaged each week. He gets $10,000 if he averages 30 or more points a game and $8,000 if he averages under 30 points a game. For his last week, in the first game he scored 30 points and in the second game he scored 28 points. In the third game he scored 32 points. In the fourth game he scored 34 points and in the fifth game he scored 26 points. How much does he get paid for the week?"
+      }
+    ]
+  }
+}
