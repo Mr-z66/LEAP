@@ -13,11 +13,6 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from answer_extraction import extract_final_answer
 
-try:
-    from schedulers.repair_handoff_prompt import DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT
-except ModuleNotFoundError:
-    from repair_handoff_prompt import DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT
-
 # ================= Default Configuration =================
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "gsm8k_labeled_training_data_strict.pt")
@@ -581,7 +576,6 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
             max_new_tokens=remaining_budget,
             min_chunk_tokens=args.min_chunk_tokens,
             max_chunk_tokens=args.max_chunk_tokens,
-            system_prompt=DEFAULT_REPAIR_HANDOFF_SYSTEM_PROMPT,
         )
         prefix = chunk_result["full_reasoning"]
         total_generated_tokens += chunk_result["generated_token_count"]
