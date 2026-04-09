@@ -2543,7 +2543,7 @@
         "avg_trigger_score": 0.26392242312431335,
         "avg_trigger_progress": 0.22200520833333334,
         "small_final_answer": "1",
-        "scheduled_final_answer": "30",
+        "scheduled_final_answer": "12",
         "route_trace": [
           {
             "event": "small_accept",
@@ -4753,7 +4753,7 @@
         "avg_trigger_score": 0.5055191516876221,
         "avg_trigger_progress": 0.10481770833333334,
         "small_final_answer": "30",
-        "scheduled_final_answer": "30",
+        "scheduled_final_answer": "8",
         "route_trace": [
           {
             "event": "small_accept",
@@ -5237,13 +5237,13 @@
         "question_id": 143,
         "prompt_token_count": 83,
         "small_is_correct": true,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.54362553358078,
         "avg_trigger_progress": 0.107421875,
         "small_final_answer": "45",
-        "scheduled_final_answer": "45",
+        "scheduled_final_answer": "75",
         "route_trace": [
           {
             "event": "small_accept",
@@ -6335,13 +6335,13 @@
         "question_id": 168,
         "prompt_token_count": 102,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.4005989730358124,
         "avg_trigger_progress": 0.08919270833333333,
         "small_final_answer": "54.00",
-        "scheduled_final_answer": "54.00",
+        "scheduled_final_answer": "54",
         "route_trace": [
           {
             "event": "small_accept",
@@ -7011,13 +7011,13 @@
         "question_id": 181,
         "prompt_token_count": 83,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.6814463138580322,
         "avg_trigger_progress": 0.24934895833333331,
         "small_final_answer": "2019",
-        "scheduled_final_answer": "2019",
+        "scheduled_final_answer": "21",
         "route_trace": [
           {
             "event": "small_accept",
@@ -7925,13 +7925,13 @@
         "question_id": 201,
         "prompt_token_count": 90,
         "small_is_correct": false,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.36586716771125793,
         "avg_trigger_progress": 0.2265625,
         "small_final_answer": "7",
-        "scheduled_final_answer": "10",
+        "scheduled_final_answer": "7",
         "route_trace": [
           {
             "event": "small_accept",
@@ -9975,13 +9975,13 @@
         "question_id": 254,
         "prompt_token_count": 109,
         "small_is_correct": true,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": true,
         "handoff_count": 1,
         "avg_trigger_score": 0.2613303065299988,
         "avg_trigger_progress": 0.20703125,
         "small_final_answer": "30",
-        "scheduled_final_answer": "30",
+        "scheduled_final_answer": "330",
         "route_trace": [
           {
             "event": "small_accept",
@@ -10151,13 +10151,13 @@
         "question_id": 255,
         "prompt_token_count": 66,
         "small_is_correct": true,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": false,
         "handoff_count": 0,
         "avg_trigger_score": NaN,
         "avg_trigger_progress": NaN,
         "small_final_answer": "25",
-        "scheduled_final_answer": "10",
+        "scheduled_final_answer": "25",
         "route_trace": [
           {
             "event": "small_accept",
@@ -10391,13 +10391,13 @@
         "question_id": 261,
         "prompt_token_count": 89,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.715367317199707,
         "avg_trigger_progress": 0.10026041666666667,
         "small_final_answer": "2.50",
-        "scheduled_final_answer": "4.50",
+        "scheduled_final_answer": "1",
         "route_trace": [
           {
             "event": "small_accept",
@@ -10729,13 +10729,13 @@
         "question_id": 264,
         "prompt_token_count": 57,
         "small_is_correct": true,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.37587055563926697,
         "avg_trigger_progress": 0.16276041666666669,
         "small_final_answer": "21600",
-        "scheduled_final_answer": "21600",
+        "scheduled_final_answer": "2",
         "route_trace": [
           {
             "event": "small_accept",
@@ -12507,13 +12507,13 @@
         "question_id": 309,
         "prompt_token_count": 61,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.4407678544521332,
         "avg_trigger_progress": 0.177734375,
         "small_final_answer": "7",
-        "scheduled_final_answer": "7",
+        "scheduled_final_answer": "84000",
         "route_trace": [
           {
             "event": "small_accept",
@@ -13613,13 +13613,13 @@
         "question_id": 323,
         "prompt_token_count": 120,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.3693707585334778,
         "avg_trigger_progress": 0.12434895833333334,
         "small_final_answer": "12.00",
-        "scheduled_final_answer": "12.00",
+        "scheduled_final_answer": "12",
         "route_trace": [
           {
             "event": "small_accept",
@@ -14595,7 +14595,7 @@
         "avg_trigger_score": 0.47327661514282227,
         "avg_trigger_progress": 0.18229166666666666,
         "small_final_answer": "328",
-        "scheduled_final_answer": "2608",
+        "scheduled_final_answer": "240",
         "route_trace": [
           {
             "event": "small_accept",
@@ -16575,7 +16575,7 @@
         "avg_trigger_score": 0.47975707054138184,
         "avg_trigger_progress": 0.060546875,
         "small_final_answer": "54000",
-        "scheduled_final_answer": "54000",
+        "scheduled_final_answer": "18000",
         "route_trace": [
           {
             "event": "small_observe_rollback",
@@ -18529,13 +18529,13 @@
         "question_id": 457,
         "prompt_token_count": 96,
         "small_is_correct": true,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.2791561782360077,
         "avg_trigger_progress": 0.16080729166666666,
         "small_final_answer": "324",
-        "scheduled_final_answer": "324",
+        "scheduled_final_answer": "2",
         "route_trace": [
           {
             "event": "small_accept",
@@ -18743,7 +18743,7 @@
         "avg_trigger_score": 0.3769163191318512,
         "avg_trigger_progress": 0.22135416666666669,
         "small_final_answer": "12",
-        "scheduled_final_answer": "12",
+        "scheduled_final_answer": "2",
         "route_trace": [
           {
             "event": "small_accept",
@@ -22297,7 +22297,7 @@
         "avg_trigger_score": NaN,
         "avg_trigger_progress": NaN,
         "small_final_answer": "1",
-        "scheduled_final_answer": "4",
+        "scheduled_final_answer": "12",
         "route_trace": [
           {
             "event": "small_accept",
@@ -24815,13 +24815,13 @@
         "question_id": 143,
         "prompt_token_count": 83,
         "small_is_correct": true,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.8256591558456421,
         "avg_trigger_progress": 0.19140625,
         "small_final_answer": "45",
-        "scheduled_final_answer": "45",
+        "scheduled_final_answer": "0.75",
         "route_trace": [
           {
             "event": "small_accept",
@@ -25835,13 +25835,13 @@
         "question_id": 168,
         "prompt_token_count": 102,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.6936898231506348,
         "avg_trigger_progress": 0.19791666666666666,
         "small_final_answer": "54.00",
-        "scheduled_final_answer": "54.00",
+        "scheduled_final_answer": "54",
         "route_trace": [
           {
             "event": "small_accept",
@@ -26511,13 +26511,13 @@
         "question_id": 181,
         "prompt_token_count": 83,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.6814463138580322,
         "avg_trigger_progress": 0.24934895833333331,
         "small_final_answer": "2019",
-        "scheduled_final_answer": "2019",
+        "scheduled_final_answer": "21",
         "route_trace": [
           {
             "event": "small_accept",
@@ -26893,13 +26893,13 @@
         "question_id": 185,
         "prompt_token_count": 69,
         "small_is_correct": true,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": false,
         "handoff_count": 0,
         "avg_trigger_score": NaN,
         "avg_trigger_progress": NaN,
         "small_final_answer": "4",
-        "scheduled_final_answer": "4",
+        "scheduled_final_answer": "3",
         "route_trace": [
           {
             "event": "small_accept",
@@ -29553,13 +29553,13 @@
         "question_id": 255,
         "prompt_token_count": 66,
         "small_is_correct": true,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": false,
         "handoff_count": 0,
         "avg_trigger_score": NaN,
         "avg_trigger_progress": NaN,
         "small_final_answer": "25",
-        "scheduled_final_answer": "10",
+        "scheduled_final_answer": "25",
         "route_trace": [
           {
             "event": "small_accept",
@@ -29781,13 +29781,13 @@
         "question_id": 261,
         "prompt_token_count": 89,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.715367317199707,
         "avg_trigger_progress": 0.10026041666666667,
         "small_final_answer": "2.50",
-        "scheduled_final_answer": "4.50",
+        "scheduled_final_answer": "1",
         "route_trace": [
           {
             "event": "small_accept",
@@ -31851,13 +31851,13 @@
         "question_id": 309,
         "prompt_token_count": 61,
         "small_is_correct": false,
-        "scheduled_is_correct": false,
+        "scheduled_is_correct": true,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.6530294418334961,
         "avg_trigger_progress": 0.2727864583333333,
         "small_final_answer": "7",
-        "scheduled_final_answer": "7",
+        "scheduled_final_answer": "84000",
         "route_trace": [
           {
             "event": "small_accept",
@@ -32941,7 +32941,7 @@
         "avg_trigger_score": 0.5564985275268555,
         "avg_trigger_progress": 0.12109375,
         "small_final_answer": "12.00",
-        "scheduled_final_answer": "132.00",
+        "scheduled_final_answer": "132",
         "route_trace": [
           {
             "event": "small_accept",
@@ -35785,7 +35785,7 @@
         "avg_trigger_score": 0.626846432685852,
         "avg_trigger_progress": 0.15950520833333334,
         "small_final_answer": "54000",
-        "scheduled_final_answer": "54000",
+        "scheduled_final_answer": "1",
         "route_trace": [
           {
             "event": "small_accept",
@@ -37751,13 +37751,13 @@
         "question_id": 457,
         "prompt_token_count": 96,
         "small_is_correct": true,
-        "scheduled_is_correct": true,
+        "scheduled_is_correct": false,
         "triggered": true,
         "handoff_count": 2,
         "avg_trigger_score": 0.7542693614959717,
         "avg_trigger_progress": 0.2838541666666667,
         "small_final_answer": "324",
-        "scheduled_final_answer": "324",
+        "scheduled_final_answer": "2",
         "route_trace": [
           {
             "event": "small_accept",
@@ -37965,7 +37965,7 @@
         "avg_trigger_score": 0.5862175226211548,
         "avg_trigger_progress": 0.32421875,
         "small_final_answer": "12",
-        "scheduled_final_answer": "12",
+        "scheduled_final_answer": "9",
         "route_trace": [
           {
             "event": "small_accept",
