@@ -15,6 +15,8 @@ DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "analysis_outputs", "latent_dri
 DEFAULT_FEATURE_NAME = "boundary_hidden_state"
 DEFAULT_METRIC = "cosine"
 DEFAULT_SPIKE_STD_SCALE = 2.0
+DEFAULT_LOCAL_WINDOW_BEFORE = 3
+DEFAULT_LOCAL_WINDOW_AFTER = 1
 
 
 def parse_args():
@@ -50,6 +52,18 @@ def parse_args():
         type=int,
         default=15,
         help="How many high-drift/error examples to save in the output JSON.",
+    )
+    parser.add_argument(
+        "--local-window-before",
+        type=int,
+        default=DEFAULT_LOCAL_WINDOW_BEFORE,
+        help="How many chunks before first_error_chunk_id to inspect for local rollback anchors.",
+    )
+    parser.add_argument(
+        "--local-window-after",
+        type=int,
+        default=DEFAULT_LOCAL_WINDOW_AFTER,
+        help="How many chunks after first_error_chunk_id to inspect for local rollback anchors.",
     )
     return parser.parse_args()
 
@@ -172,7 +186,13 @@ def build_question_analysis(question_record, feature_name, metric):
     }
 
 
-def aggregate_question_analyses(question_analyses, spike_std_scale, top_k_hard_cases):
+def aggregate_question_analyses(
+    question_analyses,
+    spike_std_scale,
+    top_k_hard_cases,
+    local_window_before,
+    local_window_after,
+):
     all_drifts = []
     correct_prefix_drifts = []
     error_chunk_drifts = []
@@ -183,6 +203,12 @@ def aggregate_question_analyses(question_analyses, spike_std_scale, top_k_hard_c
     questions_with_error = 0
     spike_examples = []
     rollback_anchor_counter = Counter()
+    local_anchor_counter = Counter()
+    local_peak_examples = []
+    local_anchor_abs_distances = []
+    local_anchor_signed_distances = []
+    local_anchor_exact_hits = 0
+    local_anchor_within_one = 0
 
     for analysis in question_analyses:
         drift_rows = [row for row in analysis["drift_rows"] if row["drift"] is not None]
@@ -194,6 +220,7 @@ def aggregate_question_analyses(question_analyses, spike_std_scale, top_k_hard_c
             local_mean = safe_mean(drift_values)
             local_std = safe_stdev(drift_values)
             local_threshold = local_mean + spike_std_scale * local_std
+            first_error_chunk_id = analysis["first_error_chunk_id"]
 
             candidate_rows = []
             for row in drift_rows:
@@ -212,6 +239,39 @@ def aggregate_question_analyses(question_analyses, spike_std_scale, top_k_hard_c
 
                 if row["drift"] >= local_threshold:
                     candidate_rows.append(row)
+
+            window_start = max(1, first_error_chunk_id - local_window_before)
+            window_end = first_error_chunk_id + local_window_after
+            local_window_rows = [
+                row
+                for row in drift_rows
+                if window_start <= row["chunk_id"] <= window_end
+            ]
+            if local_window_rows:
+                local_anchor = max(local_window_rows, key=lambda row: row["drift"])
+                signed_distance = local_anchor["chunk_id"] - first_error_chunk_id
+                abs_distance = abs(signed_distance)
+                local_anchor_signed_distances.append(signed_distance)
+                local_anchor_abs_distances.append(abs_distance)
+                local_anchor_counter[local_anchor["chunk_id"]] += 1
+                if abs_distance == 0:
+                    local_anchor_exact_hits += 1
+                if abs_distance <= 1:
+                    local_anchor_within_one += 1
+                local_peak_examples.append(
+                    {
+                        "question_id": analysis["question_id"],
+                        "first_error_chunk_id": first_error_chunk_id,
+                        "local_window_start": window_start,
+                        "local_window_end": window_end,
+                        "suggested_local_anchor_chunk_id": local_anchor["chunk_id"],
+                        "signed_distance_to_first_error": signed_distance,
+                        "abs_distance_to_first_error": abs_distance,
+                        "drift": local_anchor["drift"],
+                        "chunk_text": local_anchor["chunk_text"],
+                        "question": analysis["question"],
+                    }
+                )
 
             if candidate_rows:
                 anchor = min(candidate_rows, key=lambda row: row["chunk_id"])
@@ -247,6 +307,7 @@ def aggregate_question_analyses(question_analyses, spike_std_scale, top_k_hard_c
 
     global_spike_count = sum(1 for value in all_drifts if value >= global_spike_threshold)
     first_error_spike_count = sum(1 for value in first_error_transition_drifts if value >= global_spike_threshold)
+    local_peak_examples.sort(key=lambda item: (item["abs_distance_to_first_error"], -item["drift"]))
 
     return {
         "num_questions": len(question_analyses),
@@ -266,8 +327,19 @@ def aggregate_question_analyses(question_analyses, spike_std_scale, top_k_hard_c
             "first_error_spike_rate": first_error_spike_count / max(len(first_error_transition_drifts), 1),
             "rollback_anchor_counter": dict(rollback_anchor_counter.most_common()),
         },
+        "local_window_analysis": {
+            "window_before": local_window_before,
+            "window_after": local_window_after,
+            "count": len(local_anchor_abs_distances),
+            "anchor_abs_distance": summarize_bucket(local_anchor_abs_distances),
+            "anchor_signed_distance": summarize_bucket(local_anchor_signed_distances),
+            "exact_hit_rate": local_anchor_exact_hits / max(len(local_anchor_abs_distances), 1),
+            "within_one_chunk_rate": local_anchor_within_one / max(len(local_anchor_abs_distances), 1),
+            "local_anchor_counter": dict(local_anchor_counter.most_common()),
+        },
         "top_max_drift_questions": per_question_max_drift[:top_k_hard_cases],
         "top_spike_examples": spike_examples[:top_k_hard_cases],
+        "top_local_peak_examples": local_peak_examples[:top_k_hard_cases],
     }
 
 
@@ -296,6 +368,20 @@ def print_summary(summary, feature_name, metric, spike_std_scale):
     print(f"First-error transitions above global spike threshold: {spike['first_error_spike_count']}")
     print(f"First-error spike rate: {spike['first_error_spike_rate']:.4f}")
 
+    local_window = summary["local_window_analysis"]
+    print("\nLocal window analysis")
+    print("=" * 50)
+    print(
+        f"Window: first_error - {local_window['window_before']} to + {local_window['window_after']}"
+    )
+    print(f"Questions analyzed in local window: {local_window['count']}")
+    print(
+        f"Anchor abs distance mean={local_window['anchor_abs_distance']['mean']:.4f} "
+        f"median={local_window['anchor_abs_distance']['median']:.4f}"
+    )
+    print(f"Exact-hit rate: {local_window['exact_hit_rate']:.4f}")
+    print(f"Within-one-chunk rate: {local_window['within_one_chunk_rate']:.4f}")
+
     print("\nTop high-drift questions")
     print("=" * 50)
     for item in summary["top_max_drift_questions"][:10]:
@@ -312,6 +398,15 @@ def print_summary(summary, feature_name, metric, spike_std_scale):
             f"| suggested_anchor={item['suggested_rollback_chunk_id']} | drift={item['drift']:.6f}"
         )
 
+    print("\nTop local-window anchor examples")
+    print("=" * 50)
+    for item in summary["top_local_peak_examples"][:10]:
+        print(
+            f"qid={item['question_id']} | first_error={item['first_error_chunk_id']} "
+            f"| local_anchor={item['suggested_local_anchor_chunk_id']} "
+            f"| abs_dist={item['abs_distance_to_first_error']} | drift={item['drift']:.6f}"
+        )
+
 
 def main():
     args = parse_args()
@@ -325,6 +420,8 @@ def main():
         question_analyses=question_analyses,
         spike_std_scale=args.spike_std_scale,
         top_k_hard_cases=args.top_k_hard_cases,
+        local_window_before=args.local_window_before,
+        local_window_after=args.local_window_after,
     )
     print_summary(summary, args.feature_name, args.metric, args.spike_std_scale)
 
