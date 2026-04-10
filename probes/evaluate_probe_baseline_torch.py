@@ -225,11 +225,11 @@ def main():
     args = parse_args()
 
     print(f"Loading labeled chunk dataset from: {args.data_path}")
-    dataset = torch.load(args.data_path)
+    dataset = torch.load(args.data_path, weights_only=False)
     question_records = build_question_records(dataset)
 
     print(f"Loading PyTorch probe artifact from: {args.artifact_path}")
-    artifact = torch.load(args.artifact_path)
+    artifact = torch.load(args.artifact_path, weights_only=False)
     feature_key = artifact["feature_key"]
     test_question_ids = set(int(qid) for qid in artifact["test_question_ids"])
     scaler = artifact["scaler"]
