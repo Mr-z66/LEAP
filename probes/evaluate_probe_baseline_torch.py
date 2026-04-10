@@ -92,6 +92,11 @@ DERIVED_SCALAR_FEATURES = {
     "contains_multiple_numbers",
     "has_equation_like_pattern",
     "has_finalization_cue",
+    "entropy_delta",
+    "margin_delta",
+    "top1_prob_delta",
+    "boundary_cosine_drift",
+    "boundary_l2_drift",
 }
 
 
@@ -122,6 +127,35 @@ def chunk_scalar_feature(chunk, token):
         has_cue = bool(re.search(r"\b(therefore|thus|so|answer|final answer|total)\b", lower_text))
         return np.asarray([1.0 if has_cue else 0.0], dtype=np.float32)
     raise KeyError(f"Unsupported derived scalar feature: {token}")
+
+
+def chunk_confidence_scalar(chunk, token):
+    if token == "entropy_delta":
+        key = "final_entropy"
+    elif token == "margin_delta":
+        key = "final_margin"
+    elif token == "top1_prob_delta":
+        key = "final_top1_prob"
+    else:
+        raise KeyError(f"Unsupported confidence delta token: {token}")
+    return float(tensor_to_numpy(chunk[key]).reshape(-1)[0])
+
+
+def boundary_hidden_drift(chunk, prev_chunk, token):
+    if prev_chunk is None:
+        return np.asarray([0.0], dtype=np.float32)
+    current = tensor_to_numpy(chunk["boundary_hidden_state"]).reshape(-1)
+    previous = tensor_to_numpy(prev_chunk["boundary_hidden_state"]).reshape(-1)
+    if token == "boundary_l2_drift":
+        return np.asarray([float(np.linalg.norm(current - previous))], dtype=np.float32)
+    if token == "boundary_cosine_drift":
+        denom = float(np.linalg.norm(current) * np.linalg.norm(previous))
+        if denom <= 1e-12:
+            return np.asarray([0.0], dtype=np.float32)
+        cosine = float(np.dot(current, previous) / denom)
+        cosine = float(np.clip(cosine, -1.0, 1.0))
+        return np.asarray([1.0 - cosine], dtype=np.float32)
+    raise KeyError(f"Unsupported boundary drift token: {token}")
 
 
 def build_question_records(dataset):
@@ -159,6 +193,12 @@ def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
         elif token == "remaining_ratio":
             denom = max(total_chunks - 1, 1)
             value = np.asarray([(denom - int(chunk["chunk_id"])) / denom], dtype=np.float32)
+        elif token in {"entropy_delta", "margin_delta", "top1_prob_delta"}:
+            current = chunk_confidence_scalar(chunk, token)
+            previous = 0.0 if prev_chunk is None else chunk_confidence_scalar(prev_chunk, token)
+            value = np.asarray([current - previous], dtype=np.float32)
+        elif token in {"boundary_cosine_drift", "boundary_l2_drift"}:
+            value = boundary_hidden_drift(chunk, prev_chunk, token)
         elif token in DERIVED_SCALAR_FEATURES:
             value = chunk_scalar_feature(chunk, token)
         else:
