@@ -1,0 +1,308 @@
+﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
+4,small_correct_to_scheduled_correct,True,True,True,True,11,10,,0.19519132375717163,0.03235294117647059,0.22754426493364222,624,624,624,624,111,"To determine how many pages James writes in a year, we need to break down the problem into smaller, manageable steps.
+
+1. **Calculate the number of pages James writes per week:**
+   - James writes a 3-page letter to 2 different friends.
+   - He does this twice a week.
+   - Therefore, the number of pages he writes per week is:
+     \[
+     3 \text{ pages/letter} \times 2 \text{ letters} \times 2 \text{ times/week} = 12 \text{ pages/week}
+     \]
+
+2. **Calculate the number of weeks in a year:**- There are 52 weeks in a year.
+
+3. **Calculate the total number of pages James writes in a year:**
+   - Multiply the number of pages he writes per week by the number of weeks in a year:
+     \[
+     12 \text{ pages/week} \times 52 \text{ weeks/year} = 624 \text{ pages/year}
+     \]
+
+Thus, the total number of pages James writes in a year is \(\boxed{624}\).","To solve this problem, we need to break it down into smaller steps and calculate accordingly.
+
+1. **Determine the number of pages James writes per session:**
+   - James writes a 3-page letter to each friend.
+   - He has 2 different friends.
+   - Therefore, in one session, he writes \(3 \text{ pages} \times 2 \text{ friends} = 6 \text{ pages}\).
+
+2. **Determine the number of sessions per week:**
+   - James writes these letters twice a week.
+   - So, he writes \(2 \text{ sessions/week}\).
+
+3. **Calculate the total number of pages written per week:**
+   - In one session, he writes 6 pages.
+   - Since he writes twice a week, he writes \(6 \text{ pages/session} \times 2 \text{ sessions/week} = 12 \text{ pages/week}\).
+
+4. **Calculate the total number of weeks in a year:**
+   - There are 52 weeks in a year.
+
+5. **Calculate the total number of pages written in a year:**
+   - He writes 12 pages per week.
+   - Over 52 weeks, he writes \(12 \text{ pages/week} \times 52 \text{ weeks/year} = 624 \text{ pages/year}\).
+
+Therefore, James writes a total of 624 pages in a year.",James writes a 3-page letter to 2 different friends twice a week.  How many pages does he write a year?
+6,small_correct_to_scheduled_correct,True,True,True,True,10,9,,0.27300530672073364,0.03125,0.30425530672073364,48,48,48,48,120,"To determine how many pieces of pizza Albert eats in one day, we need to follow these steps:
+
+1. Calculate the total number of slices from the large pizzas.
+2. Calculate the total number of slices from the small pizzas.
+3. Add the slices from the large pizzas and the small pizzas together.
+
+First, let's calculate the total number of slices from the large pizzas:
+- Albert buys 2 large pizzas.
+- Each large pizza has 16 slices.
+- Therefore, the total number of slices from the large pizzas is \(2 \times 16 = 32\).
+
+Next, let's calculate the total number of slices from the small pizzas:- Albert buys 2 small pizzas.
+- Each small pizza has 8 slices.
+- Therefore, the total number of slices from the small pizzas is \(2 \times 8 = 16\).
+
+Now, we add the slices from both the large and small pizzas:
+- Total slices from large pizzas: 32
+- Total slices from small pizzas: 16
+- Combined total: \(32 + 16 = 48\)
+
+Therefore, if Albert eats all the pizzas, he will have eaten 48 pieces of pizza in one day.","To determine how many pieces of pizza Albert eats in one day if he eats all the pizzas he bought, we need to follow these steps:
+
+1. **Calculate the total number of slices from the large pizzas:**
+   - Each large pizza has 16 slices.
+   - Albert buys 2 large pizzas.
+   - Total slices from large pizzas = \( 2 \times 16 = 32 \) slices.
+
+2. **Calculate the total number of slices from the small pizzas:**
+   - Each small pizza has 8 slices.
+   - Albert buys 2 small pizzas.
+   - Total slices from small pizzas = \( 2 \times 8 = 16 \) slices.
+
+3. **Add the slices from both types of pizzas to get the total number of slices:**
+   - Total slices from large pizzas = 32 slices.
+   - Total slices from small pizzas = 16 slices.
+   - Total slices = \( 32 + 16 = 48 \) slices.
+
+Therefore, if Albert eats all the pizzas, he will have eaten a total of 48 slices.","Albert is wondering how much pizza he can eat in one day. He buys 2 large pizzas and 2 small pizzas. A large pizza has 16 slices and a small pizza has 8 slices. If he eats it all, how many pieces does he eat that day?"
+28,small_correct_to_scheduled_correct,True,True,True,False,,,,,,,8,8,8,8,,,"To determine how many gnomes the fifth house has, we can follow these steps:
+
+1. **Calculate the total number of gnomes in the first four houses:**
+   - Each of the first four houses has 3 gnomes.
+   - Therefore, the total number of gnomes in the first four houses is:
+     \[
+     4 \text{ houses} \times 3 \text{ gnomes per house} = 12 \text{ gnomes}
+     \]
+
+2. **Determine the total number of gnomes on the street:**
+   - We are given that there are a total of 20 gnomes on the street.
+
+3. **Find the number of gnomes in the fifth house:**
+   - Subtract the number of gnomes in the first four houses from the total number of gnomes on the street:
+     \[
+     20 \text{ gnomes (total)} - 12 \text{ gnomes (first four houses)} = 8 \text{ gnomes}
+     \]
+
+Thus, the fifth house has \(\boxed{8}\) gnomes.","There are 5 houses on a street, and each of the first four houses has 3 gnomes in the garden. If there are a total of 20 gnomes on the street, how many gnomes does the fifth house have?"
+34,small_correct_to_scheduled_correct,True,True,True,True,11,10,,0.162112295627594,0.04230769230769231,0.20441998793528632,5250,5250,5250,5250,62,"To determine the total amount of money shared between Ken and Tony, we need to follow these steps:
+
+1. Identify the amount of money Ken received.
+2. Calculate the amount of money Tony received.
+3. Add the amounts received by Ken and Tony to find the total.
+
+Step 1: Ken received $1750.
+
+Step 2: Tony received twice as much as Ken. Therefore, we calculate Tony's amount as follows:
+\[ \text{Tony's amount} = 2 \times \text{Ken's amount} = 2 \times 1750 = 3500 \]
+
+Step 3: Add the amounts received by Ken and Tony to find the total:\[ \text{Total amount} = \text{Ken's amount} + \text{Tony's amount} = 1750 + 3500 = 5250 \]
+
+Thus, the total amount of money shared is \( \$5250 \).","To solve this problem, let's break it down into steps:
+
+Step 1: Identify what we know.
+- Ken received $1750.
+- Tony received twice as much as Ken.
+
+Step 2: Calculate how much Tony received.
+- Since Tony got twice as much as Ken, we multiply Ken's amount by 2:
+  Tony's amount = 2 × $1750 = $3500
+
+Step 3: Calculate the total amount shared.
+- The total amount is the sum of what Ken and Tony received:
+  Total amount = Ken's amount + Tony's amount
+                = $1750 + $3500
+                = $5250
+
+Therefore, the total amount of money shared between Ken and Tony was $5250.","Mr. Sam shared a certain amount of money between his two sons, Ken and Tony. If Ken got $1750, and Tony got twice as much as Ken, how much was the money shared?"
+70,small_correct_to_scheduled_correct,True,True,True,True,9,8,,0.1842976212501526,0.03461538461538462,0.2189130058655372,19,19,19,19,65,"To determine how many apples Harry has, we need to follow these steps:
+
+1. **Find out how many apples Tim has:**
+   - We know that Martha has 68 apples.
+   - Tim has 30 less apples than Martha.
+   - Therefore, the number of apples Tim has is:
+     \[
+     68 - 30 = 38
+     \]
+
+2. **Find out how many apples Harry has:**- Harry has half as many apples as Tim.
+   - Since Tim has 38 apples, the number of apples Harry has is:
+     \[
+     \frac{38}{2} = 19
+     \]
+
+Thus, Harry has \(\boxed{19}\) apples.","Let's break down the problem step by step:
+
+1. **Identify the number of apples Martha has:**
+   - Martha has 68 apples.
+
+2. **Determine the number of apples Tim has:**
+   - Tim has 30 less apples than Martha.
+   - Therefore, Tim's apples = Martha's apples - 30
+   - Tim's apples = 68 - 30 = 38
+
+3. **Calculate the number of apples Harry has:**
+   - Harry has half as many apples as Tim.
+   - Therefore, Harry's apples = Tim's apples / 2
+   - Harry's apples = 38 / 2 = 19
+
+So, Harry has 19 apples.","Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
+76,small_correct_to_scheduled_correct,True,True,True,True,9,8,,0.23963290452957153,0.01956521739130435,0.2591981219208759,768,768,768,768,170,"To determine the total number of vegetables produced by the garden, we need to calculate the number of each type of vegetable and then sum them up.
+
+1. **Potatoes:**
+   The garden produced 237 potatoes.
+
+2. **Cucumbers:**
+   The garden produced 60 fewer cucumbers than potatoes. Therefore, the number of cucumbers is:
+   \[
+   237 - 60 = 177
+   \]
+
+3.**Peppers:**
+   The garden produced twice as many peppers as cucumbers. Therefore, the number of peppers is:
+   \[
+   2 \times 177 = 354
+   \]
+
+4. **Total Vegetables:**
+   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers:
+   \[
+   237 + 177 + 354
+   \]
+
+Let's perform the addition step-by-step:
+\[
+237 + 177 = 414
+\]
+\[
+414 + 354 = 768
+\]
+
+Thus, the total number of vegetables produced by the garden is:
+\[
+\boxed{768}
+\]","To solve this problem, we need to find out how many of each type of vegetable the garden produced and then sum them up.
+
+1. **Potatoes:**
+   The garden produced 237 potatoes.
+
+2. **Cucumbers:**
+   The garden produced 60 fewer cucumbers than potatoes.
+   \[
+   \text{Number of cucumbers} = 237 - 60 = 177
+   \]
+
+3. **Peppers:**
+   The garden produced twice as many peppers as cucumbers.
+   \[
+   \text{Number of peppers} = 2 \times 177 = 354
+   \]
+
+4. **Total number of vegetables:**
+   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers together.
+   \[
+   \text{Total vegetables} = 237 + 177 + 354
+   \]
+
+5. **Summing up:**
+   \[
+   237 + 177 = 414
+   \]
+   \[
+   414 + 354 = 768
+   \]
+
+Therefore, the garden produced a total of 768 vegetables.","A garden produced 237 potatoes, 60 fewer cucumbers and twice as many peppers than the cucumbers. How many vegetables did the garden produce?"
+78,small_correct_to_scheduled_correct,True,True,True,False,,,,,,,4,4,4,4,,,"To solve this problem, let's break it down step by step:
+
+1. **Determine the total number of people:**
+   - Manny
+   - 24 classmates
+   - Mr. Keith (the teacher)
+   
+   Total number of people = 1 + 24 + 1 = 26
+
+2. **Calculate the total number of cookie pie slices:**
+   - Each cookie pie is cut into 10 slices.
+   - There are 3 cookie pies.
+   
+   Total number of slices = 3 pies × 10 slices per pie = 30 slices
+
+3. **Determine the number of slices consumed:**
+   - Each person gets 1 slice.
+   - There are 26 people.
+   
+   Number of slices consumed = 26 slices
+
+4. **Calculate the number of slices left:**
+   - Total number of slices available = 30 slices
+   - Number of slices consumed = 26 slices
+   
+   Number of slices left = 30 slices - 26 slices = 4 slices
+
+Therefore, there are 4 slices of cookie pie left.","Manny had 3 birthday cookie pies to share with his 24 classmates and his teacher, Mr. Keith.   If each of the cookie pies were cut into 10 slices and Manny, his classmates, and Mr. Keith all had 1 piece, how many slices are left?"
+84,small_correct_to_scheduled_correct,True,True,True,True,2,1,2,0.16660428047180176,0.008333333333333333,0.1749376138051351,90,90,90,90,211,"To determine the number of different rooms Hans could be checked into, we need to consider the total number of floors available and the number of rooms per floor.Let's break it down step by step:
+
+1. **Total Floors in the Hotel:**
+   The hotel has a total of 10 floors.
+
+2. **Rooms per Floor:**
+   Each floor has 10 identical rooms.
+
+3. **Unavailable Floor:**
+   The last floor (the 10th floor) is unavailable due to an accident.
+
+4. **Available Floors:**
+   Since the 10th floor is unavailable, only the first 9 floors are available for guests.
+
+5. **Calculating Available Rooms:**
+   - Each of the 9 available floors has 10 rooms.
+   - Therefore, the total number of available rooms is calculated as:
+     \[
+     9 \text{ floors} \times 10 \text{ rooms per floor} = 90 \text{ rooms}
+     \]
+
+Thus, Hans could be checked into any one of the 90 available rooms. 
+
+The final answer is:
+\[
+\boxed{90}
+\]","To determine the number of different rooms Hans could be checked into, let's break down the problem step by step:
+
+1. **Total Floors and Rooms:**
+   - The hotel has a total of 10 floors.
+   - Each floor has 10 identical rooms.
+
+2. **Unavailable Floor:**
+   - The last floor (the 10th floor) is unavailable due to an accident.
+
+3. **Available Floors:**
+   - Since the 10th floor is unavailable, only the first 9 floors are available for guests.
+
+4. **Rooms per Available Floor:**
+   - Each of these 9 floors still has 10 rooms.
+
+5. **Total Available Rooms:**
+   - To find the total number of available rooms, we multiply the number of available floors by the number of rooms per floor:
+     \[
+     9 \text{ floors} \times 10 \text{ rooms per floor} = 90 \text{ rooms}
+     \]
+
+Therefore, Hans could be checked into any one of the 90 available rooms. 
+
+The final answer is:
+\[
+\boxed{90}
+\]","Hans booked a room in a hotel. The hotel has 10 floors with 10 identical rooms on each floor. Because of an accident, the last floor is unavailable for the guests. Considering there are no other guests, in how many different rooms could Hans be checked in?"

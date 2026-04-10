@@ -1,92 +1,144 @@
-﻿# LEAP
+# LEAP
 
-当前仓库现在有两层组织方式：
+主线仓库已经整理成 5 个顶层区块：
 
-1. 按职责放代码
-2. 按两条 baseline 给入口
+- `core_package/`
+  主线代码。后续做 GSM8K 以外的数据集，也优先在这里扩展。
+- `evaluation/`
+  评测、作图、失败分析、导出脚本。
+- `result/`
+  trace、图、JSON、case export 等实验结果。
+- `dataset/`
+  数据文件与审计样本。
+- `unsorted/`
+  历史支线、旧实验、非主线代码。
 
-## 先看这两个入口
+## 当前主线
 
-- `strict_baseline/`
-  对应 `strict prefix_correct -> probe -> single-handoff` 主线
-- `beneficial_baseline/`
-  对应 `takeover_beneficial -> beneficial probe -> multi/long handoff` 主线
+当前论文主线固定为：
 
-如果你只是想跑实验，优先看这两个目录里的 `README.md` 和 `run_mainline.txt`。
+- strict chunk-level label
+- probe 特征：
+  - `boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob`
+- observe-and-rollback
+- 原始 handoff
+- 新版答案抽取
 
-## 代码目录
+主结果 operating points：
 
-- `pipelines/`
-  数据构建、judge 标注、beneficial 标签构建
-- `probes/`
-  probe 评估与 artifact 训练
-- `schedulers/`
-  single-handoff 与 multi-handoff 调度模拟
-- `analysis/`
-  标签分析、失败归因、bad case 导出
-- `tooling/`
-  下载模型、快速检查等工具脚本
-- `multi_beneficial_handoff/`
-  独立的 beneficial multi-handoff 支线环境与运行模板
-- `verify_idea/`
-  历史验证材料与兼容入口
+- 高准确率点：`threshold = 0.25`
+- 高效率点：`threshold = 0.40` 或 `0.50`
 
-## 主线脚本位置
+## 目录说明
 
-### 数据与标注
+### `core_package/`
 
-- `pipelines/build_dataset.py`
-- `pipelines/referee_32b_labeling.py`
-- `pipelines/referee_32b_labeling_strict.py`
-- `pipelines/build_takeover_beneficial_labels.py`
+- `core_package/pipelines/`
+  - `build_dataset.py`
+  - `referee_32b_labeling_strict.py`
+  - `count_labeled_questions.py`
+- `core_package/probes/`
+  - `train_probe_artifact_torch.py`
+  - `evaluate_probe_baseline_torch.py`
+- `core_package/schedulers/`
+  - `simulate_observe_rollback_scheduler.py`
+- `core_package/tooling/`
+  - `download_model.py`
+  - `check_data.py`
+- `core_package/answer_extraction.py`
 
-### Probe
+### `evaluation/`
 
-- `probes/evaluate_probe_baseline.py`
-- `probes/train_probe_artifact.py`
+- model-only baseline 评测
+- FLOPs/threshold 作图
+- 标签统计、失败分析、case 导出
 
-### Scheduler
+### `result/`
 
-- `schedulers/simulate_chunk_scheduler.py`
-- `schedulers/simulate_multi_handoff_scheduler.py`
+- `result/analysis_outputs/`
+- `result/traces/`
+- `result/summaries/`
+- `result/scheduler_case_exports/`
 
-### 分析
+### `dataset/`
 
-- `analysis/analyze_labeled_data.py`
-- `analysis/audit_strict_label_quality.py`
-- `analysis/sample_judge_audit.py`
-- `analysis/analyze_scheduler_failures.py`
-- `analysis/export_missed_trigger_cases.py`
+- `dataset/audits/`
+- 后续可放：
+  - `gsm8k_labeled_training_data_strict.pt`
+  - 其他数据集的 `.pt/.jsonl`
 
-### 工具
+### `unsorted/`
 
-- `tooling/download_model.py`
-- `tooling/check_data.py`
+- `unsorted/legacy_experiments/`
+- `unsorted/legacy_code/`
 
-## 常用命令
+这里只保留历史材料，不再作为主线入口。
 
-在仓库根目录执行。
+## 建议的主线命令
 
-### 1. 构建 hidden-state / chunk 数据
+以下命令都在仓库根目录执行。
+
+### 1. 构建 chunk hidden-state 数据
 
 ```powershell
-python pipelines/build_dataset.py
+python -m core_package.pipelines.build_dataset
 ```
 
 ### 2. strict 标注
 
 ```powershell
-python pipelines/referee_32b_labeling_strict.py --num-samples 100 --save-every 5
+python -m core_package.pipelines.referee_32b_labeling_strict --num-samples 100 --save-every 5
 ```
 
-### 3. probe 评估
+### 3. 训练主线 probe
 
 ```powershell
-python probes/evaluate_probe_baseline.py
+python -m core_package.probes.train_probe_artifact_torch ^
+  --label-path dataset/gsm8k_labeled_training_data_strict.pt ^
+  --output-path result/artifacts/probe_artifact_torch.pt ^
+  --feature-key "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob" ^
+  --hidden-layers 128,32 ^
+  --dropout 0.1 ^
+  --epochs 60 ^
+  --batch-size 256 ^
+  --learning-rate 5e-4 ^
+  --weight-decay 1e-3 ^
+  --low-entropy-error-final-entropy-max 1.0 ^
+  --low-entropy-error-final-top1-min 0.9 ^
+  --low-entropy-error-weight 4.0
 ```
 
-### 4. single-handoff 调度
+### 4. 评估 probe
 
 ```powershell
-python schedulers/simulate_chunk_scheduler.py --thresholds 0.10,0.15,0.20,0.25
+python -m core_package.probes.evaluate_probe_baseline_torch ^
+  --data-path dataset/gsm8k_labeled_training_data_strict.pt ^
+  --artifact-path result/artifacts/probe_artifact_torch.pt
+```
+
+### 5. 运行 scheduler
+
+```powershell
+python -m core_package.schedulers.simulate_observe_rollback_scheduler ^
+  --probe-artifact-path result/artifacts/probe_artifact_torch.pt ^
+  --small-baseline-path result/analysis_outputs/qwen25_15b_only_heldout100_newextract.json ^
+  --thresholds 0.25,0.40,0.50 ^
+  --tail-bonus-weight 0.0 ^
+  --max-new-tokens 768 ^
+  --max-handoffs 2 ^
+  --large-handoff-chunks 2 ^
+  --cooldown-chunks 2 ^
+  --trace-export-path result/traces/observe_rollback_traces_mainline.json
+```
+
+### 6. 画 accuracy-FLOPs 图
+
+```powershell
+python -m evaluation.plot_threshold_accuracy_flops_compare ^
+  --trace-path result/traces/observe_rollback_traces_mainline.json ^
+  --tail-bonus-weight 0.0 ^
+  --llm-accuracy 0.94 ^
+  --llm-token-proxy 306.66 ^
+  --cost-mode approx_flops ^
+  --output-dir result/analysis_outputs
 ```

@@ -1,0 +1,203 @@
+﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
+9,small_wrong_to_scheduled_wrong,False,False,False,True,12,11,5,0.15233397483825684,0.02857142857142857,0.18090540340968542,990,3,720.00,5,256,"To determine how much money Tina makes, we need to break down her earnings into regular hours and overtime hours, and then sum them up.
+
+1. **Calculate the regular hours:**
+   Tina works 10 hours every day for 5 days.
+   \[
+   \text{Total regular hours} = 10 \text{ hours/day} \times 5 \text{ days} = 50 \text{ hours}
+   \]
+
+2. **Calculate the overtime hours:**
+   Tina is eligible for overtime if she works more than 8 hours per shift. Since she works 10 hours per day, she qualifies for overtime.The number of overtime hours per day is:
+   \[
+   \text{Overtime hours per day} = 10 \text{ hours/day} - 8 \text{ hours/day} = 2 \text{ hours/day}
+   \]
+   Over 5 days, the total overtime hours are:
+   \[
+   \text{Total overtime hours} = 2 \text{ hours/day} \times 5 \text{ days} = 10 \text{ hours}
+   \]
+
+3. **Calculate the regular pay:**
+   Regular pay is calculated based on the first 8 hours of work each day.
+   \[
+   \text{Regular hours per day} = 8 \text{ hours/day}
+   \]
+   \[
+   \text{Total regular hours} = 8 \text{ hours/day} \times 5 \text{ days} = 40 \text{ hours}
+   \]
+   Her regular pay rate is $18.00 per hour.
+   \[
+   \text{Regular pay} = 40 \text{ hours} \times \$18.00/\text{hour} = \$720.00
+   \]","To determine how much money Tina makes, we need to break down her work schedule and calculate both her regular pay and her overtime pay.
+
+### Step-by-Step Calculation:
+
+1. **Regular Pay Calculation:**
+   - Tina's regular hourly wage is $18.00.
+   - She works 8 hours at the regular rate each day.
+   - For 5 days, her total regular hours worked = \( 8 \text{ hours/day} \times 5 \text{ days} = 40 \text{ hours} \).
+   - Her total regular pay = \( 40 \text{ hours} \times \$18.00/\text{hour} = \$720.00 \).
+
+2. **Overtime Pay Calculation:**
+   - Overtime is paid at 1.5 times the regular hourly wage.
+   - Her overtime hourly wage = \( 18.00 \times 1.5 = \$27.00 \).
+   - She works 2 hours of overtime each day (since she works 10 hours total and 8 are regular).
+   - For 5 days, her total overtime hours worked = \( 2 \text{ hours/day} \times 5 \text{ days} = 10 \text{ hours} \).
+   - Her total overtime pay = \( 10 \text{ hours} \times \$27.00/\text{hour} = \$270.00 \).
+
+3. **Total Pay Calculation:**
+   - Total pay = Regular pay + Overtime pay.
+   - Total pay = \( \$720.00 + \$270.00 = \$990.00 \).
+
+Therefore, Tina makes a total of **$990.00** for working 10 hours every day for 5 days.","Tina makes $18.00 an hour.  If she works more than 8 hours per shift, she is eligible for overtime, which is paid by your hourly wage + 1/2 your hourly wage.  If she works 10 hours every day for 5 days, how much money does she make?"
+17,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,,0.23361527919769287,0.007894736842105263,0.24151001603979813,43,3,24,43,256,"To calculate the total number of hard hats remaining in the truck, we need to follow these steps:
+
+1. **Initial Count of Each Color:**- Pink: 26
+   - Green: 15
+   - Yellow: 24
+
+2. **Carl's Action:**  
+   Carl takes away 4 pink hard hats.
+   - Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
+
+3. **John's Action:**  
+   John takes away 6 pink hard hats and twice as many green hard hats as the pink ones he removed.
+   - Pink hard hats taken by John: 6
+   - Green hard hats taken by John: \( 2 \times 6 = 12 \)
+   
+   - Remaining pink hard hats after John: \( 22 - 6 = 16 \)
+   - Remaining green hard hats after John: \( 15 - 12 = 3 \)
+
+4. **Final Count of Each Color:**  
+   - Pink: 16
+   - Green: 3
+   - Yellow: 24 (unchanged)
+
+5. **Total Number of Hard Hats Remaining:**  
+   Sum up the remaining hard hats:
+   \[
+   16 \text{ (pink)} + 3 \text{ (green)} + 24","Let's break down the problem step by step to find out how many hard hats remain in the truck.
+
+### Initial Counts:
+- Pink hard hats: 26
+- Green hard hats: 15
+- Yellow hard hats: 24
+
+### Carl's Action:
+Carl takes away 4 pink hard hats.
+- Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
+
+### John's Actions:
+John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats he removed.
+- Number of pink hard hats John takes: 6
+- Number of green hard hats John takes: \( 2 \times 6 = 12 \)
+
+#### After John's Actions:
+- Remaining pink hard hats: \( 22 - 6 = 16 \)
+- Remaining green hard hats: \( 15 - 12 = 3 \)
+
+### Final Counts:
+- Pink hard hats remaining: 16
+- Green hard hats remaining: 3
+- Yellow hard hats remaining: 24 (unchanged)
+
+### Total Hard Hats Remaining:
+To find the total number of hard hats remaining in the truck, we sum up the remaining hard hats of each color:
+\[ 16 + 3 + 24 = 43 \]
+
+Thus, the total number of hard hats that remained in the truck is \( \boxed{43} \).","In a truck, there are 26 pink hard hats, 15 green hard hats, and 24 yellow hard hats.  If Carl takes away 4 pink hard hats, and John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats that he removed, then calculate the total number of hard hats that remained in the truck."
+23,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,,,5,4,4,5,,,"To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
+
+Step 1: Calculate the total cost of the shorts.
+- Ann bought 5 pairs of shorts.
+- Each pair costs $7.
+\[ \text{Total cost of shorts} = 5 \times 7 = 35 \]
+
+Step 2: Calculate the total cost of the shoes.
+- Ann bought 2 pairs of shoes.
+- Each pair costs $10.
+\[ \text{Total cost of shoes} = 2 \times 10 = 20 \]
+
+Step 3: Add the costs of the shorts and shoes to find the combined cost.
+\[ \text{Combined cost of shorts and shoes} = 35 + 20 = 55 \]
+
+Step 4: Subtract the combined cost of the shorts and shoes from the total amount spent to find the amount spent on the tops.
+- Total amount spent is $75.
+\[ \text{Amount spent on tops} = 75 - 55 = 20 \]
+
+Step 5: Determine the cost per top.
+- Ann bought 4 tops.
+\[ \text{Cost per top} = \frac{\text{Amount spent on tops}}{\text{Number of tops}} = \frac{20}{4} = 5 \]
+
+Therefore, each top cost $5.","Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each top cost?"
+95,small_wrong_to_scheduled_wrong,False,True,False,True,4,3,4,0.5503937005996704,0.009090909090909092,0.5594846096905794,64,4,4,64,256,"To determine the total value of Alice's money after exchanging her quarters for nickels, we need to follow these steps:
+
+1. **Calculate the total value of the quarters:**
+   Alice has 20 quarters.Each quarter is worth $0.25.
+   \[
+   \text{Total value of quarters} = 20 \times 0.25 = 5 \text{ dollars}
+   \]
+
+2. **Determine the number of nickels Alice receives:**
+   Since each quarter is worth 25 cents and each nickel is worth 5 cents, the number of nickels Alice will receive is:
+   \[
+   \text{Number of nickels} = \frac{20 \times 25}{5} = \frac{500}{5} = 100 \text{ nickels}
+   \]
+
+3. **Calculate the number of iron nickels:**
+   Alice discovers that 20% of the nickels are iron nickels. Therefore, the number of iron nickels is:
+   \[
+   \text{Number of iron nickels} = 0.20 \times 100 = 20 \text{ iron nickels}
+   \]
+
+4. **Calculate the number of regular nickels:**
+   The remaining nickels are regular nickels. Thus, the number of regular nickels is:
+   \[
+   \text{Number of","To solve this problem, we need to follow these steps:
+
+1. **Determine the total number of nickels Alice receives:**
+   - Each quarter is worth $0.25.
+   - Alice has 20 quarters, so the total value in dollars is:
+     \[
+     20 \times 0.25 = 5 \text{ dollars}
+     \]
+   - Since each nickel is worth $0.05, the number of nickels she gets is:
+     \[
+     \frac{5}{0.05} = 100 \text{ nickels}
+     \]
+
+2. **Calculate the number of iron nickels:**
+   - 20% of the nickels are iron nickels.
+   - The number of iron nickels is:
+     \[
+     0.20 \times 100 = 20 \text{ iron nickels}
+     \]
+
+3. **Calculate the number of regular nickels:**
+   - The remaining nickels are regular nickels.
+   - The number of regular nickels is:
+     \[
+     100 - 20 = 80 \text{ regular nickels}
+     \]
+
+4. **Calculate the total value of the iron nickels:**
+   - Each iron nickel is worth $3.
+   - The total value of the iron nickels is:
+     \[
+     20 \times 3 = 60 \text{ dollars}
+     \]
+
+5. **Calculate the total value of the regular nickels:**
+   - Each regular nickel is worth $0.05.
+   - The total value of the regular nickels is:
+     \[
+     80 \times 0.05 = 4 \text{ dollars}
+     \]
+
+6. **Calculate the total value of all the nickels:**
+   - Add the value of the iron nickels and the regular nickels:
+     \[
+     60 + 4 = 64 \text{ dollars}
+     \]
+
+Therefore, the total value of Alice's money now is \(\boxed{64}\) dollars.","Alice has 20 quarters. She wants to exchange them for nickels and so she goes to the bank. After getting back from the bank, she discovers that 20% of the nickels are iron nickels worth $3 each. What is the total value of her money now?"

@@ -1,0 +1,1033 @@
+﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
+4,small_correct_to_scheduled_correct,True,True,True,True,11,10,,0.19519132375717163,0.03235294117647059,0.22754426493364222,624,624,624,624,111,"To determine how many pages James writes in a year, we need to break down the problem into smaller, manageable steps.
+
+1. **Calculate the number of pages James writes per week:**
+   - James writes a 3-page letter to 2 different friends.
+   - He does this twice a week.
+   - Therefore, the number of pages he writes per week is:
+     \[
+     3 \text{ pages/letter} \times 2 \text{ letters} \times 2 \text{ times/week} = 12 \text{ pages/week}
+     \]
+
+2. **Calculate the number of weeks in a year:**- There are 52 weeks in a year.
+
+3. **Calculate the total number of pages James writes in a year:**
+   - Multiply the number of pages he writes per week by the number of weeks in a year:
+     \[
+     12 \text{ pages/week} \times 52 \text{ weeks/year} = 624 \text{ pages/year}
+     \]
+
+Thus, the total number of pages James writes in a year is \(\boxed{624}\).","To solve this problem, we need to break it down into smaller steps and calculate accordingly.
+
+1. **Determine the number of pages James writes per session:**
+   - James writes a 3-page letter to each friend.
+   - He has 2 different friends.
+   - Therefore, in one session, he writes \(3 \text{ pages} \times 2 \text{ friends} = 6 \text{ pages}\).
+
+2. **Determine the number of sessions per week:**
+   - James writes these letters twice a week.
+   - So, he writes \(2 \text{ sessions/week}\).
+
+3. **Calculate the total number of pages written per week:**
+   - In one session, he writes 6 pages.
+   - Since he writes twice a week, he writes \(6 \text{ pages/session} \times 2 \text{ sessions/week} = 12 \text{ pages/week}\).
+
+4. **Calculate the total number of weeks in a year:**
+   - There are 52 weeks in a year.
+
+5. **Calculate the total number of pages written in a year:**
+   - He writes 12 pages per week.
+   - Over 52 weeks, he writes \(12 \text{ pages/week} \times 52 \text{ weeks/year} = 624 \text{ pages/year}\).
+
+Therefore, James writes a total of 624 pages in a year.",James writes a 3-page letter to 2 different friends twice a week.  How many pages does he write a year?
+5,small_wrong_to_scheduled_correct,False,True,True,True,8,7,,0.27849245071411133,0.020000000000000004,0.29849245071411135,35,4,35,35,254,"To determine the total number of flowers in Mark's garden, we need to calculate the number of each color of flower and then sum them up.
+
+1. **Yellow Flowers:**
+   Mark has 10 yellow flowers.
+
+2. **Purple Flowers:**
+   There are 80% more purple flowers than yellow flowers. To find the number of purple flowers, we calculate 80% of the yellow flowers and add it to the number of yellow flowers.\[
+   \text{Number of purple flowers} = 10 + (0.80 \times 10) = 10 + 8 = 18
+   \]
+
+3. **Green Flowers:**
+   The number of green flowers is 25% of the combined number of yellow and purple flowers.
+   
+   First, we find the combined number of yellow and purple flowers:
+   
+   \[
+   \text{Combined number of yellow and purple flowers} = 10 + 18 = 28
+   \]
+   
+   Then, we calculate 25% of this combined number:
+   
+   \[
+   \text{Number of green flowers} = 0.25 \times 28 = 7
+   \]
+
+4. **Total Number of Flowers:**
+   Finally, we sum the number of yellow, purple, and green flowers to get the total number of flowers in the garden:
+   
+   \[
+   \text{Total number of flowers} = 10 + 18 + 7 = 35
+   \]
+
+Thus, the total number of flowers in Mark's garden is \(\boxed{35}\).","Let's break down the problem step by step to find out how many flowers Mark has in his garden.
+
+1. **Identify the number of yellow flowers:**
+   - Mark has 10 yellow flowers.
+
+2. **Calculate the number of purple flowers:**
+   - There are 80% more purple flowers than yellow flowers.
+   - To find 80% of 10:
+     \[
+     0.80 \times 10 = 8
+     \]
+   - Therefore, the number of purple flowers is:
+     \[
+     10 + 8 = 18
+     \]
+
+3. **Determine the total number of yellow and purple flowers:**
+   - The total number of yellow and purple flowers is:
+     \[
+     10 + 18 = 28
+     \]
+
+4. **Calculate the number of green flowers:**
+   - There are only 25% as many green flowers as there are yellow and purple flowers.
+   - To find 25% of 28:
+     \[
+     0.25 \times 28 = 7
+     \]
+
+5. **Find the total number of flowers in the garden:**
+   - Add the number of yellow, purple, and green flowers together:
+     \[
+     10 + 18 + 7 = 35
+     \]
+
+Therefore, Mark has a total of 35 flowers in his garden.","Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?"
+6,small_correct_to_scheduled_correct,True,True,True,True,8,7,,0.14197450876235962,0.025,0.1669745087623596,48,48,48,48,207,"To determine how many pieces of pizza Albert eats in one day, we need to follow these steps:
+
+1. Calculate the total number of slices from the large pizzas.
+2. Calculate the total number of slices from the small pizzas.
+3. Add the slices from the large pizzas and the small pizzas together.
+
+First, let's calculate the total number of slices from the large pizzas:
+- Albert buys 2 large pizzas.
+- Each large pizza has 16 slices.So, the total number of slices from the large pizzas is:
+\[ 2 \text{ large pizzas} \times 16 \text{ slices per large pizza} = 32 \text{ slices} \]
+
+Next, let's calculate the total number of slices from the small pizzas:
+- Albert buys 2 small pizzas.
+- Each small pizza has 8 slices.
+
+So, the total number of slices from the small pizzas is:
+\[ 2 \text{ small pizzas} \times 8 \text{ slices per small pizza} = 16 \text{ slices} \]
+
+Now, we add the slices from the large pizzas and the small pizzas together:
+\[ 32 \text{ slices from large pizzas} + 16 \text{ slices from small pizzas} = 48 \text{ slices} \]
+
+Therefore, if Albert eats all the pizzas, he will have eaten:
+\[
+\boxed{48}
+\] slices of pizza in one day.","To determine how many pieces of pizza Albert eats in one day if he eats all the pizzas he bought, we need to follow these steps:
+
+1. **Calculate the total number of slices from the large pizzas:**
+   - Each large pizza has 16 slices.
+   - Albert buys 2 large pizzas.
+   - Total slices from large pizzas = \( 2 \times 16 = 32 \) slices.
+
+2. **Calculate the total number of slices from the small pizzas:**
+   - Each small pizza has 8 slices.
+   - Albert buys 2 small pizzas.
+   - Total slices from small pizzas = \( 2 \times 8 = 16 \) slices.
+
+3. **Add the slices from both types of pizzas to get the total number of slices:**
+   - Total slices from large pizzas = 32 slices.
+   - Total slices from small pizzas = 16 slices.
+   - Total slices = \( 32 + 16 = 48 \) slices.
+
+Therefore, if Albert eats all the pizzas, he will have eaten a total of 48 slices.","Albert is wondering how much pizza he can eat in one day. He buys 2 large pizzas and 2 small pizzas. A large pizza has 16 slices and a small pizza has 8 slices. If he eats it all, how many pieces does he eat that day?"
+9,small_wrong_to_scheduled_wrong,False,False,False,True,12,11,5,0.15233397483825684,0.02857142857142857,0.18090540340968542,990,3,720.00,5,256,"To determine how much money Tina makes, we need to break down her earnings into regular hours and overtime hours, and then sum them up.
+
+1. **Calculate the regular hours:**
+   Tina works 10 hours every day for 5 days.
+   \[
+   \text{Total regular hours} = 10 \text{ hours/day} \times 5 \text{ days} = 50 \text{ hours}
+   \]
+
+2. **Calculate the overtime hours:**
+   Tina is eligible for overtime if she works more than 8 hours per shift. Since she works 10 hours per day, she qualifies for overtime.The number of overtime hours per day is:
+   \[
+   \text{Overtime hours per day} = 10 \text{ hours/day} - 8 \text{ hours/day} = 2 \text{ hours/day}
+   \]
+   Over 5 days, the total overtime hours are:
+   \[
+   \text{Total overtime hours} = 2 \text{ hours/day} \times 5 \text{ days} = 10 \text{ hours}
+   \]
+
+3. **Calculate the regular pay:**
+   Regular pay is calculated based on the first 8 hours of work each day.
+   \[
+   \text{Regular hours per day} = 8 \text{ hours/day}
+   \]
+   \[
+   \text{Total regular hours} = 8 \text{ hours/day} \times 5 \text{ days} = 40 \text{ hours}
+   \]
+   Her regular pay rate is $18.00 per hour.
+   \[
+   \text{Regular pay} = 40 \text{ hours} \times \$18.00/\text{hour} = \$720.00
+   \]","To determine how much money Tina makes, we need to break down her work schedule and calculate both her regular pay and her overtime pay.
+
+### Step-by-Step Calculation:
+
+1. **Regular Pay Calculation:**
+   - Tina's regular hourly wage is $18.00.
+   - She works 8 hours at the regular rate each day.
+   - For 5 days, her total regular hours worked = \( 8 \text{ hours/day} \times 5 \text{ days} = 40 \text{ hours} \).
+   - Her total regular pay = \( 40 \text{ hours} \times \$18.00/\text{hour} = \$720.00 \).
+
+2. **Overtime Pay Calculation:**
+   - Overtime is paid at 1.5 times the regular hourly wage.
+   - Her overtime hourly wage = \( 18.00 \times 1.5 = \$27.00 \).
+   - She works 2 hours of overtime each day (since she works 10 hours total and 8 are regular).
+   - For 5 days, her total overtime hours worked = \( 2 \text{ hours/day} \times 5 \text{ days} = 10 \text{ hours} \).
+   - Her total overtime pay = \( 10 \text{ hours} \times \$27.00/\text{hour} = \$270.00 \).
+
+3. **Total Pay Calculation:**
+   - Total pay = Regular pay + Overtime pay.
+   - Total pay = \( \$720.00 + \$270.00 = \$990.00 \).
+
+Therefore, Tina makes a total of **$990.00** for working 10 hours every day for 5 days.","Tina makes $18.00 an hour.  If she works more than 8 hours per shift, she is eligible for overtime, which is paid by your hourly wage + 1/2 your hourly wage.  If she works 10 hours every day for 5 days, how much money does she make?"
+17,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,,0.23361527919769287,0.007894736842105263,0.24151001603979813,43,3,24,43,256,"To calculate the total number of hard hats remaining in the truck, we need to follow these steps:
+
+1. **Initial Count of Each Color:**- Pink: 26
+   - Green: 15
+   - Yellow: 24
+
+2. **Carl's Action:**  
+   Carl takes away 4 pink hard hats.
+   - Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
+
+3. **John's Action:**  
+   John takes away 6 pink hard hats and twice as many green hard hats as the pink ones he removed.
+   - Pink hard hats taken by John: 6
+   - Green hard hats taken by John: \( 2 \times 6 = 12 \)
+   
+   - Remaining pink hard hats after John: \( 22 - 6 = 16 \)
+   - Remaining green hard hats after John: \( 15 - 12 = 3 \)
+
+4. **Final Count of Each Color:**  
+   - Pink: 16
+   - Green: 3
+   - Yellow: 24 (unchanged)
+
+5. **Total Number of Hard Hats Remaining:**  
+   Sum up the remaining hard hats:
+   \[
+   16 \text{ (pink)} + 3 \text{ (green)} + 24","Let's break down the problem step by step to find out how many hard hats remain in the truck.
+
+### Initial Counts:
+- Pink hard hats: 26
+- Green hard hats: 15
+- Yellow hard hats: 24
+
+### Carl's Action:
+Carl takes away 4 pink hard hats.
+- Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
+
+### John's Actions:
+John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats he removed.
+- Number of pink hard hats John takes: 6
+- Number of green hard hats John takes: \( 2 \times 6 = 12 \)
+
+#### After John's Actions:
+- Remaining pink hard hats: \( 22 - 6 = 16 \)
+- Remaining green hard hats: \( 15 - 12 = 3 \)
+
+### Final Counts:
+- Pink hard hats remaining: 16
+- Green hard hats remaining: 3
+- Yellow hard hats remaining: 24 (unchanged)
+
+### Total Hard Hats Remaining:
+To find the total number of hard hats remaining in the truck, we sum up the remaining hard hats of each color:
+\[ 16 + 3 + 24 = 43 \]
+
+Thus, the total number of hard hats that remained in the truck is \( \boxed{43} \).","In a truck, there are 26 pink hard hats, 15 green hard hats, and 24 yellow hard hats.  If Carl takes away 4 pink hard hats, and John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats that he removed, then calculate the total number of hard hats that remained in the truck."
+22,small_wrong_to_scheduled_correct,False,True,True,True,16,15,,0.12415546178817749,0.0380952380952381,0.1622506998834156,7,10,7,7,143,"Let's break down the problem step by step:
+
+1. **Determine the length of Jamie's last name:**
+   Jamie's last name is ""Grey"". The length of ""Grey"" is 4 letters.
+
+2. **Set up the relationship between the lengths of Bobbie's and Jamie's last names:**
+   According to the problem, if Bobbie took two letters off her last name, she would have a last name twice the length of Jamie's last name. Let's denote the length of Bobbie's last name as \( B \).
+
+   So, we have:
+   \[
+   B - 2 = 2 \times 4
+   \]
+   Simplifying this equation:
+   \[
+   B - 2 = 8
+   \]
+   Adding 2 to both sides:
+   \[
+   B = 10
+   \]
+   Therefore,Bobbie's last name has 10 letters.
+
+3. **Determine the length of Samantha's last name:**
+   The problem states that Samantha’s last name has three fewer letters than Bobbie’s last name. Let's denote the length of Samantha's last name as \( S \).
+
+   So, we have:
+   \[
+   S = B - 3
+   \]
+   Substituting the value of \( B \) (which is 10):
+   \[
+   S = 10 - 3
+   \]
+   Simplifying this:
+   \[
+   S = 7
+   \]
+
+Therefore, Samantha’s last name has 7 letters.","To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
+
+1. **Identify the number of letters in Jamie's last name:**
+   - Jamie's full name is Jamie Grey.
+   - The last name ""Grey"" has 4 letters.
+
+2. **Determine the relationship between Bobbie's and Jamie's last names:**
+   - If Bobbie took two letters off her last name, it would be twice the length of Jamie's last name.
+   - Let \( B \) represent the number of letters in Bobbie's last name.
+   - According to the problem, \( B - 2 = 2 \times 4 \).
+   - Simplify the equation:
+     \[
+     B - 2 = 8
+     \]
+   - Solve for \( B \):
+     \[
+     B = 8 + 2 = 10
+     \]
+
+3. **Determine the relationship between Samantha's and Bobbie's last names:**
+   - Samantha’s last name has three fewer letters than Bobbie’s last name.
+   - Let \( S \) represent the number of letters in Samantha's last name.
+   - According to the problem, \( S = B - 3 \).
+   - Substitute \( B = 10 \) into the equation:
+     \[
+     S = 10 - 3 = 7
+     \]
+
+Therefore, the number of letters in Samantha’s last name is \(\boxed{7}\).","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
+23,small_wrong_to_scheduled_wrong,False,True,False,False,,,,,,,5,4,4,5,,,"To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
+
+Step 1: Calculate the total cost of the shorts.
+- Ann bought 5 pairs of shorts.
+- Each pair costs $7.
+\[ \text{Total cost of shorts} = 5 \times 7 = 35 \]
+
+Step 2: Calculate the total cost of the shoes.
+- Ann bought 2 pairs of shoes.
+- Each pair costs $10.
+\[ \text{Total cost of shoes} = 2 \times 10 = 20 \]
+
+Step 3: Add the costs of the shorts and shoes to find the combined cost.
+\[ \text{Combined cost of shorts and shoes} = 35 + 20 = 55 \]
+
+Step 4: Subtract the combined cost of the shorts and shoes from the total amount spent to find the amount spent on the tops.
+- Total amount spent is $75.
+\[ \text{Amount spent on tops} = 75 - 55 = 20 \]
+
+Step 5: Determine the cost per top.
+- Ann bought 4 tops.
+\[ \text{Cost per top} = \frac{\text{Amount spent on tops}}{\text{Number of tops}} = \frac{20}{4} = 5 \]
+
+Therefore, each top cost $5.","Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each top cost?"
+28,small_correct_to_scheduled_correct,True,True,True,False,,,,,,,8,8,8,8,,,"To determine how many gnomes the fifth house has, we can follow these steps:
+
+1. **Calculate the total number of gnomes in the first four houses:**
+   - Each of the first four houses has 3 gnomes.
+   - Therefore, the total number of gnomes in the first four houses is:
+     \[
+     4 \text{ houses} \times 3 \text{ gnomes per house} = 12 \text{ gnomes}
+     \]
+
+2. **Determine the total number of gnomes on the street:**
+   - We are given that there are a total of 20 gnomes on the street.
+
+3. **Find the number of gnomes in the fifth house:**
+   - Subtract the number of gnomes in the first four houses from the total number of gnomes on the street:
+     \[
+     20 \text{ gnomes (total)} - 12 \text{ gnomes (first four houses)} = 8 \text{ gnomes}
+     \]
+
+Thus, the fifth house has \(\boxed{8}\) gnomes.","There are 5 houses on a street, and each of the first four houses has 3 gnomes in the garden. If there are a total of 20 gnomes on the street, how many gnomes does the fifth house have?"
+34,small_correct_to_scheduled_correct,True,True,True,True,11,10,,0.162112295627594,0.04230769230769231,0.20441998793528632,5250,5250,5250,5250,62,"To determine the total amount of money shared between Ken and Tony, we need to follow these steps:
+
+1. Identify the amount of money Ken received.
+2. Calculate the amount of money Tony received.
+3. Add the amounts received by Ken and Tony to find the total.
+
+Step 1: Ken received $1750.
+
+Step 2: Tony received twice as much as Ken. Therefore, we calculate Tony's amount as follows:
+\[ \text{Tony's amount} = 2 \times \text{Ken's amount} = 2 \times 1750 = 3500 \]
+
+Step 3: Add the amounts received by Ken and Tony to find the total:\[ \text{Total amount} = \text{Ken's amount} + \text{Tony's amount} = 1750 + 3500 = 5250 \]
+
+Thus, the total amount of money shared is \( \$5250 \).","To solve this problem, let's break it down into steps:
+
+Step 1: Identify what we know.
+- Ken received $1750.
+- Tony received twice as much as Ken.
+
+Step 2: Calculate how much Tony received.
+- Since Tony got twice as much as Ken, we multiply Ken's amount by 2:
+  Tony's amount = 2 × $1750 = $3500
+
+Step 3: Calculate the total amount shared.
+- The total amount is the sum of what Ken and Tony received:
+  Total amount = Ken's amount + Tony's amount
+                = $1750 + $3500
+                = $5250
+
+Therefore, the total amount of money shared between Ken and Tony was $5250.","Mr. Sam shared a certain amount of money between his two sons, Ken and Tony. If Ken got $1750, and Tony got twice as much as Ken, how much was the money shared?"
+38,small_wrong_to_scheduled_correct,False,True,True,True,4,3,10,0.15785151720046997,0.0125,0.17035151720046998,9,6,9,9,256,"To determine how many ounces of tea Artemis needs for the party, we can follow these steps:
+
+1. **Determine the ratio of tea to water in the original cup:**
+   - The original cup is 8 ounces and uses 1 ounce of tea.- This gives us a ratio of 1 ounce of tea per 8 ounces of water.
+
+2. **Calculate the amount of tea needed for one 6-ounce cup:**
+   - We know that 1 ounce of tea is used for 8 ounces of water.
+   - To find out how much tea is needed for 6 ounces of water, we set up a proportion:
+     \[
+     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{6 \text{ ounces of water}}
+     \]
+   - Solving for \( x \):
+     \[
+     x = \frac{1 \times 6}{8} = \frac{6}{8} = 0.75 \text{ ounces of tea}
+     \]
+
+3. **Calculate the total amount of tea needed for 12 people:**
+   - Each person wants a 6-ounce cup of tea, which requires 0.75 ounces of tea.
+   - For 12 people:
+     \[
+     12 \times 0.75 = 9 \text{ ounces of tea}
+     \]
+
+Therefore","To determine how many ounces of tea Artemis needs, we can follow these steps:
+
+1. **Understand the given ratio:**
+   - Her mom drinks an 8-ounce cup of tea using 1 ounce of tea.
+   - This means the ratio of tea to water is \( \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} \).
+
+2. **Calculate the amount of tea needed per person at the party:**
+   - Each person at the party wants a 6-ounce cup of tea.
+   - Using the same ratio, we need to find out how much tea is required for a 6-ounce cup.
+
+3. **Set up the proportion based on the ratio:**
+   - For 8 ounces of water, 1 ounce of tea is used.
+   - For 6 ounces of water, let \( x \) be the amount of tea needed.
+   - We set up the proportion: 
+     \[
+     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{6 \text{ ounces of water}}
+     \]
+
+4. **Solve for \( x \):**
+   - Cross-multiply to solve for \( x \):
+     \[
+     1 \times 6 = 8 \times x
+     \]
+     \[
+     6 = 8x
+     \]
+     \[
+     x = \frac{6}{8} = \frac{3}{4} \text{ ounces of tea}
+     \]
+
+5. **Calculate the total amount of tea needed for all 12 people:**
+   - Each person needs \( \frac{3}{4} \) ounces of tea.
+   - There are 12 people:
+     \[
+     12 \times \frac{3}{4} = 12 \times 0.75 = 9 \text{ ounces of tea}
+     \]
+
+Therefore, Artemis needs \(\boxed{9}\) ounces of tea for the party.",Artemis is making tea for a party. She knows her mom drinks an 8-ounce cup of tea and uses one ounce of tea. She will use this same ratio for the party. The party has 12 people there and each of them wants a 6-ounce cup of tea. How many ounces of tea does she need?
+64,small_wrong_to_scheduled_correct,False,True,True,True,13,12,,0.15287619829177856,0.02954545454545455,0.1824216528372331,840,30,840,840,256,"To determine James's weekly earnings, we need to calculate his earnings from both his main job and his second job separately, and then sum them up.
+
+First, let's calculate his earnings from his main job:
+- James earns $20 per hour at his main job.
+- He works 30 hours at his main job.
+
+\[
+\text{Earnings from main job} = 20 \, \text{dollars/hour} \times 30 \, \text{hours} = 600 \, \text{dollars}
+\]
+
+Next, let's calculate his earnings from his second job:
+- James earns 20% less at his second job compared to his main job.
+- His main job pays $20 per hour,so 20% of $20 is:
+
+\[
+0.20 \times 20 = 4 \, \text{dollars}
+\]
+
+Thus, his hourly wage at the second job is:
+
+\[
+20 - 4 = 16 \, \text{dollars/hour}
+\]
+
+- He works half as many hours at his second job as he does at his main job. Since he works 30 hours at his main job, he works:
+
+\[
+\frac{30}{2} = 15 \, \text{hours}
+\]
+
+\[
+\text{Earnings from second job} = 16 \, \text{dollars/hour} \times 15 \, \text{hours} = 240 \, \text{dollars}
+\]
+
+Finally, we sum up his earnings from both jobs to find his total weekly earnings:
+
+\[
+\text{Total weekly earnings} = 600 \, \text{dollars} + 240 \, \text{dollars} = 840 \, \text{dollars}
+\]
+
+Therefore, James earns \(\boxed{840","To determine how much James earns per week, we need to calculate his earnings from both his main job and his second job separately, then sum them up.
+
+### Step 1: Calculate hourly wage for the second job
+James earns 20% less at his second job compared to his main job. 
+
+- Hourly wage at the main job: $20
+- 20% of $20 = \( 0.20 \times 20 = 4 \)
+
+So, his hourly wage at the second job is:
+\[ 20 - 4 = 16 \]
+
+### Step 2: Calculate hours worked at each job
+- Hours worked at the main job: 30 hours
+- Hours worked at the second job: half of 30 hours = \( \frac{30}{2} = 15 \) hours
+
+### Step 3: Calculate weekly earnings from the main job
+\[ \text{Earnings from main job} = \text{Hourly wage} \times \text{Hours worked} \]
+\[ \text{Earnings from main job} = 20 \times 30 = 600 \]
+
+### Step 4: Calculate weekly earnings from the second job
+\[ \text{Earnings from second job} = \text{Hourly wage} \times \text{Hours worked} \]
+\[ \text{Earnings from second job} = 16 \times 15 = 240 \]
+
+### Step 5: Calculate total weekly earnings
+\[ \text{Total weekly earnings} = \text{Earnings from main job} + \text{Earnings from second job} \]
+\[ \text{Total weekly earnings} = 600 + 240 = 840 \]
+
+Thus, James earns a total of \( \boxed{840} \) dollars per week.",James earns $20 an hour while working at his main job.  He earns 20% less while working his second job.  He works 30 hours at his main job and half that much at his second job.  How much does he earn per week?
+70,small_correct_to_scheduled_correct,True,True,True,True,9,8,,0.1842976212501526,0.03461538461538462,0.2189130058655372,19,19,19,19,65,"To determine how many apples Harry has, we need to follow these steps:
+
+1. **Find out how many apples Tim has:**
+   - We know that Martha has 68 apples.
+   - Tim has 30 less apples than Martha.
+   - Therefore, the number of apples Tim has is:
+     \[
+     68 - 30 = 38
+     \]
+
+2. **Find out how many apples Harry has:**- Harry has half as many apples as Tim.
+   - Since Tim has 38 apples, the number of apples Harry has is:
+     \[
+     \frac{38}{2} = 19
+     \]
+
+Thus, Harry has \(\boxed{19}\) apples.","Let's break down the problem step by step:
+
+1. **Identify the number of apples Martha has:**
+   - Martha has 68 apples.
+
+2. **Determine the number of apples Tim has:**
+   - Tim has 30 less apples than Martha.
+   - Therefore, Tim's apples = Martha's apples - 30
+   - Tim's apples = 68 - 30 = 38
+
+3. **Calculate the number of apples Harry has:**
+   - Harry has half as many apples as Tim.
+   - Therefore, Harry's apples = Tim's apples / 2
+   - Harry's apples = 38 / 2 = 19
+
+So, Harry has 19 apples.","Tim has 30 less apples than Martha, and Harry has half as many apples as Tim. If Martha has 68 apples, how many apples does Harry have?"
+76,small_correct_to_scheduled_correct,True,True,True,True,4,3,,0.1577697992324829,0.008695652173913044,0.16646545140639596,768,768,768,768,246,"To determine the total number of vegetables produced by the garden, we need to calculate the number of each type of vegetable and then sum them up.
+
+1. **Potatoes:**
+   The garden produced 237 potatoes.This is given directly in the problem.
+
+2. **Cucumbers:**
+   The garden produced 60 fewer cucumbers than potatoes.
+   \[
+   \text{Number of cucumbers} = 237 - 60 = 177
+   \]
+
+3. **Peppers:**
+   The garden produced twice as many peppers as cucumbers.
+   \[
+   \text{Number of peppers} = 2 \times 177 = 354
+   \]
+
+4. **Total number of vegetables:**
+   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers.
+   \[
+   \text{Total vegetables} = 237 + 177 + 354
+   \]
+
+   Let's perform the addition step-by-step:
+   \[
+   237 + 177 = 414
+   \]
+   \[
+   414 + 354 = 768
+   \]
+
+Therefore, the total number of vegetables produced by the garden is \boxed{768}.","To solve this problem, we need to find out how many of each type of vegetable the garden produced and then sum them up.
+
+1. **Potatoes:**
+   The garden produced 237 potatoes.
+
+2. **Cucumbers:**
+   The garden produced 60 fewer cucumbers than potatoes.
+   \[
+   \text{Number of cucumbers} = 237 - 60 = 177
+   \]
+
+3. **Peppers:**
+   The garden produced twice as many peppers as cucumbers.
+   \[
+   \text{Number of peppers} = 2 \times 177 = 354
+   \]
+
+4. **Total number of vegetables:**
+   To find the total number of vegetables, we add the number of potatoes, cucumbers, and peppers together.
+   \[
+   \text{Total vegetables} = 237 + 177 + 354
+   \]
+
+5. **Summing up:**
+   \[
+   237 + 177 = 414
+   \]
+   \[
+   414 + 354 = 768
+   \]
+
+Therefore, the garden produced a total of 768 vegetables.","A garden produced 237 potatoes, 60 fewer cucumbers and twice as many peppers than the cucumbers. How many vegetables did the garden produce?"
+78,small_correct_to_scheduled_correct,True,True,True,False,,,,,,,4,4,4,4,,,"To solve this problem, let's break it down step by step:
+
+1. **Determine the total number of people:**
+   - Manny
+   - 24 classmates
+   - Mr. Keith (the teacher)
+   
+   Total number of people = 1 + 24 + 1 = 26
+
+2. **Calculate the total number of cookie pie slices:**
+   - Each cookie pie is cut into 10 slices.
+   - There are 3 cookie pies.
+   
+   Total number of slices = 3 pies × 10 slices per pie = 30 slices
+
+3. **Determine the number of slices consumed:**
+   - Each person gets 1 slice.
+   - There are 26 people.
+   
+   Number of slices consumed = 26 slices
+
+4. **Calculate the number of slices left:**
+   - Total number of slices available = 30 slices
+   - Number of slices consumed = 26 slices
+   
+   Number of slices left = 30 slices - 26 slices = 4 slices
+
+Therefore, there are 4 slices of cookie pie left.","Manny had 3 birthday cookie pies to share with his 24 classmates and his teacher, Mr. Keith.   If each of the cookie pies were cut into 10 slices and Manny, his classmates, and Mr. Keith all had 1 piece, how many slices are left?"
+84,small_correct_to_scheduled_correct,True,True,True,True,2,1,2,0.16660428047180176,0.008333333333333333,0.1749376138051351,90,90,90,90,211,"To determine the number of different rooms Hans could be checked into, we need to consider the total number of floors available and the number of rooms per floor.Let's break it down step by step:
+
+1. **Total Floors in the Hotel:**
+   The hotel has a total of 10 floors.
+
+2. **Rooms per Floor:**
+   Each floor has 10 identical rooms.
+
+3. **Unavailable Floor:**
+   The last floor (the 10th floor) is unavailable due to an accident.
+
+4. **Available Floors:**
+   Since the 10th floor is unavailable, only the first 9 floors are available for guests.
+
+5. **Calculating Available Rooms:**
+   - Each of the 9 available floors has 10 rooms.
+   - Therefore, the total number of available rooms is calculated as:
+     \[
+     9 \text{ floors} \times 10 \text{ rooms per floor} = 90 \text{ rooms}
+     \]
+
+Thus, Hans could be checked into any one of the 90 available rooms. 
+
+The final answer is:
+\[
+\boxed{90}
+\]","To determine the number of different rooms Hans could be checked into, let's break down the problem step by step:
+
+1. **Total Floors and Rooms:**
+   - The hotel has a total of 10 floors.
+   - Each floor has 10 identical rooms.
+
+2. **Unavailable Floor:**
+   - The last floor (the 10th floor) is unavailable due to an accident.
+
+3. **Available Floors:**
+   - Since the 10th floor is unavailable, only the first 9 floors are available for guests.
+
+4. **Rooms per Available Floor:**
+   - Each of these 9 floors still has 10 rooms.
+
+5. **Total Available Rooms:**
+   - To find the total number of available rooms, we multiply the number of available floors by the number of rooms per floor:
+     \[
+     9 \text{ floors} \times 10 \text{ rooms per floor} = 90 \text{ rooms}
+     \]
+
+Therefore, Hans could be checked into any one of the 90 available rooms. 
+
+The final answer is:
+\[
+\boxed{90}
+\]","Hans booked a room in a hotel. The hotel has 10 floors with 10 identical rooms on each floor. Because of an accident, the last floor is unavailable for the guests. Considering there are no other guests, in how many different rooms could Hans be checked in?"
+87,small_correct_to_scheduled_wrong,True,True,False,True,5,4,7,0.1982983946800232,0.01388888888888889,0.2121872835689121,600,600,3,600,256,"To determine how much more the cow is worth after gaining weight, we need to follow these steps:
+
+1. Calculate the cow's new weight.
+2. Determine the increase in weight.
+3. Calculate the increase in value based on the new weight.Let's go through each step.
+
+### Step 1: Calculate the Cow's New Weight
+
+The cow initially weighs 400 pounds and increases its weight to 1.5 times its starting weight.
+
+\[
+\text{New weight} = 1.5 \times 400 \text{ pounds}
+\]
+
+\[
+\text{New weight} = 600 \text{ pounds}
+\]
+
+### Step 2: Determine the Increase in Weight
+
+Next, we find the difference between the new weight and the initial weight.
+
+\[
+\text{Increase in weight} = \text{New weight} - \text{Initial weight}
+\]
+
+\[
+\text{Increase in weight} = 600 \text{ pounds} - 400 \text{ pounds}
+\]
+
+\[
+\text{Increase in weight} = 200 \text{ pounds}
+\]
+
+### Step 3: Calculate the Increase in Value
+
+The cow can be sold for $3 per pound. We need to calculate the additional value due to the increase in weight.
+
+\[
+\text{Increase in value} = \text{Increase in weight} \times \text{Price per pound}
+\]","To solve this problem, we need to follow these steps:
+
+1. **Determine the new weight of the cow:**
+   - The cow initially weighs 400 pounds.
+   - The weight increases to 1.5 times its starting weight.
+   - New weight = 1.5 × 400 pounds
+
+2. **Calculate the new weight:**
+   \[
+   \text{New weight} = 1.5 \times 400 = 600 \text{ pounds}
+   \]
+
+3. **Find the increase in weight:**
+   - Increase in weight = New weight - Initial weight
+   \[
+   \text{Increase in weight} = 600 \text{ pounds} - 400 \text{ pounds} = 200 \text{ pounds}
+   \]
+
+4. **Calculate the value of the cow before and after the weight gain:**
+   - Value per pound = $3
+   - Initial value = 400 pounds × $3/pound
+   \[
+   \text{Initial value} = 400 \times 3 = \$1200
+   \]
+   - New value = 600 pounds × $3/pound
+   \[
+   \text{New value} = 600 \times 3 = \$1800
+   \]
+
+5. **Determine how much more the cow is worth after gaining the weight:**
+   - Increase in value = New value - Initial value
+   \[
+   \text{Increase in value} = \$1800 - \$1200 = \$600
+   \]
+
+Therefore, the cow is worth \$600 more after gaining the weight.",John's cow weighs 400 pounds.  It increased its weight to 1.5 times its starting weight.  He is able to sell the cow for $3 per pound.  How much more is it worth after gaining the weight?
+89,small_wrong_to_scheduled_correct,False,True,True,True,9,8,9,0.32557380199432373,0.03,0.35557380199432376,216,3,216,216,197,"To determine how many books Krystian borrows in a week, we need to break down the problem into smaller parts and calculate step by step.
+
+1. **Calculate the number of books borrowed on a regular day (Monday to Thursday):**
+   Krystian borrows an average of 40 books every day from Monday to Thursday.
+   \[
+   \text{Books borrowed from Monday to Thursday} = 40 \text{ books/day} \times 4 \text{ days} = 160 \text{ books}
+   \]
+
+2. **Calculate the number of books borrowed on Friday:**
+   On Friday, Krystian borrows 40% more books than the daily average.First, we find 40% of 40 books:
+   \[
+   40\% \text{ of } 40 = 0.40 \times 40 = 16 \text{ books}
+   \]
+   Adding this to the daily average:
+   \[
+   \text{Books borrowed on Friday} = 40 + 16 = 56 \text{ books}
+   \]
+
+3. **Calculate the total number of books borrowed in a week:**
+   Add the books borrowed from Monday to Thursday to the books borrowed on Friday:
+   \[
+   \text{Total books borrowed in a week} = 160 \text{ books} + 56 \text{ books} = 216 \text{ books}
+   \]
+
+Thus, the total number of books Krystian borrows in a week is \(\boxed{216}\).","To solve this problem, we need to calculate the total number of books Krystian borrows in a week, considering that the library is open from Monday to Friday and that on Fridays, he borrows 40% more books than his daily average.
+
+Let's break it down step-by-step:
+
+1. **Daily Average Borrowing:**
+   - Krystian borrows an average of 40 books per day from Monday to Thursday.
+   
+2. **Friday Borrowing:**
+   - On Fridays, he borrows 40% more books than the daily average.
+   - To find out how many books he borrows on Friday, we calculate:
+     \[
+     \text{Books borrowed on Friday} = 40 + (0.40 \times 40)
+     \]
+     \[
+     \text{Books borrowed on Friday} = 40 + 16 = 56
+     \]
+
+3. **Total Books Borrowed from Monday to Thursday:**
+   - From Monday to Thursday, there are 4 days.
+   - Each day, he borrows 40 books.
+   - Therefore, the total for these four days is:
+     \[
+     4 \times 40 = 160
+     \]
+
+4. **Total Books Borrowed on Friday:**
+   - As calculated earlier, he borrows 56 books on Friday.
+
+5. **Total Books Borrowed in a Week:**
+   - Adding the total from Monday to Thursday and the total for Friday:
+     \[
+     \text{Total books borrowed in a week} = 160 + 56 = 216
+     \]
+
+Therefore, Krystian borrows a total of 216 books in a week.","Krystian works in the library. He borrows an average of 40 books every day. Every Friday, his number of borrowed books is about 40% higher than the daily average. How many books does he borrow in a week if the library is open from Monday to Friday?"
+92,small_wrong_to_scheduled_correct,False,True,True,True,8,7,,0.1434585452079773,0.021052631578947368,0.16451117678692467,1825,1095,1825,1825,256,"To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+
+1. Calculate the total amount of money each person will earn in a year.
+2. Determine how much each person will save, which is half of their annual earnings.
+3. Add their savings together to find the total amount saved for the trip.
+
+First, let's calculate the annual earnings for each person:
+
+- Sally makes $6 per day.There are 365 days in a year (assuming it's not a leap year).
+  \[
+  \text{Sally's annual earnings} = 6 \times 365 = 2190 \text{ dollars}
+  \]
+
+- Bob makes $4 per day.
+  \[
+  \text{Bob's annual earnings} = 4 \times 365 = 1460 \text{ dollars}
+  \]
+
+Next, we calculate how much each person will save, which is half of their annual earnings:
+
+- Sally saves half of her annual earnings:
+  \[
+  \text{Sally's savings} = \frac{2190}{2} = 1095 \text{ dollars}
+  \]
+
+- Bob saves half of his annual earnings:
+  \[
+  \text{Bob's savings} = \frac{1460}{2} = 730 \text{ dollars}
+  \]
+
+Finally, we add their savings together to find the total amount saved for the trip:
+
+\[
+\text{Total savings} = 1095 + 730 = 1825 \text{ dollars}
+\]","To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+
+1. **Calculate daily earnings:**
+   - Sally earns $6 per day.
+   - Bob earns $4 per day.
+
+2. **Determine the amount each saves per day:**
+   - Since they both save half of what they earn:
+     - Sally saves \( \frac{6}{2} = 3 \) dollars per day.
+     - Bob saves \( \frac{4}{2} = 2 \) dollars per day.
+
+3. **Calculate total savings per day combined:**
+   - Combined, they save \( 3 + 2 = 5 \) dollars per day.
+
+4. **Determine the number of days in a year:**
+   - There are 365 days in a year (assuming it's not a leap year).
+
+5. **Calculate total savings over the year:**
+   - Total savings = Savings per day * Number of days in a year
+   - Total savings = \( 5 \times 365 = 1825 \) dollars.
+
+Therefore, Sally and Bob will have saved a total of \( \boxed{1825} \) dollars for their trip after a year.","Sally and Bob have made plans to go on a trip at the end of the year. They both decide to work as babysitters and save half of what they've earned for their trip. If Sally makes $6 per day and Bob makes $4 per day, how much money will they both have saved for their trip after a year?"
+95,small_wrong_to_scheduled_wrong,False,True,False,True,4,3,4,0.5503937005996704,0.009090909090909092,0.5594846096905794,64,4,4,64,256,"To determine the total value of Alice's money after exchanging her quarters for nickels, we need to follow these steps:
+
+1. **Calculate the total value of the quarters:**
+   Alice has 20 quarters.Each quarter is worth $0.25.
+   \[
+   \text{Total value of quarters} = 20 \times 0.25 = 5 \text{ dollars}
+   \]
+
+2. **Determine the number of nickels Alice receives:**
+   Since each quarter is worth 25 cents and each nickel is worth 5 cents, the number of nickels Alice will receive is:
+   \[
+   \text{Number of nickels} = \frac{20 \times 25}{5} = \frac{500}{5} = 100 \text{ nickels}
+   \]
+
+3. **Calculate the number of iron nickels:**
+   Alice discovers that 20% of the nickels are iron nickels. Therefore, the number of iron nickels is:
+   \[
+   \text{Number of iron nickels} = 0.20 \times 100 = 20 \text{ iron nickels}
+   \]
+
+4. **Calculate the number of regular nickels:**
+   The remaining nickels are regular nickels. Thus, the number of regular nickels is:
+   \[
+   \text{Number of","To solve this problem, we need to follow these steps:
+
+1. **Determine the total number of nickels Alice receives:**
+   - Each quarter is worth $0.25.
+   - Alice has 20 quarters, so the total value in dollars is:
+     \[
+     20 \times 0.25 = 5 \text{ dollars}
+     \]
+   - Since each nickel is worth $0.05, the number of nickels she gets is:
+     \[
+     \frac{5}{0.05} = 100 \text{ nickels}
+     \]
+
+2. **Calculate the number of iron nickels:**
+   - 20% of the nickels are iron nickels.
+   - The number of iron nickels is:
+     \[
+     0.20 \times 100 = 20 \text{ iron nickels}
+     \]
+
+3. **Calculate the number of regular nickels:**
+   - The remaining nickels are regular nickels.
+   - The number of regular nickels is:
+     \[
+     100 - 20 = 80 \text{ regular nickels}
+     \]
+
+4. **Calculate the total value of the iron nickels:**
+   - Each iron nickel is worth $3.
+   - The total value of the iron nickels is:
+     \[
+     20 \times 3 = 60 \text{ dollars}
+     \]
+
+5. **Calculate the total value of the regular nickels:**
+   - Each regular nickel is worth $0.05.
+   - The total value of the regular nickels is:
+     \[
+     80 \times 0.05 = 4 \text{ dollars}
+     \]
+
+6. **Calculate the total value of all the nickels:**
+   - Add the value of the iron nickels and the regular nickels:
+     \[
+     60 + 4 = 64 \text{ dollars}
+     \]
+
+Therefore, the total value of Alice's money now is \(\boxed{64}\) dollars.","Alice has 20 quarters. She wants to exchange them for nickels and so she goes to the bank. After getting back from the bank, she discovers that 20% of the nickels are iron nickels worth $3 each. What is the total value of her money now?"
+98,small_wrong_to_scheduled_correct,False,True,True,True,11,10,,0.16343766450881958,0.03235294117647059,0.19579060568529016,45,39,45,45,200,"To determine the total number of gumballs Hector purchased, we need to work backwards from the information given about how many gumballs he gave away and how many he had left.
+
+1. **Gumballs given to Alisha:**
+   Hector gave twice as many gumballs to Alisha as he gave to Todd. Since he gave 4 gumballs to Todd, he gave:
+   \[
+   2 \times 4 = 8 \text{ gumballs to Alisha}
+   \]
+
+2. **Gumballs given to Bobby:**
+   Hector gave 5 less than four times as many gumballs to Bobby as he gave to Alisha. Since he gave 8 gumballs to Alisha,he gave:
+   \[
+   4 \times 8 - 5 = 32 - 5 = 27 \text{ gumballs to Bobby}
+   \]
+
+3. **Total gumballs given away:**
+   We sum the gumballs given to Todd, Alisha, and Bobby:
+   \[
+   4 + 8 + 27 = 39 \text{ gumballs}
+   \]
+
+4. **Remaining gumballs:**
+   Hector had 6 gumballs remaining after giving away the others.
+
+5. **Total gumballs purchased:**
+   To find the total number of gumballs Hector originally purchased, we add the gumballs given away to the gumballs remaining:
+   \[
+   39 + 6 = 45
+   \]
+
+Thus, the total number of gumballs Hector purchased is:
+\[
+\boxed{45}
+\]","To solve this problem, we need to determine how many gumballs Hector initially purchased. Let's break down the information given and solve it step by step.
+
+1. **Define Variables:**
+   - Let \( x \) be the total number of gumballs Hector initially purchased.
+
+2. **Gumballs Given Away:**
+   - Hector gave 4 gumballs to Todd.
+   - Hector gave twice as many gumballs to Alisha as he gave to Todd. Therefore, he gave \( 2 \times 4 = 8 \) gumballs to Alisha.
+   - Hector gave 5 less than four times as many gumballs to Bobby as he gave to Alisha. Therefore, he gave \( 4 \times 8 - 5 = 32 - 5 = 27 \) gumballs to Bobby.
+
+3. **Total Gumballs Given Away:**
+   - The total number of gumballs given away is:
+     \[
+     4 + 8 + 27 = 39
+     \]
+
+4. **Remaining Gumballs:**
+   - Hector had 6 gumballs remaining after giving away the gumballs.
+
+5. **Set Up the Equation:**
+   - The total number of gumballs Hector initially purchased minus the total number of gumballs given away equals the number of gumballs remaining:
+     \[
+     x - 39 = 6
+     \]
+
+6. **Solve for \( x \):**
+   - Add 39 to both sides of the equation:
+     \[
+     x = 6 + 39
+     \]
+     \[
+     x = 45
+     \]
+
+Therefore, the total number of gumballs Hector purchased is \(\boxed{45}\).","Hector purchased a container of gumballs.  He gave 4 to Todd, then he gave twice as many as he had given Todd to Alisha, and then he gave 5 less than four times as many to Bobby as he had given to Alisha.  If Hector had 6 gumballs remaining, what is the total number of gumballs that Hector purchased?"

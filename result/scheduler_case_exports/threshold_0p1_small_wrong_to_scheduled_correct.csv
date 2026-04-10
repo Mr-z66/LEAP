@@ -1,0 +1,299 @@
+﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
+5,small_wrong_to_scheduled_correct,False,True,True,True,4,3,,0.10668891668319702,0.010000000000000002,0.11668891668319703,35,4,35,35,256,"To determine the total number of flowers in Mark's garden, we need to calculate the number of each color of flower and then sum them up.
+
+1. **Yellow Flowers:**
+   Mark has 10 yellow flowers.2. **Purple Flowers:**
+   The number of purple flowers is 80% more than the number of yellow flowers.
+   - First, calculate 80% of the yellow flowers:
+     \[
+     0.80 \times 10 = 8
+     \]
+   - Add this to the original number of yellow flowers to get the number of purple flowers:
+     \[
+     10 + 8 = 18
+     \]
+
+3. **Green Flowers:**
+   The number of green flowers is 25% of the combined number of yellow and purple flowers.
+   - Calculate the combined number of yellow and purple flowers:
+     \[
+     10 + 18 = 28
+     \]
+   - Calculate 25% of this combined number:
+     \[
+     0.25 \times 28 = 7
+     \]
+
+4. **Total Number of Flowers:**
+   Sum the number of yellow, purple, and green flowers:
+   \[
+   10 + 18 + 7 = 35
+   \]
+
+Therefore, the total number of flowers in Mark's garden is \(\boxed{35}\).","Let's break down the problem step by step to find out how many flowers Mark has in his garden.
+
+1. **Identify the number of yellow flowers:**
+   - Mark has 10 yellow flowers.
+
+2. **Calculate the number of purple flowers:**
+   - There are 80% more purple flowers than yellow flowers.
+   - To find 80% of 10:
+     \[
+     0.80 \times 10 = 8
+     \]
+   - Therefore, the number of purple flowers is:
+     \[
+     10 + 8 = 18
+     \]
+
+3. **Determine the total number of yellow and purple flowers:**
+   - The total number of yellow and purple flowers is:
+     \[
+     10 + 18 = 28
+     \]
+
+4. **Calculate the number of green flowers:**
+   - There are only 25% as many green flowers as there are yellow and purple flowers.
+   - To find 25% of 28:
+     \[
+     0.25 \times 28 = 7
+     \]
+
+5. **Find the total number of flowers in the garden:**
+   - Add the number of yellow, purple, and green flowers together:
+     \[
+     10 + 18 + 7 = 35
+     \]
+
+Therefore, Mark has a total of 35 flowers in his garden.","Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there are yellow and purple flowers. How many flowers does Mark have in his garden?"
+23,small_wrong_to_scheduled_correct,False,True,True,True,11,10,,0.10702413320541382,0.026190476190476195,0.13321460939589003,5,4,5,5,226,"To determine the cost of each top, we need to follow these steps:
+
+1. Calculate the total cost of the shorts.
+2. Calculate the total cost of the shoes.
+3. Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops.
+4. Divide the total cost of the tops by the number of tops to find the cost per top.
+
+Let's go through each step in detail:
+
+1. **Calculate the total cost of the shorts:**
+   Ann bought 5 pairs of shorts, each costing $7.
+   \[
+   \text{Total cost of shorts} = 5 \times 7 = 35 \text{ dollars}\]
+
+2. **Calculate the total cost of the shoes:**
+   Ann bought 2 pairs of shoes, each costing $10.
+   \[
+   \text{Total cost of shoes} = 2 \times 10 = 20 \text{ dollars}
+   \]
+
+3. **Subtract the total cost of the shorts and shoes from the total amount spent to find the total cost of the tops:**
+   Ann spent a total of $75.
+   \[
+   \text{Total cost of tops} = 75 - (35 + 20) = 75 - 55 = 20 \text{ dollars}
+   \]
+
+4. **Divide the total cost of the tops by the number of tops to find the cost per top:**
+   Ann bought 4 tops.
+   \[
+   \text{Cost per top} = \frac{20}{4} = 5 \text{ dollars}
+   \]
+
+Therefore, the cost of each top is \(\boxed{5}\) dollars.","To find out how much each top cost, we need to break down the total amount Ann spent and then solve for the cost of the tops.
+
+Step 1: Calculate the total cost of the shorts.
+- Ann bought 5 pairs of shorts.
+- Each pair costs $7.
+\[ \text{Total cost of shorts} = 5 \times 7 = 35 \]
+
+Step 2: Calculate the total cost of the shoes.
+- Ann bought 2 pairs of shoes.
+- Each pair costs $10.
+\[ \text{Total cost of shoes} = 2 \times 10 = 20 \]
+
+Step 3: Add the costs of the shorts and shoes to find the combined cost.
+\[ \text{Combined cost of shorts and shoes} = 35 + 20 = 55 \]
+
+Step 4: Subtract the combined cost of the shorts and shoes from the total amount spent to find the amount spent on the tops.
+- Total amount spent is $75.
+\[ \text{Amount spent on tops} = 75 - 55 = 20 \]
+
+Step 5: Determine the cost per top.
+- Ann bought 4 tops.
+\[ \text{Cost per top} = \frac{\text{Amount spent on tops}}{\text{Number of tops}} = \frac{20}{4} = 5 \]
+
+Therefore, each top cost $5.","Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each top cost?"
+38,small_wrong_to_scheduled_correct,False,True,True,True,4,3,10,0.15785151720046997,0.0125,0.17035151720046998,9,6,9,9,256,"To determine how many ounces of tea Artemis needs for the party, we can follow these steps:
+
+1. **Determine the ratio of tea to water in the original cup:**
+   - The original cup is 8 ounces and uses 1 ounce of tea.- This gives us a ratio of 1 ounce of tea per 8 ounces of water.
+
+2. **Calculate the amount of tea needed for one 6-ounce cup:**
+   - We know that 1 ounce of tea is used for 8 ounces of water.
+   - To find out how much tea is needed for 6 ounces of water, we set up a proportion:
+     \[
+     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{6 \text{ ounces of water}}
+     \]
+   - Solving for \( x \):
+     \[
+     x = \frac{1 \times 6}{8} = \frac{6}{8} = 0.75 \text{ ounces of tea}
+     \]
+
+3. **Calculate the total amount of tea needed for 12 people:**
+   - Each person wants a 6-ounce cup of tea, which requires 0.75 ounces of tea.
+   - For 12 people:
+     \[
+     12 \times 0.75 = 9 \text{ ounces of tea}
+     \]
+
+Therefore","To determine how many ounces of tea Artemis needs, we can follow these steps:
+
+1. **Understand the given ratio:**
+   - Her mom drinks an 8-ounce cup of tea using 1 ounce of tea.
+   - This means the ratio of tea to water is \( \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} \).
+
+2. **Calculate the amount of tea needed per person at the party:**
+   - Each person at the party wants a 6-ounce cup of tea.
+   - Using the same ratio, we need to find out how much tea is required for a 6-ounce cup.
+
+3. **Set up the proportion based on the ratio:**
+   - For 8 ounces of water, 1 ounce of tea is used.
+   - For 6 ounces of water, let \( x \) be the amount of tea needed.
+   - We set up the proportion: 
+     \[
+     \frac{1 \text{ ounce of tea}}{8 \text{ ounces of water}} = \frac{x \text{ ounces of tea}}{6 \text{ ounces of water}}
+     \]
+
+4. **Solve for \( x \):**
+   - Cross-multiply to solve for \( x \):
+     \[
+     1 \times 6 = 8 \times x
+     \]
+     \[
+     6 = 8x
+     \]
+     \[
+     x = \frac{6}{8} = \frac{3}{4} \text{ ounces of tea}
+     \]
+
+5. **Calculate the total amount of tea needed for all 12 people:**
+   - Each person needs \( \frac{3}{4} \) ounces of tea.
+   - There are 12 people:
+     \[
+     12 \times \frac{3}{4} = 12 \times 0.75 = 9 \text{ ounces of tea}
+     \]
+
+Therefore, Artemis needs \(\boxed{9}\) ounces of tea for the party.",Artemis is making tea for a party. She knows her mom drinks an 8-ounce cup of tea and uses one ounce of tea. She will use this same ratio for the party. The party has 12 people there and each of them wants a 6-ounce cup of tea. How many ounces of tea does she need?
+92,small_wrong_to_scheduled_correct,False,True,True,True,7,6,,0.12324434518814087,0.018421052631578946,0.14166539781971982,1825,1095,1825,1825,241,"To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+
+1. Calculate the total amount of money each person will earn in a year.
+2. Determine how much each person will save, which is half of their annual earnings.
+3. Add their savings together to find the total amount saved for the trip.
+
+First, let's calculate the annual earnings for each person:- There are 365 days in a year (we'll ignore leap years for simplicity).
+
+For Sally:
+\[ \text{Daily earnings} = \$6 \]
+\[ \text{Annual earnings} = 365 \times 6 = \$2190 \]
+
+For Bob:
+\[ \text{Daily earnings} = \$4 \]
+\[ \text{Annual earnings} = 365 \times 4 = \$1460 \]
+
+Next, we calculate how much each person saves, which is half of their annual earnings:
+
+For Sally:
+\[ \text{Savings} = \frac{2190}{2} = \$1095 \]
+
+For Bob:
+\[ \text{Savings} = \frac{1460}{2} = \$730 \]
+
+Finally, we add their savings together to find the total amount saved for the trip:
+
+\[ \text{Total savings} = 1095 + 730 = \$1825 \]
+
+Therefore, Sally and Bob will have saved a total of \$1825 for their trip after a year.","To determine how much money Sally and Bob will have saved for their trip after a year, we need to follow these steps:
+
+1. **Calculate daily earnings:**
+   - Sally earns $6 per day.
+   - Bob earns $4 per day.
+
+2. **Determine the amount each saves per day:**
+   - Since they both save half of what they earn:
+     - Sally saves \( \frac{6}{2} = 3 \) dollars per day.
+     - Bob saves \( \frac{4}{2} = 2 \) dollars per day.
+
+3. **Calculate total savings per day combined:**
+   - Combined, they save \( 3 + 2 = 5 \) dollars per day.
+
+4. **Determine the number of days in a year:**
+   - There are 365 days in a year (assuming it's not a leap year).
+
+5. **Calculate total savings over the year:**
+   - Total savings = Savings per day * Number of days in a year
+   - Total savings = \( 5 \times 365 = 1825 \) dollars.
+
+Therefore, Sally and Bob will have saved a total of \( \boxed{1825} \) dollars for their trip after a year.","Sally and Bob have made plans to go on a trip at the end of the year. They both decide to work as babysitters and save half of what they've earned for their trip. If Sally makes $6 per day and Bob makes $4 per day, how much money will they both have saved for their trip after a year?"
+98,small_wrong_to_scheduled_correct,False,True,True,True,5,4,,0.10487371683120728,0.014705882352941178,0.11957959918414846,45,39,45,45,256,"To determine the total number of gumballs Hector purchased, we need to work backwards from the information given about how many gumballs he gave away and how many he had left.
+
+1. **Gumballs given to Alisha:**
+   Hector gave twice as many gumballs to Alisha as he gave to Todd. Since he gave 4 gumballs to Todd,he gave:
+   \[
+   2 \times 4 = 8 \text{ gumballs to Alisha}
+   \]
+
+2. **Gumballs given to Bobby:**
+   Hector gave 5 less than four times as many gumballs to Bobby as he gave to Alisha. Since he gave 8 gumballs to Alisha, he gave:
+   \[
+   4 \times 8 - 5 = 32 - 5 = 27 \text{ gumballs to Bobby}
+   \]
+
+3. **Total gumballs given away:**
+   We sum the gumballs given to Todd, Alisha, and Bobby:
+   \[
+   4 + 8 + 27 = 39 \text{ gumballs}
+   \]
+
+4. **Remaining gumballs:**
+   Hector had 6 gumballs remaining after giving away the gumballs.
+
+5. **Total gumballs purchased:**
+   To find the total number of gumballs Hector purchased, we add the gumballs given away to the gumballs remaining:
+   \[
+   39 + 6 = 45
+   \]
+
+Thus","To solve this problem, we need to determine how many gumballs Hector initially purchased. Let's break down the information given and solve it step by step.
+
+1. **Define Variables:**
+   - Let \( x \) be the total number of gumballs Hector initially purchased.
+
+2. **Gumballs Given Away:**
+   - Hector gave 4 gumballs to Todd.
+   - Hector gave twice as many gumballs to Alisha as he gave to Todd. Therefore, he gave \( 2 \times 4 = 8 \) gumballs to Alisha.
+   - Hector gave 5 less than four times as many gumballs to Bobby as he gave to Alisha. Therefore, he gave \( 4 \times 8 - 5 = 32 - 5 = 27 \) gumballs to Bobby.
+
+3. **Total Gumballs Given Away:**
+   - The total number of gumballs given away is:
+     \[
+     4 + 8 + 27 = 39
+     \]
+
+4. **Remaining Gumballs:**
+   - Hector had 6 gumballs remaining after giving away the gumballs.
+
+5. **Set Up the Equation:**
+   - The total number of gumballs Hector initially purchased minus the total number of gumballs given away equals the number of gumballs remaining:
+     \[
+     x - 39 = 6
+     \]
+
+6. **Solve for \( x \):**
+   - Add 39 to both sides of the equation:
+     \[
+     x = 6 + 39
+     \]
+     \[
+     x = 45
+     \]
+
+Therefore, the total number of gumballs Hector purchased is \(\boxed{45}\).","Hector purchased a container of gumballs.  He gave 4 to Todd, then he gave twice as many as he had given Todd to Alisha, and then he gave 5 less than four times as many to Bobby as he had given to Alisha.  If Hector had 6 gumballs remaining, what is the total number of gumballs that Hector purchased?"

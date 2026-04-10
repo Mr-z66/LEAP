@@ -1,0 +1,337 @@
+﻿question_id,outcome_type,small_is_correct,large_baseline_is_correct,scheduled_is_correct,triggered,trigger_chunk_id,takeover_start_chunk_id,first_error_chunk_id,trigger_error_score,trigger_tail_bonus,trigger_combined_score,ground_truth_final_answer,small_final_answer,scheduled_final_answer,large_baseline_final_answer,takeover_generated_token_count,takeover_full_reasoning,large_baseline_full_reasoning,question
+9,small_wrong_to_scheduled_wrong,False,False,False,True,5,4,5,0.09328007698059082,0.011904761904761904,0.10518483888535272,990,3,7,5,256,"To determine how much money Tina makes, we need to break down her earnings into regular hours and overtime hours, and then sum them up.
+
+1. **Calculate the regular hours:**
+   Tina works 10 hours every day for 5 days.The first 8 hours of each day are considered regular hours.
+   \[
+   \text{Regular hours per day} = 8 \text{ hours}
+   \]
+   \[
+   \text{Total regular hours} = 8 \text{ hours/day} \times 5 \text{ days} = 40 \text{ hours}
+   \]
+
+2. **Calculate the overtime hours:**
+   Any hours worked beyond 8 hours in a day are considered overtime. Since she works 10 hours each day:
+   \[
+   \text{Overtime hours per day} = 10 \text{ hours/day} - 8 \text{ hours/day} = 2 \text{ hours/day}
+   \]
+   \[
+   \text{Total overtime hours} = 2 \text{ hours/day} \times 5 \text{ days} = 10 \text{ hours}
+   \]
+
+3. **Calculate the pay for regular hours:**
+   Tina's regular hourly wage is $18.00.
+   \[
+   \text{Regular pay} = 40 \text{ hours} \times \$18.00/\text{hour} = \$7","To determine how much money Tina makes, we need to break down her work schedule and calculate both her regular pay and her overtime pay.
+
+### Step-by-Step Calculation:
+
+1. **Regular Pay Calculation:**
+   - Tina's regular hourly wage is $18.00.
+   - She works 8 hours at the regular rate each day.
+   - For 5 days, her total regular hours worked = \( 8 \text{ hours/day} \times 5 \text{ days} = 40 \text{ hours} \).
+   - Her total regular pay = \( 40 \text{ hours} \times \$18.00/\text{hour} = \$720.00 \).
+
+2. **Overtime Pay Calculation:**
+   - Overtime is paid at 1.5 times the regular hourly wage.
+   - Her overtime hourly wage = \( 18.00 \times 1.5 = \$27.00 \).
+   - She works 2 hours of overtime each day (since she works 10 hours total and 8 are regular).
+   - For 5 days, her total overtime hours worked = \( 2 \text{ hours/day} \times 5 \text{ days} = 10 \text{ hours} \).
+   - Her total overtime pay = \( 10 \text{ hours} \times \$27.00/\text{hour} = \$270.00 \).
+
+3. **Total Pay Calculation:**
+   - Total pay = Regular pay + Overtime pay.
+   - Total pay = \( \$720.00 + \$270.00 = \$990.00 \).
+
+Therefore, Tina makes a total of **$990.00** for working 10 hours every day for 5 days.","Tina makes $18.00 an hour.  If she works more than 8 hours per shift, she is eligible for overtime, which is paid by your hourly wage + 1/2 your hourly wage.  If she works 10 hours every day for 5 days, how much money does she make?"
+17,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,,0.23361527919769287,0.007894736842105263,0.24151001603979813,43,3,24,43,256,"To calculate the total number of hard hats remaining in the truck, we need to follow these steps:
+
+1. **Initial Count of Each Color:**- Pink: 26
+   - Green: 15
+   - Yellow: 24
+
+2. **Carl's Action:**  
+   Carl takes away 4 pink hard hats.
+   - Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
+
+3. **John's Action:**  
+   John takes away 6 pink hard hats and twice as many green hard hats as the pink ones he removed.
+   - Pink hard hats taken by John: 6
+   - Green hard hats taken by John: \( 2 \times 6 = 12 \)
+   
+   - Remaining pink hard hats after John: \( 22 - 6 = 16 \)
+   - Remaining green hard hats after John: \( 15 - 12 = 3 \)
+
+4. **Final Count of Each Color:**  
+   - Pink: 16
+   - Green: 3
+   - Yellow: 24 (unchanged)
+
+5. **Total Number of Hard Hats Remaining:**  
+   Sum up the remaining hard hats:
+   \[
+   16 \text{ (pink)} + 3 \text{ (green)} + 24","Let's break down the problem step by step to find out how many hard hats remain in the truck.
+
+### Initial Counts:
+- Pink hard hats: 26
+- Green hard hats: 15
+- Yellow hard hats: 24
+
+### Carl's Action:
+Carl takes away 4 pink hard hats.
+- Remaining pink hard hats after Carl: \( 26 - 4 = 22 \)
+
+### John's Actions:
+John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats he removed.
+- Number of pink hard hats John takes: 6
+- Number of green hard hats John takes: \( 2 \times 6 = 12 \)
+
+#### After John's Actions:
+- Remaining pink hard hats: \( 22 - 6 = 16 \)
+- Remaining green hard hats: \( 15 - 12 = 3 \)
+
+### Final Counts:
+- Pink hard hats remaining: 16
+- Green hard hats remaining: 3
+- Yellow hard hats remaining: 24 (unchanged)
+
+### Total Hard Hats Remaining:
+To find the total number of hard hats remaining in the truck, we sum up the remaining hard hats of each color:
+\[ 16 + 3 + 24 = 43 \]
+
+Thus, the total number of hard hats that remained in the truck is \( \boxed{43} \).","In a truck, there are 26 pink hard hats, 15 green hard hats, and 24 yellow hard hats.  If Carl takes away 4 pink hard hats, and John takes away 6 pink hard hats and twice as many green hard hats as the number of pink hard hats that he removed, then calculate the total number of hard hats that remained in the truck."
+22,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,,0.13114112615585327,0.007142857142857143,0.13828398329871042,7,10,10,7,256,"Let's break down the problem step by step:
+
+1. **Determine the length of Jamie's last name:**
+   Jamie's last name is ""Grey"".The number of letters in ""Grey"" is 4.
+
+2. **Relate Bobbie's last name to Jamie's last name:**
+   According to the problem, if Bobbie took two letters off her last name, it would be twice the length of Jamie's last name.
+   
+   Let \( B \) represent the number of letters in Bobbie's last name.
+   
+   Therefore, we can write the equation:
+   \[
+   B - 2 = 2 \times 4
+   \]
+   Simplifying this:
+   \[
+   B - 2 = 8
+   \]
+   Solving for \( B \):
+   \[
+   B = 8 + 2 = 10
+   \]
+
+3. **Relate Samantha's last name to Bobbie's last name:**
+   Samantha’s last name has three fewer letters than Bobbie’s last name.
+   
+   Let \( S \) represent the number of letters in Samantha's last name.
+   
+   Therefore, we can write the equation:
+   \[
+   S = B - 3
+   \]
+   Substituting the value of \( B \) (which is 10):
+   \[
+   S = 10 -","To solve this problem, we need to determine the number of letters in Samantha's last name based on the information given about the lengths of the last names of Samantha, Bobbie, and Jamie.
+
+1. **Identify the number of letters in Jamie's last name:**
+   - Jamie's full name is Jamie Grey.
+   - The last name ""Grey"" has 4 letters.
+
+2. **Determine the relationship between Bobbie's and Jamie's last names:**
+   - If Bobbie took two letters off her last name, it would be twice the length of Jamie's last name.
+   - Let \( B \) represent the number of letters in Bobbie's last name.
+   - According to the problem, \( B - 2 = 2 \times 4 \).
+   - Simplify the equation:
+     \[
+     B - 2 = 8
+     \]
+   - Solve for \( B \):
+     \[
+     B = 8 + 2 = 10
+     \]
+
+3. **Determine the relationship between Samantha's and Bobbie's last names:**
+   - Samantha’s last name has three fewer letters than Bobbie’s last name.
+   - Let \( S \) represent the number of letters in Samantha's last name.
+   - According to the problem, \( S = B - 3 \).
+   - Substitute \( B = 10 \) into the equation:
+     \[
+     S = 10 - 3 = 7
+     \]
+
+Therefore, the number of letters in Samantha’s last name is \(\boxed{7}\).","Samantha’s last name has three fewer letters than Bobbie’s last name. If Bobbie took two letters off her last name, she would have a last name twice the length of Jamie’s. Jamie’s full name is Jamie Grey. How many letters are in Samantha’s last name?"
+64,small_wrong_to_scheduled_wrong,False,True,False,True,4,3,,0.09310740232467651,0.009090909090909092,0.10219831141558561,840,30,30,840,256,"To determine James's weekly earnings, we need to calculate his earnings from both his main job and his second job separately, and then sum them up.
+
+First, let's calculate his earnings from his main job:1. James earns $20 per hour at his main job.
+2. He works 30 hours at his main job each week.
+
+\[
+\text{Earnings from main job} = \text{Hourly wage} \times \text{Hours worked}
+\]
+\[
+\text{Earnings from main job} = 20 \, \text{dollars/hour} \times 30 \, \text{hours} = 600 \, \text{dollars}
+\]
+
+Next, let's calculate his earnings from his second job:
+1. James earns 20% less at his second job compared to his main job.
+2. His hourly wage at the second job is therefore:
+
+\[
+\text{Hourly wage at second job} = 20 \, \text{dollars/hour} \times (1 - 0.20) = 20 \, \text{dollars/hour} \times 0.80 = 16 \, \text{dollars/hour}
+\]
+
+3. He works half as many hours at his second job as he does at his main job. Since he works 30 hours at","To determine how much James earns per week, we need to calculate his earnings from both his main job and his second job separately, then sum them up.
+
+### Step 1: Calculate hourly wage for the second job
+James earns 20% less at his second job compared to his main job. 
+
+- Hourly wage at the main job: $20
+- 20% of $20 = \( 0.20 \times 20 = 4 \)
+
+So, his hourly wage at the second job is:
+\[ 20 - 4 = 16 \]
+
+### Step 2: Calculate hours worked at each job
+- Hours worked at the main job: 30 hours
+- Hours worked at the second job: half of 30 hours = \( \frac{30}{2} = 15 \) hours
+
+### Step 3: Calculate weekly earnings from the main job
+\[ \text{Earnings from main job} = \text{Hourly wage} \times \text{Hours worked} \]
+\[ \text{Earnings from main job} = 20 \times 30 = 600 \]
+
+### Step 4: Calculate weekly earnings from the second job
+\[ \text{Earnings from second job} = \text{Hourly wage} \times \text{Hours worked} \]
+\[ \text{Earnings from second job} = 16 \times 15 = 240 \]
+
+### Step 5: Calculate total weekly earnings
+\[ \text{Total weekly earnings} = \text{Earnings from main job} + \text{Earnings from second job} \]
+\[ \text{Total weekly earnings} = 600 + 240 = 840 \]
+
+Thus, James earns a total of \( \boxed{840} \) dollars per week.",James earns $20 an hour while working at his main job.  He earns 20% less while working his second job.  He works 30 hours at his main job and half that much at his second job.  How much does he earn per week?
+89,small_wrong_to_scheduled_wrong,False,True,False,True,4,3,9,0.12846946716308594,0.013333333333333334,0.14180280049641927,216,3,5,216,256,"To determine how many books Krystian borrows in a week, we need to break down the problem into smaller parts and calculate step by step.
+
+1. **Calculate the number of books borrowed on a regular day (Monday to Thursday):**
+   Krystian borrows an average of 40 books every day from Monday to Thursday.There are 4 such days in a week.
+   \[
+   \text{Books borrowed from Monday to Thursday} = 40 \text{ books/day} \times 4 \text{ days} = 160 \text{ books}
+   \]
+
+2. **Calculate the number of books borrowed on Friday:**
+   On Fridays, Krystian borrows 40% more books than the daily average. First, we need to find out what 40% of 40 books is:
+   \[
+   40\% \text{ of } 40 = 0.40 \times 40 = 16 \text{ books}
+   \]
+   Therefore, the total number of books borrowed on Friday is:
+   \[
+   40 \text{ books} + 16 \text{ books} = 56 \text{ books}
+   \]
+
+3. **Calculate the total number of books borrowed in a week:**
+   Add the number of books borrowed from Monday to Thursday to the number of books borrowed on Friday:
+   \[
+   \text{Total books borrowed in a week} = 160 \text{ books} + 5","To solve this problem, we need to calculate the total number of books Krystian borrows in a week, considering that the library is open from Monday to Friday and that on Fridays, he borrows 40% more books than his daily average.
+
+Let's break it down step-by-step:
+
+1. **Daily Average Borrowing:**
+   - Krystian borrows an average of 40 books per day from Monday to Thursday.
+   
+2. **Friday Borrowing:**
+   - On Fridays, he borrows 40% more books than the daily average.
+   - To find out how many books he borrows on Friday, we calculate:
+     \[
+     \text{Books borrowed on Friday} = 40 + (0.40 \times 40)
+     \]
+     \[
+     \text{Books borrowed on Friday} = 40 + 16 = 56
+     \]
+
+3. **Total Books Borrowed from Monday to Thursday:**
+   - From Monday to Thursday, there are 4 days.
+   - Each day, he borrows 40 books.
+   - Therefore, the total for these four days is:
+     \[
+     4 \times 40 = 160
+     \]
+
+4. **Total Books Borrowed on Friday:**
+   - As calculated earlier, he borrows 56 books on Friday.
+
+5. **Total Books Borrowed in a Week:**
+   - Adding the total from Monday to Thursday and the total for Friday:
+     \[
+     \text{Total books borrowed in a week} = 160 + 56 = 216
+     \]
+
+Therefore, Krystian borrows a total of 216 books in a week.","Krystian works in the library. He borrows an average of 40 books every day. Every Friday, his number of borrowed books is about 40% higher than the daily average. How many books does he borrow in a week if the library is open from Monday to Friday?"
+95,small_wrong_to_scheduled_wrong,False,True,False,True,3,2,4,0.11307138204574585,0.006818181818181818,0.11988956386392767,64,4,20,64,256,"To determine the total value of Alice's money after exchanging her quarters for nickels, we need to follow these steps:
+
+1. **Calculate the total value of the quarters:**Each quarter is worth $0.25. Alice has 20 quarters.
+   \[
+   20 \text{ quarters} \times \$0.25/\text{quarter} = \$5.00
+   \]
+
+2. **Determine the number of nickels Alice receives:**  
+   Since each quarter is worth 25 cents and each nickel is worth 5 cents, each quarter can be exchanged for:
+   \[
+   \frac{25 \text{ cents}}{5 \text{ cents/nickel}} = 5 \text{ nickels}
+   \]
+   Therefore, 20 quarters will be exchanged for:
+   \[
+   20 \text{ quarters} \times 5 \text{ nickels/quarter} = 100 \text{ nickels}
+   \]
+
+3. **Identify the number of iron nickels and regular nickels:**  
+   We know that 20% of the nickels are iron nickels. Thus, the number of iron nickels is:
+   \[
+   0.20 \times 100 \text{ nickels} = 20 \text{ iron nickels}","To solve this problem, we need to follow these steps:
+
+1. **Determine the total number of nickels Alice receives:**
+   - Each quarter is worth $0.25.
+   - Alice has 20 quarters, so the total value in dollars is:
+     \[
+     20 \times 0.25 = 5 \text{ dollars}
+     \]
+   - Since each nickel is worth $0.05, the number of nickels she gets is:
+     \[
+     \frac{5}{0.05} = 100 \text{ nickels}
+     \]
+
+2. **Calculate the number of iron nickels:**
+   - 20% of the nickels are iron nickels.
+   - The number of iron nickels is:
+     \[
+     0.20 \times 100 = 20 \text{ iron nickels}
+     \]
+
+3. **Calculate the number of regular nickels:**
+   - The remaining nickels are regular nickels.
+   - The number of regular nickels is:
+     \[
+     100 - 20 = 80 \text{ regular nickels}
+     \]
+
+4. **Calculate the total value of the iron nickels:**
+   - Each iron nickel is worth $3.
+   - The total value of the iron nickels is:
+     \[
+     20 \times 3 = 60 \text{ dollars}
+     \]
+
+5. **Calculate the total value of the regular nickels:**
+   - Each regular nickel is worth $0.05.
+   - The total value of the regular nickels is:
+     \[
+     80 \times 0.05 = 4 \text{ dollars}
+     \]
+
+6. **Calculate the total value of all the nickels:**
+   - Add the value of the iron nickels and the regular nickels:
+     \[
+     60 + 4 = 64 \text{ dollars}
+     \]
+
+Therefore, the total value of Alice's money now is \(\boxed{64}\) dollars.","Alice has 20 quarters. She wants to exchange them for nickels and so she goes to the bank. After getting back from the bank, she discovers that 20% of the nickels are iron nickels worth $3 each. What is the total value of her money now?"
