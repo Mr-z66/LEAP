@@ -114,7 +114,7 @@ python -m core_package.pipelines.build_dataset \
   --dataset-split "train[:500]" \
   --model-path models/Qwen2.5-1.5B \
   --save-path dataset/gsm8k_15b_hidden_states.pt \
-  --max-new-tokens 256
+  --max-new-tokens  512
 ```
 
 ### 2. strict 标注
@@ -236,6 +236,7 @@ python -m core_package.pipelines.build_dataset \
   --model-path models/Qwen2.5-1.5B \
   --save-path dataset/svamp_15b_hidden_states.pt \
   --max-new-tokens 512
+<<<<<<< HEAD
 ```
 
 test:
@@ -248,6 +249,8 @@ python -m core_package.pipelines.build_dataset \
   --model-path models/Qwen2.5-1.5B \
   --save-path dataset/svamp_test_15b_hidden_states.pt \
   --max-new-tokens 512
+=======
+>>>>>>> 4f796e5dbb1fcdad5c0ed4d222842c594d3dff2c
 ```
 
 ### 2. strict 标注
