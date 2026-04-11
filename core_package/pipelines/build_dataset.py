@@ -1,5 +1,8 @@
+import argparse
+import json
 import os
 import re
+from typing import Dict, Iterable, List, Optional
 
 import numpy as np
 import torch
@@ -7,20 +10,65 @@ from datasets import load_dataset
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# ================= Configuration =================
-MODEL_PATH = os.path.join(os.getcwd(), "models", "Qwen2.5-1.5B")
-SAVE_PATH = "gsm8k_15b_hidden_states.pt"
-NUM_SAMPLES = 1000
-MAX_NEW_TOKENS = 256
-MIN_TOKENS = 5
-MAX_TOKENS = 30
-PUNCTUATIONS = [".", ",", "!", "?", "\n"]
-# =================================================
+from core_package.answer_extraction import extract_final_answer
 
 
-def extract_last_number(text):
+DEFAULT_MODEL_PATH = os.path.join(os.getcwd(), "models", "Qwen2.5-1.5B")
+DEFAULT_SAVE_PATH = "gsm8k_15b_hidden_states.pt"
+DEFAULT_MAX_NEW_TOKENS = 256
+DEFAULT_MIN_TOKENS = 5
+DEFAULT_MAX_TOKENS = 30
+DEFAULT_PUNCTUATIONS = [".", ",", "!", "?", "\n"]
+DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Build chunked hidden-state trajectories for GSM8K-style math datasets."
+    )
+    parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH, help="Local model path.")
+    parser.add_argument("--save-path", default=DEFAULT_SAVE_PATH, help="Output .pt file path.")
+    parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "jsonl"], default="gsm8k")
+    parser.add_argument("--dataset-split", default=None, help="Dataset split to use.")
+    parser.add_argument("--num-samples", type=int, default=1000, help="Maximum number of samples to process.")
+    parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
+    parser.add_argument("--min-tokens", type=int, default=DEFAULT_MIN_TOKENS)
+    parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
+    parser.add_argument("--input-path", default=None, help="Local json/jsonl path for svamp/jsonl modes.")
+    parser.add_argument("--question-field", default="question", help="Question field for jsonl mode.")
+    parser.add_argument("--answer-field", default="answer", help="Answer field for jsonl mode.")
+    parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT)
+    return parser.parse_args()
+
+
+def normalize_numeric_text(text: str) -> str:
+    return text.replace(",", "").strip().rstrip(".")
+
+
+def extract_last_number(text: str):
     matches = re.findall(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
     return matches[-1] if matches else None
+
+
+def normalize_answer_text(value) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        text = str(value)
+    else:
+        text = str(value).strip()
+    if not text:
+        return None
+
+    extracted = extract_final_answer(text)
+    if extracted is not None:
+        return extracted
+
+    numeric = extract_last_number(text)
+    if numeric is not None:
+        return normalize_numeric_text(numeric)
+
+    return text
 
 
 def decode_tokens(tokenizer, token_ids):
@@ -86,7 +134,7 @@ def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
     generated_hidden_states = []
     generated_token_confidences = []
 
-    for step in range(max_new_tokens):
+    for _ in range(max_new_tokens):
         with torch.no_grad():
             outputs = model(
                 input_ids=input_ids,
@@ -95,8 +143,6 @@ def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
                 output_hidden_states=True,
             )
 
-        # When we feed a previously generated token, the last hidden state
-        # aligns with that token and can be stored as a chunk feature source.
         if generated_token_ids:
             generated_hidden_states.append(
                 outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu()
@@ -136,7 +182,7 @@ def generate_with_hidden_states(model, tokenizer, prompt_text, max_new_tokens):
     )
 
 
-def build_chunks(tokenizer, token_ids, hidden_states, token_confidences):
+def build_chunks(tokenizer, token_ids, hidden_states, token_confidences, min_tokens, max_tokens, punctuations):
     chunks = []
     current_chunk_token_ids = []
     current_chunk_hidden_states = []
@@ -150,12 +196,12 @@ def build_chunks(tokenizer, token_ids, hidden_states, token_confidences):
         current_chunk_confidences.append(token_confidences[token_idx])
 
         chunk_len = len(current_chunk_token_ids)
-        hit_punctuation = any(p in token_text for p in PUNCTUATIONS)
+        hit_punctuation = any(p in token_text for p in punctuations)
 
         cut_reason = None
-        if hit_punctuation and chunk_len >= MIN_TOKENS:
+        if hit_punctuation and chunk_len >= min_tokens:
             cut_reason = "punctuation"
-        elif chunk_len >= MAX_TOKENS:
+        elif chunk_len >= max_tokens:
             cut_reason = "max_tokens"
 
         if cut_reason is None:
@@ -206,70 +252,161 @@ def build_chunks(tokenizer, token_ids, hidden_states, token_confidences):
     return chunks
 
 
-print(f"Loading base model from: {MODEL_PATH}")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_PATH,
-    torch_dtype=torch.bfloat16,
-    device_map="auto",
-    local_files_only=True,
-)
-model.eval()
+def load_jsonl_rows(path: str) -> List[Dict]:
+    rows = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rows.append(json.loads(line))
+    return rows
 
-print(f"Loading GSM8K train split[:{NUM_SAMPLES}]")
-dataset = load_dataset("gsm8k", "main", split=f"train[:{NUM_SAMPLES}]")
 
-all_extracted_data = []
+def load_source_rows(args) -> Iterable[Dict]:
+    if args.dataset_name == "gsm8k":
+        split = args.dataset_split or f"train[:{args.num_samples}]"
+        print(f"Loading GSM8K split: {split}")
+        return list(load_dataset("gsm8k", "main", split=split))
 
-for idx, row in enumerate(tqdm(dataset, desc="Building heuristic chunks")):
-    question = row["question"]
-    ground_truth_answer = row["answer"]
+    if args.input_path is None:
+        raise ValueError("--input-path is required for svamp/jsonl modes.")
 
-    messages = [
-        {"role": "system", "content": "You are a helpful math assistant. Please reason step by step."},
-        {"role": "user", "content": question},
-    ]
-    prompt_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    rows = load_jsonl_rows(args.input_path)
+    if args.num_samples is not None:
+        rows = rows[: args.num_samples]
 
-    generated_token_ids, generated_hidden_states, generated_token_confidences = generate_with_hidden_states(
-        model=model,
-        tokenizer=tokenizer,
-        prompt_text=prompt_text,
-        max_new_tokens=MAX_NEW_TOKENS,
-    )
+    print(f"Loading local dataset from: {args.input_path} | rows={len(rows)}")
+    return rows
 
-    generated_text = decode_tokens(tokenizer, generated_token_ids).strip()
-    model_final_answer = extract_last_number(generated_text)
-    ground_truth_final_answer = extract_last_number(ground_truth_answer)
-    chunks = build_chunks(tokenizer, generated_token_ids, generated_hidden_states, generated_token_confidences)
 
-    prefix_token_ids = []
-    for chunk in chunks:
-        prefix_token_ids.extend(chunk["token_ids"])
-        chunk["prefix_text"] = decode_tokens(tokenizer, prefix_token_ids).strip()
-
-    all_extracted_data.append(
-        {
+def format_sample(row: Dict, idx: int, args) -> Dict:
+    if args.dataset_name == "gsm8k":
+        question = str(row["question"]).strip()
+        answer_text = str(row["answer"]).strip()
+        return {
             "question_id": idx,
             "question": question,
-            "prompt_text": prompt_text,
-            "ground_truth_answer_text": ground_truth_answer,
-            "ground_truth_final_answer": ground_truth_final_answer,
-            "generated_text": generated_text,
-            "generated_token_ids": generated_token_ids,
-            "model_final_answer": model_final_answer,
-            "is_final_correct": model_final_answer == ground_truth_final_answer,
-            "chunking_method": "heuristic_punctuation_minmax",
-            "chunking_config": {
-                "min_tokens": MIN_TOKENS,
-                "max_tokens": MAX_TOKENS,
-                "punctuations": PUNCTUATIONS,
-                "max_new_tokens": MAX_NEW_TOKENS,
-            },
-            "chunks": chunks,
+            "ground_truth_answer_text": answer_text,
+            "ground_truth_final_answer": normalize_answer_text(answer_text),
+            "source_meta": {"dataset_name": "gsm8k"},
         }
-    )
 
-print(f"Saving {len(all_extracted_data)} trajectories to: {SAVE_PATH}")
-torch.save(all_extracted_data, SAVE_PATH)
-print("Done.")
+    if args.dataset_name == "svamp":
+        body = str(row.get("Body", "")).strip()
+        question_part = str(row.get("Question", "")).strip()
+        question = f"{body} {question_part}".strip()
+        answer_value = row.get("Answer")
+        answer_text = str(answer_value).strip()
+        return {
+            "question_id": idx,
+            "question": question,
+            "ground_truth_answer_text": answer_text,
+            "ground_truth_final_answer": normalize_answer_text(answer_value),
+            "source_meta": {
+                "dataset_name": "svamp",
+                "id": row.get("ID"),
+                "type": row.get("Type"),
+                "equation": row.get("Equation"),
+            },
+        }
+
+    question = str(row.get(args.question_field, "")).strip()
+    answer_value = row.get(args.answer_field)
+    answer_text = "" if answer_value is None else str(answer_value).strip()
+    return {
+        "question_id": idx,
+        "question": question,
+        "ground_truth_answer_text": answer_text,
+        "ground_truth_final_answer": normalize_answer_text(answer_value),
+        "source_meta": {"dataset_name": "jsonl"},
+    }
+
+
+def main():
+    args = parse_args()
+
+    punctuations = list(DEFAULT_PUNCTUATIONS)
+    print(f"Loading base model from: {args.model_path}")
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path, local_files_only=True)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_path,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        local_files_only=True,
+    )
+    model.eval()
+
+    dataset_rows = load_source_rows(args)
+    formatted_rows = [format_sample(row, idx, args) for idx, row in enumerate(dataset_rows)]
+
+    all_extracted_data = []
+    for row in tqdm(formatted_rows, desc="Building heuristic chunks"):
+        question = row["question"]
+        ground_truth_answer = row["ground_truth_answer_text"]
+
+        messages = [
+            {"role": "system", "content": args.system_prompt},
+            {"role": "user", "content": question},
+        ]
+        prompt_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+        generated_token_ids, generated_hidden_states, generated_token_confidences = generate_with_hidden_states(
+            model=model,
+            tokenizer=tokenizer,
+            prompt_text=prompt_text,
+            max_new_tokens=args.max_new_tokens,
+        )
+
+        generated_text = decode_tokens(tokenizer, generated_token_ids).strip()
+        model_final_answer = extract_final_answer(generated_text)
+        if model_final_answer is None:
+            model_final_answer = extract_last_number(generated_text)
+            if model_final_answer is not None:
+                model_final_answer = normalize_numeric_text(model_final_answer)
+
+        chunks = build_chunks(
+            tokenizer=tokenizer,
+            token_ids=generated_token_ids,
+            hidden_states=generated_hidden_states,
+            token_confidences=generated_token_confidences,
+            min_tokens=args.min_tokens,
+            max_tokens=args.max_tokens,
+            punctuations=punctuations,
+        )
+
+        prefix_token_ids = []
+        for chunk in chunks:
+            prefix_token_ids.extend(chunk["token_ids"])
+            chunk["prefix_text"] = decode_tokens(tokenizer, prefix_token_ids).strip()
+
+        all_extracted_data.append(
+            {
+                "question_id": row["question_id"],
+                "question": question,
+                "prompt_text": prompt_text,
+                "ground_truth_answer_text": ground_truth_answer,
+                "ground_truth_final_answer": row["ground_truth_final_answer"],
+                "generated_text": generated_text,
+                "generated_token_ids": generated_token_ids,
+                "model_final_answer": model_final_answer,
+                "is_final_correct": model_final_answer == row["ground_truth_final_answer"],
+                "chunking_method": "heuristic_punctuation_minmax",
+                "chunking_config": {
+                    "min_tokens": args.min_tokens,
+                    "max_tokens": args.max_tokens,
+                    "punctuations": punctuations,
+                    "max_new_tokens": args.max_new_tokens,
+                },
+                "source_meta": row.get("source_meta", {}),
+                "chunks": chunks,
+            }
+        )
+
+    print(f"Saving {len(all_extracted_data)} trajectories to: {args.save_path}")
+    torch.save(all_extracted_data, args.save_path)
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
