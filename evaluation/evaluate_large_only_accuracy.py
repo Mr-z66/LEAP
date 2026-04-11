@@ -39,6 +39,18 @@ def build_inputs(tokenizer, question: str):
 
 def load_question_table(dataset) -> Dict[int, Dict]:
     table: Dict[int, Dict] = {}
+    if dataset and isinstance(dataset[0], dict) and "chunks" in dataset[0]:
+        for item in dataset:
+            qid = int(item["question_id"])
+            if qid in table:
+                continue
+            table[qid] = {
+                "question_id": qid,
+                "question": item["question"],
+                "ground_truth_final_answer": item.get("ground_truth_final_answer"),
+            }
+        return table
+
     for item in dataset:
         qid = int(item["question_id"])
         if qid in table:

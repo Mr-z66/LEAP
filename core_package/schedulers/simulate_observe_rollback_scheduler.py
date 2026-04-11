@@ -70,6 +70,11 @@ class TorchMLPProbe(torch.nn.Module):
 def parse_args():
     parser = argparse.ArgumentParser(description="Simulate an observe-and-rollback chunk scheduler.")
     parser.add_argument("--label-path", default=DEFAULT_LABEL_PATH, help="Path to strict labeled chunk data.")
+    parser.add_argument(
+        "--eval-data-path",
+        default=None,
+        help="Optional separate evaluation dataset path. Can be a strict labeled .pt or a raw trajectory .pt from build_dataset.",
+    )
     parser.add_argument("--small-model-path", default=DEFAULT_SMALL_MODEL_PATH, help="Path to the small model.")
     parser.add_argument("--large-model-path", default=DEFAULT_LARGE_MODEL_PATH, help="Path to the large model.")
     parser.add_argument("--feature-key", default=DEFAULT_FEATURE_KEY, help="Chunk feature used by the probe.")
@@ -362,6 +367,36 @@ def decode_tokens(tokenizer, token_ids):
 def build_question_records(dataset, feature_key):
     question_records = {}
     required_tokens = parse_feature_spec(feature_key)
+
+    if dataset and isinstance(dataset[0], dict) and "chunks" in dataset[0]:
+        for item in dataset:
+            question_id = int(item["question_id"])
+            chunks = []
+            has_all_components = True
+            for chunk in item.get("chunks", []):
+                for token in required_tokens:
+                    if is_derived_feature_token(token):
+                        continue
+                    resolved_key = canonical_feature_name(token)
+                    if resolved_key not in chunk:
+                        has_all_components = False
+                        break
+                if not has_all_components:
+                    break
+                chunks.append(chunk)
+            if not has_all_components or not chunks:
+                continue
+
+            question_records[question_id] = {
+                "question_id": question_id,
+                "question": item["question"],
+                "ground_truth_final_answer": item.get("ground_truth_final_answer"),
+                "small_final_answer": item.get("model_final_answer"),
+                "small_is_correct": bool(item.get("is_final_correct", False)),
+                "chunks": sorted(chunks, key=lambda chunk: int(chunk["chunk_id"])),
+            }
+        return question_records
+
     for item in dataset:
         has_all_components = True
         for token in required_tokens:
@@ -419,6 +454,8 @@ def build_feature_arrays(question_records, feature_key):
         chunks = record["chunks"]
         total_chunks = len(chunks)
         for index, chunk in enumerate(chunks):
+            if "label" not in chunk:
+                raise KeyError("Chunk labels are required for probe fitting but missing in the provided training dataset.")
             prev_chunk = None if index == 0 else chunks[index - 1]
             rows.append(build_feature_vector(chunk, prev_chunk, total_chunks, feature_key))
             labels.append(int(chunk["label"]))
@@ -891,7 +928,7 @@ def main():
     args = parse_args()
     thresholds = parse_csv_floats(args.thresholds)
 
-    print(f"Loading labeled chunk dataset from: {args.label_path}")
+    print(f"Loading training dataset from: {args.label_path}")
     dataset = torch.load(args.label_path)
 
     requested_feature_key = args.feature_key
@@ -903,15 +940,28 @@ def main():
 
     question_records = build_question_records(dataset, args.feature_key)
     updated_small_records = apply_small_baseline_overrides(question_records, args.small_baseline_path)
-    print(f"Loaded questions with {args.feature_key}: {len(question_records)}")
+    print(f"Loaded training questions with {args.feature_key}: {len(question_records)}")
     if updated_small_records:
-        print(f"Overrode stored small-model baseline for {updated_small_records} questions from: {args.small_baseline_path}")
+        print(f"Overrode stored small-model baseline for {updated_small_records} training questions from: {args.small_baseline_path}")
+
+    eval_question_records = question_records
+    if args.eval_data_path is not None:
+        print(f"Loading separate evaluation dataset from: {args.eval_data_path}")
+        eval_dataset = torch.load(args.eval_data_path)
+        eval_question_records = build_question_records(eval_dataset, args.feature_key)
+        updated_eval_small_records = apply_small_baseline_overrides(eval_question_records, args.small_baseline_path)
+        print(f"Loaded eval questions with {args.feature_key}: {len(eval_question_records)}")
+        if updated_eval_small_records:
+            print(f"Overrode stored small-model baseline for {updated_eval_small_records} eval questions from: {args.small_baseline_path}")
     if artifact is not None:
         print(f"Loading fixed probe artifact from: {args.probe_artifact_path}")
         probe = artifact.get("probe")
         scaler = artifact["scaler"]
         train_question_ids = list(artifact["train_question_ids"])
-        test_question_ids = list(artifact["test_question_ids"])
+        if args.eval_data_path is not None:
+            test_question_ids = sorted(eval_question_records.keys())
+        else:
+            test_question_ids = list(artifact["test_question_ids"])
     else:
         raise FileNotFoundError(
             "Multi-handoff scheduler now requires a trained takeover_beneficial artifact. "
@@ -919,7 +969,7 @@ def main():
         )
     print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")
 
-    test_records = [question_records[question_id] for question_id in sorted(test_question_ids)]
+    test_records = [eval_question_records[question_id] for question_id in sorted(test_question_ids) if question_id in eval_question_records]
     if args.num_test_questions is not None:
         test_records = test_records[: args.num_test_questions]
         print(f"Using first {len(test_records)} held-out questions for multi hand-off simulation.")

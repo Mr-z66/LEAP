@@ -219,13 +219,14 @@ python -m core_package.schedulers.simulate_observe_rollback_scheduler \
 - `dataset/svamp/train.jsonl`
 - `dataset/svamp/test.jsonl`
 
-目前推荐先跑和 GSM8K 完全对齐的版本：
+推荐优先跑规范版：
 
-- 用 `train.jsonl`
-- 在 train 内部切 held-out
-- 先把整条链跑通
+- `train=700` 用来构建轨迹、strict 标注、训练 probe
+- `test=300` 用来做最终单模型和 scheduler 评测
 
 ### 1. 构建 chunk 轨迹
+
+train:
 
 ```bash
 python -m core_package.pipelines.build_dataset \
@@ -234,7 +235,19 @@ python -m core_package.pipelines.build_dataset \
   --num-samples 700 \
   --model-path models/Qwen2.5-1.5B \
   --save-path dataset/svamp_15b_hidden_states.pt \
-  --max-new-tokens 256
+  --max-new-tokens 512
+```
+
+test:
+
+```bash
+python -m core_package.pipelines.build_dataset \
+  --dataset-name svamp \
+  --input-path dataset/svamp/test.jsonl \
+  --num-samples 300 \
+  --model-path models/Qwen2.5-1.5B \
+  --save-path dataset/svamp_test_15b_hidden_states.pt \
+  --max-new-tokens 512
 ```
 
 ### 2. strict 标注
@@ -282,28 +295,30 @@ python -m core_package.probes.train_probe_artifact_torch \
 
 ### 4. 跑 1.5B / 32B baseline
 
+这里改成在 `test=300` 上评测。
+
 1.5B:
 
 ```bash
 python -m evaluation.evaluate_model_only_accuracy \
-  --label-path dataset/svamp_labeled_training_data_strict.pt \
-  --artifact-path result/artifacts/probe_artifact_svamp_torch.pt \
+  --label-path dataset/svamp_test_15b_hidden_states.pt \
+  --artifact-path does_not_exist.pt \
   --trace-path does_not_exist.json \
   --model-path models/Qwen2.5-1.5B \
   --max-new-tokens 768 \
-  --output-path result/analysis_outputs/qwen25_15b_only_svamp_heldout.json
+  --output-path result/analysis_outputs/qwen25_15b_only_svamp_test.json
 ```
 
 32B:
 
 ```bash
 python -m evaluation.evaluate_model_only_accuracy \
-  --label-path dataset/svamp_labeled_training_data_strict.pt \
-  --artifact-path result/artifacts/probe_artifact_svamp_torch.pt \
+  --label-path dataset/svamp_test_15b_hidden_states.pt \
+  --artifact-path does_not_exist.pt \
   --trace-path does_not_exist.json \
   --model-path models/Qwen2.5-32B \
   --max-new-tokens 768 \
-  --output-path result/analysis_outputs/qwen25_32b_only_svamp_heldout.json
+  --output-path result/analysis_outputs/qwen25_32b_only_svamp_test.json
 ```
 
 ### 5. 跑 scheduler
@@ -311,15 +326,16 @@ python -m evaluation.evaluate_model_only_accuracy \
 ```bash
 python -m core_package.schedulers.simulate_observe_rollback_scheduler \
   --label-path dataset/svamp_labeled_training_data_strict.pt \
+  --eval-data-path dataset/svamp_test_15b_hidden_states.pt \
   --probe-artifact-path result/artifacts/probe_artifact_svamp_torch.pt \
-  --small-baseline-path result/analysis_outputs/qwen25_15b_only_svamp_heldout.json \
+  --small-baseline-path result/analysis_outputs/qwen25_15b_only_svamp_test.json \
   --thresholds 0.25,0.40,0.50 \
   --tail-bonus-weight 0.0 \
   --max-new-tokens 768 \
   --max-handoffs 2 \
   --large-handoff-chunks 2 \
   --cooldown-chunks 2 \
-  --trace-export-path result/traces/observe_rollback_traces_svamp_mainline.json
+  --trace-export-path result/traces/observe_rollback_traces_svamp_test_mainline.json
 ```
 
 ---
@@ -340,6 +356,12 @@ python -m core_package.pipelines.build_dataset \
   --answer-field your_answer_field \
   --save-path dataset/your_dataset_15b_hidden_states.pt
 ```
+
+如果你已经有单独的 official `train/test`，推荐像上面的 `SVAMP` 一样：
+
+- train 上做 strict 标注和 probe 训练
+- test 上只构建轨迹
+- 用 scheduler 的 `--eval-data-path` 在 test 上做最终评测
 
 后面步骤不变，只要把：
 
@@ -373,9 +395,9 @@ python -m core_package.pipelines.build_dataset \
 - probe artifact：
   `result/artifacts/probe_artifact_<name>_torch.pt`
 - 单模型输出：
-  `result/analysis_outputs/qwen25_<model>_only_<name>_heldout.json`
+  `result/analysis_outputs/qwen25_<model>_only_<name>_test.json`
 - scheduler trace：
-  `result/traces/observe_rollback_traces_<name>_mainline.json`
+  `result/traces/observe_rollback_traces_<name>_test_mainline.json`
 
 ## 常见注意事项
 
