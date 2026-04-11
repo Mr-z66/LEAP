@@ -12,28 +12,28 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_extraction import extract_final_answer
+from core_package.config import MODELS, SCHEDULER
 
 # ================= Default Configuration =================
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "dataset", "gsm8k_labeled_training_data_strict.pt")
-DEFAULT_SMALL_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-1.5B")
-DEFAULT_LARGE_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
-DEFAULT_TEST_SIZE = 0.2
-DEFAULT_RANDOM_STATE = 55
-DEFAULT_FEATURE_KEY = "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob"
-DEFAULT_MLP_HIDDEN_LAYERS = "512,128,32"
-DEFAULT_MLP_MAX_ITER = 300
-DEFAULT_MLP_ALPHA = 1e-4
-DEFAULT_MLP_LEARNING_RATE_INIT = 1e-3
-DEFAULT_THRESHOLDS = "0.15,0.20,0.25"
-DEFAULT_MAX_NEW_TOKENS = 768
-DEFAULT_MIN_CHUNK_TOKENS = 5
-DEFAULT_MAX_CHUNK_TOKENS = 30
-DEFAULT_TAIL_BONUS_WEIGHT = 0.0
-DEFAULT_MAX_HANDOFFS = 2
-DEFAULT_LARGE_HANDOFF_CHUNKS = 2
-DEFAULT_PROBE_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "result", "artifacts", "probe_artifact_torch.pt")
-DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
+DEFAULT_LABEL_PATH = SCHEDULER.label_path
+DEFAULT_SMALL_MODEL_PATH = MODELS.small_model_path
+DEFAULT_LARGE_MODEL_PATH = MODELS.large_model_path
+DEFAULT_TEST_SIZE = SCHEDULER.test_size
+DEFAULT_RANDOM_STATE = SCHEDULER.random_state
+DEFAULT_FEATURE_KEY = SCHEDULER.feature_key
+DEFAULT_MLP_HIDDEN_LAYERS = SCHEDULER.mlp_hidden_layers
+DEFAULT_MLP_MAX_ITER = SCHEDULER.mlp_max_iter
+DEFAULT_MLP_ALPHA = SCHEDULER.mlp_alpha
+DEFAULT_MLP_LEARNING_RATE_INIT = SCHEDULER.mlp_learning_rate_init
+DEFAULT_THRESHOLDS = SCHEDULER.thresholds
+DEFAULT_MAX_NEW_TOKENS = SCHEDULER.max_new_tokens
+DEFAULT_MIN_CHUNK_TOKENS = SCHEDULER.min_chunk_tokens
+DEFAULT_MAX_CHUNK_TOKENS = SCHEDULER.max_chunk_tokens
+DEFAULT_TAIL_BONUS_WEIGHT = SCHEDULER.tail_bonus_weight
+DEFAULT_MAX_HANDOFFS = SCHEDULER.max_handoffs
+DEFAULT_LARGE_HANDOFF_CHUNKS = SCHEDULER.large_handoff_chunks
+DEFAULT_PROBE_ARTIFACT_PATH = SCHEDULER.probe_artifact_path
+DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
 # ========================================================
 
@@ -92,7 +92,7 @@ def parse_args():
     parser.add_argument("--tail-bonus-weight", type=float, default=DEFAULT_TAIL_BONUS_WEIGHT, help="Add alpha * generation_progress to risk score.")
     parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
-    parser.add_argument("--cooldown-chunks", type=int, default=1, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
+    parser.add_argument("--cooldown-chunks", type=int, default=SCHEDULER.cooldown_chunks, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
     parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
     parser.add_argument("--trace-export-path", default=None, help="Optional JSON path to export per-question routing traces.")

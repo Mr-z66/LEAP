@@ -11,15 +11,16 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.answer_extraction import extract_final_answer
+from core_package.config import DATASET_BUILD, MODELS
 
 
-DEFAULT_MODEL_PATH = os.path.join(os.getcwd(), "models", "Qwen2.5-1.5B")
-DEFAULT_SAVE_PATH = "gsm8k_15b_hidden_states.pt"
-DEFAULT_MAX_NEW_TOKENS = 256
-DEFAULT_MIN_TOKENS = 5
-DEFAULT_MAX_TOKENS = 30
-DEFAULT_PUNCTUATIONS = [".", ",", "!", "?", "\n"]
-DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
+DEFAULT_MODEL_PATH = MODELS.small_model_path
+DEFAULT_SAVE_PATH = DATASET_BUILD.save_path
+DEFAULT_MAX_NEW_TOKENS = DATASET_BUILD.max_new_tokens
+DEFAULT_MIN_TOKENS = DATASET_BUILD.min_tokens
+DEFAULT_MAX_TOKENS = DATASET_BUILD.max_tokens
+DEFAULT_PUNCTUATIONS = DATASET_BUILD.punctuations
+DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
 
 
 def parse_args():

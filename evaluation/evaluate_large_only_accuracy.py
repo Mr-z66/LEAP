@@ -6,13 +6,13 @@ from typing import Dict, List, Optional
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_extraction import extract_final_answer
+from core_package.config import EVALUATION, MODELS
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "dataset", "gsm8k_labeled_training_data_strict.pt")
-DEFAULT_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "Qwen2.5-32B")
-DEFAULT_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "result", "artifacts", "probe_artifact_torch.pt")
-DEFAULT_TRACE_PATH = os.path.join(PROJECT_ROOT, "result", "traces", "observe_rollback_traces_384.json")
-DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
+DEFAULT_LABEL_PATH = EVALUATION.label_path
+DEFAULT_MODEL_PATH = MODELS.large_model_path
+DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
+DEFAULT_TRACE_PATH = EVALUATION.trace_path
+DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
 
 
 def parse_args():
@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH, help="Path to large model.")
     parser.add_argument("--artifact-path", default=DEFAULT_ARTIFACT_PATH, help="Optional artifact path to reuse held-out test_question_ids.")
     parser.add_argument("--trace-path", default=DEFAULT_TRACE_PATH, help="Optional routing trace JSON to recover the same held-out question ids safely.")
-    parser.add_argument("--max-new-tokens", type=int, default=768, help="Max new tokens for large-model generation.")
+    parser.add_argument("--max-new-tokens", type=int, default=EVALUATION.max_new_tokens, help="Max new tokens for large-model generation.")
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on number of test questions.")
     parser.add_argument("--output-path", default=None, help="Optional JSON output path for per-question predictions.")
     return parser.parse_args()

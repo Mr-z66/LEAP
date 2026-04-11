@@ -7,26 +7,26 @@ import numpy as np
 import torch
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
+from core_package.config import PROBE_TRAIN
 
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "dataset", "gsm8k_labeled_training_data_strict.pt")
-DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "result", "artifacts", "probe_artifact_torch.pt")
-DEFAULT_TEST_SIZE = 0.2
-DEFAULT_VAL_SIZE = 0.2
-DEFAULT_RANDOM_STATE = 55
-DEFAULT_FEATURE_KEY = "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob"
-DEFAULT_LABEL_KEY = "label"
-DEFAULT_HIDDEN_LAYERS = "128,32"
-DEFAULT_DROPOUT = 0.1
-DEFAULT_EPOCHS = 60
-DEFAULT_BATCH_SIZE = 256
-DEFAULT_LEARNING_RATE = 5e-4
-DEFAULT_WEIGHT_DECAY = 1e-3
-DEFAULT_POS_WEIGHT = 1.0
-DEFAULT_LOW_ENTROPY_ERROR_WEIGHT = 4.0
-DEFAULT_EARLY_STOPPING_PATIENCE = 8
-DEFAULT_MIN_EPOCHS = 10
+DEFAULT_LABEL_PATH = PROBE_TRAIN.label_path
+DEFAULT_OUTPUT_PATH = PROBE_TRAIN.output_path
+DEFAULT_TEST_SIZE = PROBE_TRAIN.test_size
+DEFAULT_VAL_SIZE = PROBE_TRAIN.val_size
+DEFAULT_RANDOM_STATE = PROBE_TRAIN.random_state
+DEFAULT_FEATURE_KEY = PROBE_TRAIN.feature_key
+DEFAULT_LABEL_KEY = PROBE_TRAIN.label_key
+DEFAULT_HIDDEN_LAYERS = PROBE_TRAIN.hidden_layers
+DEFAULT_DROPOUT = PROBE_TRAIN.dropout
+DEFAULT_EPOCHS = PROBE_TRAIN.epochs
+DEFAULT_BATCH_SIZE = PROBE_TRAIN.batch_size
+DEFAULT_LEARNING_RATE = PROBE_TRAIN.learning_rate
+DEFAULT_WEIGHT_DECAY = PROBE_TRAIN.weight_decay
+DEFAULT_POS_WEIGHT = PROBE_TRAIN.pos_weight
+DEFAULT_LOW_ENTROPY_ERROR_WEIGHT = PROBE_TRAIN.low_entropy_error_weight
+DEFAULT_EARLY_STOPPING_PATIENCE = PROBE_TRAIN.early_stopping_patience
+DEFAULT_MIN_EPOCHS = PROBE_TRAIN.min_epochs
 
 
 def parse_args():

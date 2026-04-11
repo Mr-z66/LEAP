@@ -6,13 +6,14 @@ import re
 import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from core_package.config import MODELS, STRICT_LABEL
 
 # ================= Default Configuration =================
-DEFAULT_INPUT_DATA_PATH = "gsm8k_15b_hidden_states.pt"
-DEFAULT_OUTPUT_DATA_PATH = "dataset/gsm8k_labeled_training_data_strict.pt"
-DEFAULT_MODEL_PATH_32B = os.path.join(os.getcwd(), "models", "Qwen2.5-32B")
-DEFAULT_MAX_JUDGE_TOKENS = 128
-DEFAULT_SAVE_EVERY = 10
+DEFAULT_INPUT_DATA_PATH = STRICT_LABEL.input_path
+DEFAULT_OUTPUT_DATA_PATH = STRICT_LABEL.output_path
+DEFAULT_MODEL_PATH_32B = MODELS.large_model_path
+DEFAULT_MAX_JUDGE_TOKENS = STRICT_LABEL.max_judge_tokens
+DEFAULT_SAVE_EVERY = STRICT_LABEL.save_every
 # ========================================================
 
 

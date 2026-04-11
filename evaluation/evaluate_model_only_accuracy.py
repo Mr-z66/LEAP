@@ -6,12 +6,12 @@ from typing import Dict, List, Optional
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_extraction import extract_final_answer
+from core_package.config import EVALUATION, MODELS
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "dataset", "gsm8k_labeled_training_data_strict.pt")
-DEFAULT_ARTIFACT_PATH = os.path.join(PROJECT_ROOT, "result", "artifacts", "probe_artifact_torch.pt")
-DEFAULT_TRACE_PATH = os.path.join(PROJECT_ROOT, "result", "traces", "observe_rollback_traces_768.json")
-DEFAULT_SYSTEM_PROMPT = "You are a helpful math assistant. Please reason step by step."
+DEFAULT_LABEL_PATH = EVALUATION.label_path
+DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
+DEFAULT_TRACE_PATH = EVALUATION.trace_path
+DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
 
 class TorchMLPProbe(torch.nn.Module):
     def __init__(self, input_dim, hidden_layers, dropout=0.0):
@@ -45,7 +45,7 @@ def parse_args():
         default=DEFAULT_TRACE_PATH,
         help="Optional routing trace JSON to recover the same held-out question ids safely.",
     )
-    parser.add_argument("--max-new-tokens", type=int, default=768, help="Max new tokens for generation.")
+    parser.add_argument("--max-new-tokens", type=int, default=EVALUATION.max_new_tokens, help="Max new tokens for generation.")
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on number of test questions.")
     parser.add_argument("--output-path", default=None, help="Optional JSON output path for detailed predictions.")
     return parser.parse_args()
