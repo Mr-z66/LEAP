@@ -98,6 +98,11 @@ def parse_args():
     parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
     parser.add_argument("--cooldown-chunks", type=int, default=SCHEDULER.cooldown_chunks, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
+    parser.add_argument(
+        "--require-consecutive-risk",
+        action="store_true",
+        help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
+    )
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
     parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
     parser.add_argument("--trace-export-path", default=None, help="Optional JSON path to export per-question routing traces.")
@@ -671,6 +676,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     reset_prev_chunk = False
     cooldown_remaining = 0
     route_trace = []
+    previous_combined_score = None
 
     while total_tokens < args.max_new_tokens:
         safe_prefix = prefix
@@ -706,8 +712,22 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         positive_prob = probe.predict_proba(features)[0, 1]
         trigger_score = artifact_trigger_score(artifact, positive_prob) if artifact is not None else (1.0 - positive_prob)
         combined_score = trigger_score + args.tail_bonus_weight * progress_ratio
+        prev_score_for_trace = previous_combined_score
 
-        if combined_score >= threshold and handoff_count < args.max_handoffs and cooldown_remaining <= 0:
+        # SVAMP false-alarm mitigation:
+        # When enabled, we only trigger after two consecutive risky chunks.
+        # This keeps the old behavior fully recoverable: do not pass
+        # --require-consecutive-risk and the scheduler falls back to the
+        # original single-chunk trigger rule.
+        meets_risk_trigger = combined_score >= threshold
+        if args.require_consecutive_risk:
+            meets_risk_trigger = (
+                combined_score >= threshold
+                and previous_combined_score is not None
+                and previous_combined_score >= threshold
+            )
+
+        if meets_risk_trigger and handoff_count < args.max_handoffs and cooldown_remaining <= 0:
             triggered = True
             trigger_scores.append(combined_score)
             trigger_progresses.append(progress_ratio)
@@ -720,8 +740,10 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     "generated_token_count": small_chunk["generated_token_count"],
                     "trigger_score": float(trigger_score),
                     "combined_score": float(combined_score),
+                    "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
                     "progress_ratio": float(progress_ratio),
                     "cut_reason": small_chunk["cut_reason"],
+                    "trigger_rule": "consecutive_two_chunk_risk" if args.require_consecutive_risk else "single_chunk_risk",
                 }
             )
 
@@ -752,6 +774,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             chunk_index += large_result["generated_chunks"]
             reset_prev_chunk = True
             cooldown_remaining = args.cooldown_chunks
+            previous_combined_score = None
             if large_result["reached_eos"]:
                 break
             continue
@@ -764,6 +787,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 "generated_token_count": small_chunk["generated_token_count"],
                 "trigger_score": float(trigger_score),
                 "combined_score": float(combined_score),
+                "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
                 "progress_ratio": float(progress_ratio),
                 "cut_reason": small_chunk["cut_reason"],
             }
@@ -772,12 +796,22 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         chunk_index += 1
         if cooldown_remaining > 0:
             cooldown_remaining -= 1
+        previous_combined_score = combined_score
         if small_chunk["reached_eos"]:
             break
 
-    final_reasoning = prefix or ""
-    final_answer = extract_final_answer(final_reasoning)
-    scheduled_is_correct = final_answer == ground_truth_final_answer
+    # Evaluation hygiene fix:
+    # If no handoff happened, the scheduler should exactly inherit the stored
+    # small-model baseline instead of being judged on chunk-by-chunk decoding
+    # drift. This keeps "no trigger" rows from looking like fake harms/rescues.
+    if handoff_count == 0:
+        final_reasoning = prefix or ""
+        final_answer = record.get("small_final_answer")
+        scheduled_is_correct = bool(record.get("small_is_correct", False))
+    else:
+        final_reasoning = prefix or ""
+        final_answer = extract_final_answer(final_reasoning)
+        scheduled_is_correct = final_answer == ground_truth_final_answer
     return {
         "scheduled_is_correct": scheduled_is_correct,
         "scheduled_final_answer": final_answer,
