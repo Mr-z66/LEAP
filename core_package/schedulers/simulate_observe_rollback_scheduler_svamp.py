@@ -11,7 +11,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from core_package.answer_extraction_svamp import extract_final_answer_svamp
+from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import MODELS, SCHEDULER
 
 # ================= Default Configuration =================
@@ -34,6 +34,7 @@ DEFAULT_MAX_HANDOFFS = SCHEDULER.max_handoffs
 DEFAULT_LARGE_HANDOFF_CHUNKS = SCHEDULER.large_handoff_chunks
 DEFAULT_PROBE_ARTIFACT_PATH = SCHEDULER.probe_artifact_path
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_ANSWER_TYPE = "svamp_numeric"
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
 # ========================================================
 
@@ -111,6 +112,7 @@ def parse_args():
         default=None,
         help="Optional JSON produced by evaluation/evaluate_model_only_accuracy.py to override stored small-model correctness.",
     )
+    parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
     return parser.parse_args()
 
 
@@ -663,6 +665,7 @@ def to_jsonable(value):
 def simulate_question(record, small_model, small_tokenizer, large_model, large_tokenizer, probe, scaler, threshold, args, artifact=None):
     question = record["question"]
     ground_truth_final_answer = record["ground_truth_final_answer"]
+    answer_extractor = get_answer_extractor(args.answer_type)
     question_prompt_token_count = prompt_token_count(small_tokenizer, question)
     prefix = None
     total_tokens = 0
@@ -810,8 +813,12 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         scheduled_is_correct = bool(record.get("small_is_correct", False))
     else:
         final_reasoning = prefix or ""
-        final_answer = extract_final_answer_svamp(final_reasoning)
-        scheduled_is_correct = final_answer == ground_truth_final_answer
+        final_answer, has_answer = answer_extractor(final_reasoning)
+        scheduled_is_correct = has_answer and check_answer_correctness(
+            final_answer,
+            ground_truth_final_answer,
+            args.answer_type,
+        )
     return {
         "scheduled_is_correct": scheduled_is_correct,
         "scheduled_final_answer": final_answer,

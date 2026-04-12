@@ -11,6 +11,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.answer_extraction import extract_final_answer
+from core_package.answer_registry import check_answer_correctness, get_answer_extractor, resolve_answer_type
 from core_package.config import DATASET_BUILD, MODELS
 
 
@@ -38,6 +39,11 @@ def parse_args():
     parser.add_argument("--input-path", default=None, help="Local json/jsonl path for svamp/jsonl modes.")
     parser.add_argument("--question-field", default="question", help="Question field for jsonl mode.")
     parser.add_argument("--answer-field", default="answer", help="Answer field for jsonl mode.")
+    parser.add_argument(
+        "--answer-type",
+        default=None,
+        help="Optional answer protocol override. Defaults keep GSM8K on the legacy extractor and route SVAMP to the SVAMP-specific extractor.",
+    )
     parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT)
     return parser.parse_args()
 
@@ -326,6 +332,8 @@ def format_sample(row: Dict, idx: int, args) -> Dict:
 
 def main():
     args = parse_args()
+    answer_type = resolve_answer_type(args.dataset_name, args.answer_type)
+    answer_extractor = get_answer_extractor(answer_type)
 
     punctuations = list(DEFAULT_PUNCTUATIONS)
     print(f"Loading base model from: {args.model_path}")
@@ -360,11 +368,14 @@ def main():
         )
 
         generated_text = decode_tokens(tokenizer, generated_token_ids).strip()
-        model_final_answer = extract_final_answer(generated_text)
-        if model_final_answer is None:
-            model_final_answer = extract_last_number(generated_text)
-            if model_final_answer is not None:
-                model_final_answer = normalize_numeric_text(model_final_answer)
+        model_final_answer, has_model_answer = answer_extractor(generated_text)
+        if not has_model_answer:
+            model_final_answer = ""
+        is_final_correct = check_answer_correctness(
+            model_final_answer,
+            row["ground_truth_final_answer"],
+            answer_type,
+        )
 
         chunks = build_chunks(
             tokenizer=tokenizer,
@@ -391,7 +402,8 @@ def main():
                 "generated_text": generated_text,
                 "generated_token_ids": generated_token_ids,
                 "model_final_answer": model_final_answer,
-                "is_final_correct": model_final_answer == row["ground_truth_final_answer"],
+                "is_final_correct": is_final_correct,
+                "answer_type": answer_type,
                 "chunking_method": "heuristic_punctuation_minmax",
                 "chunking_config": {
                     "min_tokens": args.min_tokens,
