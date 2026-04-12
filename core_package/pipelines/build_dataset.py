@@ -10,7 +10,6 @@ from datasets import load_dataset
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from core_package.answer_extraction import extract_final_answer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor, resolve_answer_type
 from core_package.config import DATASET_BUILD, MODELS
 
@@ -30,7 +29,7 @@ def parse_args():
     )
     parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH, help="Local model path.")
     parser.add_argument("--save-path", default=DEFAULT_SAVE_PATH, help="Output .pt file path.")
-    parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "jsonl"], default="gsm8k")
+    parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "math500", "jsonl"], default="gsm8k")
     parser.add_argument("--dataset-split", default=None, help="Dataset split to use.")
     parser.add_argument("--num-samples", type=int, default=1000, help="Maximum number of samples to process.")
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
@@ -57,7 +56,7 @@ def extract_last_number(text: str):
     return matches[-1] if matches else None
 
 
-def normalize_answer_text(value) -> Optional[str]:
+def normalize_answer_text(value, answer_type: str) -> Optional[str]:
     if value is None:
         return None
     if isinstance(value, (int, float)):
@@ -67,9 +66,8 @@ def normalize_answer_text(value) -> Optional[str]:
     if not text:
         return None
 
-    extracted = extract_final_answer(text)
-    if extracted is not None:
-        return extracted
+    if answer_type == "boxed":
+        return text
 
     numeric = extract_last_number(text)
     if numeric is not None:
@@ -287,7 +285,7 @@ def load_source_rows(args) -> Iterable[Dict]:
     return rows
 
 
-def format_sample(row: Dict, idx: int, args) -> Dict:
+def format_sample(row: Dict, idx: int, args, answer_type: str) -> Dict:
     if args.dataset_name == "gsm8k":
         question = str(row["question"]).strip()
         answer_text = str(row["answer"]).strip()
@@ -295,7 +293,7 @@ def format_sample(row: Dict, idx: int, args) -> Dict:
             "question_id": idx,
             "question": question,
             "ground_truth_answer_text": answer_text,
-            "ground_truth_final_answer": normalize_answer_text(answer_text),
+            "ground_truth_final_answer": normalize_answer_text(answer_text, answer_type),
             "source_meta": {"dataset_name": "gsm8k"},
         }
 
@@ -309,12 +307,29 @@ def format_sample(row: Dict, idx: int, args) -> Dict:
             "question_id": idx,
             "question": question,
             "ground_truth_answer_text": answer_text,
-            "ground_truth_final_answer": normalize_answer_text(answer_value),
+            "ground_truth_final_answer": normalize_answer_text(answer_value, answer_type),
             "source_meta": {
                 "dataset_name": "svamp",
                 "id": row.get("ID"),
                 "type": row.get("Type"),
                 "equation": row.get("Equation"),
+            },
+        }
+
+    if args.dataset_name == "math500":
+        question = str(row.get("problem", "")).strip()
+        answer_value = row.get("answer")
+        answer_text = "" if answer_value is None else str(answer_value).strip()
+        return {
+            "question_id": idx,
+            "question": question,
+            "ground_truth_answer_text": answer_text,
+            "ground_truth_final_answer": normalize_answer_text(answer_value, answer_type),
+            "source_meta": {
+                "dataset_name": "math500",
+                "subject": row.get("subject"),
+                "level": row.get("level"),
+                "unique_id": row.get("unique_id"),
             },
         }
 
@@ -325,7 +340,7 @@ def format_sample(row: Dict, idx: int, args) -> Dict:
         "question_id": idx,
         "question": question,
         "ground_truth_answer_text": answer_text,
-        "ground_truth_final_answer": normalize_answer_text(answer_value),
+        "ground_truth_final_answer": normalize_answer_text(answer_value, answer_type),
         "source_meta": {"dataset_name": "jsonl"},
     }
 
@@ -347,7 +362,7 @@ def main():
     model.eval()
 
     dataset_rows = load_source_rows(args)
-    formatted_rows = [format_sample(row, idx, args) for idx, row in enumerate(dataset_rows)]
+    formatted_rows = [format_sample(row, idx, args, answer_type) for idx, row in enumerate(dataset_rows)]
 
     all_extracted_data = []
     for row in tqdm(formatted_rows, desc="Building heuristic chunks"):

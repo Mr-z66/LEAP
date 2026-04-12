@@ -5,13 +5,14 @@ from typing import Dict, List, Optional
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from core_package.answer_extraction import extract_final_answer
+from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import EVALUATION, MODELS
 
 DEFAULT_LABEL_PATH = EVALUATION.label_path
 DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
 DEFAULT_TRACE_PATH = EVALUATION.trace_path
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_ANSWER_TYPE = "legacy_math"
 
 class TorchMLPProbe(torch.nn.Module):
     def __init__(self, input_dim, hidden_layers, dropout=0.0):
@@ -48,12 +49,14 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=EVALUATION.max_new_tokens, help="Max new tokens for generation.")
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on number of test questions.")
     parser.add_argument("--output-path", default=None, help="Optional JSON output path for detailed predictions.")
+    parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
+    parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT, help="System prompt used during generation.")
     return parser.parse_args()
 
 
-def build_inputs(tokenizer, question: str):
+def build_inputs(tokenizer, question: str, system_prompt: str):
     messages = [
-        {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": question},
     ]
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -150,6 +153,7 @@ def main():
 
     print(f"Evaluating model-only on questions: {len(eval_ids)}")
     print(f"Loading model from: {args.model_path}")
+    answer_extractor = get_answer_extractor(args.answer_type)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, local_files_only=True)
     model = AutoModelForCausalLM.from_pretrained(
@@ -165,7 +169,7 @@ def main():
 
     for idx, qid in enumerate(eval_ids, start=1):
         rec = question_table[qid]
-        inputs = build_inputs(tokenizer, rec["question"])
+        inputs = build_inputs(tokenizer, rec["question"], args.system_prompt)
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
 
@@ -181,15 +185,16 @@ def main():
 
         gen_ids = output_ids[0, input_ids.shape[1]:]
         reasoning = tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
-        pred = extract_final_answer(reasoning)
+        pred, has_answer = answer_extractor(reasoning)
         gt = rec["ground_truth_final_answer"]
-        is_correct = pred == gt
+        is_correct = has_answer and check_answer_correctness(pred, gt, args.answer_type)
         correct += int(is_correct)
 
         rows.append(
             {
                 "question_id": qid,
                 "pred_final_answer": pred,
+                "has_extracted_answer": has_answer,
                 "ground_truth_final_answer": gt,
                 "is_correct": is_correct,
                 "generated_token_count": int(gen_ids.shape[0]),

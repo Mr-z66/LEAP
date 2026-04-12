@@ -134,6 +134,10 @@ def _extract_boxed_content(text: str) -> Optional[str]:
     return None
 
 
+def _extract_last_boxed_answer(text: str) -> Optional[str]:
+    return _extract_boxed_content(text)
+
+
 def _extract_last_number(text: str) -> Optional[str]:
     matches = NUMBER_PATTERN.findall(text.replace(",", ""))
     return matches[-1] if matches else None
@@ -267,11 +271,54 @@ def _extract_final_answer_svamp(text: str) -> Optional[str]:
     return _extract_tail_fallback(normalized_text)
 
 
+def _strip_outer_braces(text: str) -> str:
+    text = text.strip()
+    while text.startswith("{") and text.endswith("}"):
+        depth = 0
+        is_balanced = True
+        for idx, char in enumerate(text):
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0 and idx != len(text) - 1:
+                    is_balanced = False
+                    break
+        if is_balanced:
+            text = text[1:-1].strip()
+        else:
+            break
+    return text
+
+
+def _normalize_boxed_math(text: str) -> str:
+    normalized = str(text).strip()
+    normalized = normalized.strip("$")
+    normalized = normalized.replace("\\left", "").replace("\\right", "")
+    normalized = normalized.replace("\\!", "")
+    normalized = normalized.replace("\\,", "")
+    normalized = normalized.replace("\\;", "")
+    normalized = normalized.replace("\\:", "")
+    normalized = normalized.replace("\\ ", "")
+    normalized = normalized.replace("\n", " ")
+    normalized = re.sub(r"\s+", "", normalized)
+    normalized = normalized.rstrip(".")
+    normalized = _strip_outer_braces(normalized)
+    return normalized
+
+
 def extract_legacy_math_answer(text: str) -> Tuple[str, bool]:
     answer = extract_final_answer(text)
     if answer is None:
         return "", False
     return str(answer), True
+
+
+def extract_boxed_answer(text: str) -> Tuple[str, bool]:
+    answer = _extract_last_boxed_answer(text)
+    if answer is None:
+        return "", False
+    return answer.strip(), True
 
 
 def extract_svamp_numeric_answer(text: str) -> Tuple[str, bool]:
@@ -287,6 +334,9 @@ def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> b
     if not predicted_text or not actual_text:
         return False
 
+    if answer_type == "boxed":
+        return _normalize_boxed_math(predicted_text) == _normalize_boxed_math(actual_text)
+
     if answer_type in {"legacy_math", "svamp_numeric"}:
         return predicted_text == actual_text
 
@@ -295,6 +345,7 @@ def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> b
 
 def get_answer_extractor(answer_type: str) -> AnswerExtractor:
     extractors = {
+        "boxed": extract_boxed_answer,
         "legacy_math": extract_legacy_math_answer,
         "svamp_numeric": extract_svamp_numeric_answer,
     }
@@ -309,5 +360,7 @@ def resolve_answer_type(dataset_name: str, override: Optional[str] = None) -> st
 
     if dataset_name == "svamp":
         return "svamp_numeric"
+    if dataset_name == "math500":
+        return "boxed"
 
     return "legacy_math"
