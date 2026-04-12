@@ -69,6 +69,39 @@ def extract_candidate_numbers(text: str):
     return list(re.finditer(r"-?\d+(?:\.\d+)?", text))
 
 
+def extract_number_after_last_equals(clause: str) -> Optional[str]:
+    parts = clause.split("=")
+    if len(parts) < 2:
+        return None
+    rhs = parts[-1]
+    value = extract_last_number(rhs)
+    return normalize_extracted_number(value)
+
+
+def extract_number_after_last_marker(clause: str) -> Optional[str]:
+    lower = clause.lower()
+    markers = [
+        "final answer",
+        "the answer is",
+        "answer:",
+        "therefore",
+        "thus",
+        "hence",
+        "so,",
+        "so ",
+    ]
+    last_idx = -1
+    for marker in markers:
+        idx = lower.rfind(marker)
+        if idx > last_idx:
+            last_idx = idx
+    if last_idx < 0:
+        return None
+    tail = clause[last_idx:]
+    value = extract_last_number(tail)
+    return normalize_extracted_number(value)
+
+
 def score_candidate(clause: str, match: re.Match) -> tuple[int, int]:
     start, end = match.span()
     value = match.group(0)
@@ -78,10 +111,14 @@ def score_candidate(clause: str, match: re.Match) -> tuple[int, int]:
 
     if any(marker in before for marker in ("therefore", "thus", "hence", "so", "final answer", "answer is")):
         score += 6
+    if "=" in before[-12:]:
+        score += 8
     if re.search(r"(=|is|are|was|were|be|gives|get|gets|got|total|altogether|left|remain|remaining|spent|made|needs|need|cost|costs|worked|harvested|read|has|have)\s*$", before):
         score += 5
     if re.search(r"^\s*(hours?|minutes?|days?|weeks?|months?|years?|feet|books?|pages?|games?|bottles?|bags?|cookies?|cakes?|shirts?|chapters?|dollars?|oranges?|children|people|crayons?|tomatoes?|potatoes?)\b", after):
         score += 4
+    if any(marker in before for marker in ("initially", "at first", "start with", "started with", "yesterday", "today", "this morning", "morning", "afternoon", "evening")):
+        score -= 3
     if any(marker in after for marker in ("per day", "per minute", "per bag", "per person")):
         score -= 3
     if "%" in before or "%" in after:
@@ -94,6 +131,14 @@ def score_candidate(clause: str, match: re.Match) -> tuple[int, int]:
 
 
 def extract_from_clause(clause: str) -> Optional[str]:
+    equation_value = extract_number_after_last_equals(clause)
+    if equation_value is not None:
+        return equation_value
+
+    marker_value = extract_number_after_last_marker(clause)
+    if marker_value is not None:
+        return marker_value
+
     matches = extract_candidate_numbers(clause)
     if not matches:
         return None
@@ -130,12 +175,12 @@ def extract_final_answer_svamp(text: str) -> Optional[str]:
 
     boxed = extract_boxed_content(normalized_text)
     if boxed:
-        denominator = extract_fraction_denominator(boxed)
-        if denominator is not None:
-            return denominator
         boxed_number = extract_last_number(boxed)
         if boxed_number is not None:
             return normalize_extracted_number(boxed_number)
+        denominator = extract_fraction_denominator(boxed)
+        if denominator is not None:
+            return denominator
 
     tail = normalized_text[-800:]
     sentences = split_sentences(tail)
@@ -155,6 +200,10 @@ def extract_final_answer_svamp(text: str) -> Optional[str]:
         value = extract_from_clause(trim_to_conclusion_span(clause))
         if value is not None:
             return value
+
+    tail_equation_value = extract_number_after_last_equals(tail)
+    if tail_equation_value is not None:
+        return tail_equation_value
 
     tail_number = extract_last_number(tail)
     if tail_number is not None:
