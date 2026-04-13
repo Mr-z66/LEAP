@@ -7,6 +7,7 @@ import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.config import MODELS, STRICT_LABEL
+from core_package.vllm_utils import build_openai_messages, infer_served_model_name, request_vllm_chat_completion
 
 # ================= Default Configuration =================
 DEFAULT_INPUT_DATA_PATH = STRICT_LABEL.input_path
@@ -29,6 +30,11 @@ def parse_args():
     parser.add_argument("--resume", action="store_true", help="Resume from an existing output file if present.")
     parser.add_argument("--stop-after-first-error", action="store_true", help="Stop labeling later chunks once a question gets its first error label.")
     parser.add_argument("--include-reference-answer", action="store_true", help="Include the ground-truth answer in the judge prompt.")
+    parser.add_argument("--backend", choices=["hf", "vllm"], default="hf", help="Judge backend.")
+    parser.add_argument("--vllm-base-url", default="http://127.0.0.1:8000", help="Base URL for an OpenAI-compatible vLLM server.")
+    parser.add_argument("--vllm-api-key", default="EMPTY", help="API key for the vLLM OpenAI-compatible server.")
+    parser.add_argument("--vllm-model-name", default=None, help="Served model name exposed by the vLLM server.")
+    parser.add_argument("--vllm-timeout", type=float, default=300.0, help="HTTP timeout in seconds for vLLM calls.")
     return parser.parse_args()
 
 
@@ -145,13 +151,18 @@ if args.num_samples is not None:
 
 print(f"Loading judge model from: {args.model_path}")
 tokenizer = AutoTokenizer.from_pretrained(args.model_path, local_files_only=True)
-model = AutoModelForCausalLM.from_pretrained(
-    args.model_path,
-    torch_dtype=torch.bfloat16,
-    device_map="auto",
-    local_files_only=True,
-)
-model.eval()
+if args.backend == "hf":
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_path,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        local_files_only=True,
+    )
+    model.eval()
+else:
+    model = None
+    served_name = infer_served_model_name(args.model_path, args.vllm_model_name)
+    print(f"Using vLLM judge backend: {args.vllm_base_url} | served_model={served_name}")
 
 labeled_dataset = load_existing_labels(args.output_path, args.resume)
 processed_questions = build_processed_question_set(labeled_dataset)
@@ -177,21 +188,32 @@ for sample in tqdm(questions_to_process, desc="Labeling heuristic chunks with st
         )
 
         messages = [{"role": "user", "content": prompt}]
-        chat_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        inputs = tokenizer([chat_text], return_tensors="pt").to(model.device)
+        if args.backend == "hf":
+            chat_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            inputs = tokenizer([chat_text], return_tensors="pt").to(model.device)
 
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=args.max_judge_tokens,
-                do_sample=False,
-                pad_token_id=tokenizer.eos_token_id,
+            with torch.no_grad():
+                outputs = model.generate(
+                    **inputs,
+                    max_new_tokens=args.max_judge_tokens,
+                    do_sample=False,
+                    pad_token_id=tokenizer.eos_token_id,
+                )
+
+            raw_response = tokenizer.decode(
+                outputs[0][inputs.input_ids.shape[1]:],
+                skip_special_tokens=True,
+            ).strip()
+        else:
+            response = request_vllm_chat_completion(
+                base_url=args.vllm_base_url,
+                api_key=args.vllm_api_key,
+                model_name=infer_served_model_name(args.model_path, args.vllm_model_name),
+                messages=build_openai_messages(None, prompt),
+                max_tokens=args.max_judge_tokens,
+                timeout=args.vllm_timeout,
             )
-
-        raw_response = tokenizer.decode(
-            outputs[0][inputs.input_ids.shape[1]:],
-            skip_special_tokens=True,
-        ).strip()
+            raw_response = response["text"].strip()
         judge_result = parse_judge_response(raw_response)
 
         labeled_dataset.append(
@@ -221,6 +243,7 @@ for sample in tqdm(questions_to_process, desc="Labeling heuristic chunks with st
                 "model_final_answer": sample["model_final_answer"],
                 "is_final_correct": sample["is_final_correct"],
                 "judge_model_path": args.model_path,
+                "judge_backend": args.backend,
                 "judge_mode": "strict_prefix_plus_reference" if args.include_reference_answer else "strict_prefix_only",
                 "judge_prompt": prompt,
                 "judge_raw_response": raw_response,

@@ -8,6 +8,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import EVALUATION, MODELS
 from core_package.math500_protocol import append_math500_instruction
+from core_package.vllm_utils import build_openai_messages, infer_served_model_name, request_vllm_chat_completion
 
 DEFAULT_LABEL_PATH = EVALUATION.label_path
 DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
@@ -53,6 +54,11 @@ def parse_args():
     parser.add_argument("--output-path", default=None, help="Optional JSON output path for detailed predictions.")
     parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
     parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT, help="System prompt used during generation.")
+    parser.add_argument("--backend", choices=["hf", "vllm"], default="hf", help="Generation backend for evaluation.")
+    parser.add_argument("--vllm-base-url", default="http://127.0.0.1:8000", help="Base URL for an OpenAI-compatible vLLM server.")
+    parser.add_argument("--vllm-api-key", default="EMPTY", help="API key for the vLLM OpenAI-compatible server.")
+    parser.add_argument("--vllm-model-name", default=None, help="Served model name exposed by the vLLM server.")
+    parser.add_argument("--vllm-timeout", type=float, default=300.0, help="HTTP timeout in seconds for vLLM calls.")
     return parser.parse_args()
 
 
@@ -72,6 +78,12 @@ def build_inputs(tokenizer, question: str, system_prompt: str, answer_type: str)
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt")
     return inputs
+
+
+def build_question_text(question: str, answer_type: str) -> str:
+    if answer_type == "math500_qwen_boxed":
+        return append_math500_instruction(question)
+    return question
 
 
 def load_question_table(dataset) -> Dict[int, Dict]:
@@ -167,35 +179,54 @@ def main():
     answer_extractor = get_answer_extractor(args.answer_type)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, local_files_only=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path,
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
-        local_files_only=True,
-    )
-    model.eval()
+    if args.backend == "hf":
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model_path,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+            local_files_only=True,
+        )
+        model.eval()
+    else:
+        model = None
+        served_name = infer_served_model_name(args.model_path, args.vllm_model_name)
+        print(f"Using vLLM backend: {args.vllm_base_url} | served_model={served_name}")
 
     rows = []
     correct = 0
 
     for idx, qid in enumerate(eval_ids, start=1):
         rec = question_table[qid]
-        inputs = build_inputs(tokenizer, rec["question"], args.system_prompt, args.answer_type)
-        input_ids = inputs.input_ids.to(model.device)
-        attention_mask = inputs.attention_mask.to(model.device)
+        question_text = build_question_text(rec["question"], args.answer_type)
+        if args.backend == "hf":
+            inputs = build_inputs(tokenizer, rec["question"], args.system_prompt, args.answer_type)
+            input_ids = inputs.input_ids.to(model.device)
+            attention_mask = inputs.attention_mask.to(model.device)
 
-        with torch.no_grad():
-            output_ids = model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=args.max_new_tokens,
-                do_sample=False,
-                eos_token_id=tokenizer.eos_token_id,
-                pad_token_id=tokenizer.eos_token_id,
+            with torch.no_grad():
+                output_ids = model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    max_new_tokens=args.max_new_tokens,
+                    do_sample=False,
+                    eos_token_id=tokenizer.eos_token_id,
+                    pad_token_id=tokenizer.eos_token_id,
+                )
+
+            gen_ids = output_ids[0, input_ids.shape[1]:]
+            reasoning = tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
+            generated_token_count = int(gen_ids.shape[0])
+        else:
+            response = request_vllm_chat_completion(
+                base_url=args.vllm_base_url,
+                api_key=args.vllm_api_key,
+                model_name=infer_served_model_name(args.model_path, args.vllm_model_name),
+                messages=build_openai_messages(args.system_prompt, question_text),
+                max_tokens=args.max_new_tokens,
+                timeout=args.vllm_timeout,
             )
-
-        gen_ids = output_ids[0, input_ids.shape[1]:]
-        reasoning = tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
+            reasoning = response["text"].strip()
+            generated_token_count = len(tokenizer.encode(reasoning, add_special_tokens=False))
         pred, has_answer = answer_extractor(reasoning)
         gt = rec["ground_truth_final_answer"]
         is_correct = has_answer and check_answer_correctness(pred, gt, args.answer_type)
@@ -208,7 +239,7 @@ def main():
                 "has_extracted_answer": has_answer,
                 "ground_truth_final_answer": gt,
                 "is_correct": is_correct,
-                "generated_token_count": int(gen_ids.shape[0]),
+                "generated_token_count": generated_token_count,
                 "reasoning": reasoning,
             }
         )
@@ -230,6 +261,7 @@ def main():
         payload = {
             "questions_total": len(eval_ids),
             "model_path": args.model_path,
+            "backend": args.backend,
             "model_only_accuracy": acc,
             "avg_generated_tokens": avg_tokens,
             "eval_question_ids": eval_ids,

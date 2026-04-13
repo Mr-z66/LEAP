@@ -3,6 +3,8 @@ import json
 import os
 import re
 import statistics
+import urllib.error
+import urllib.request
 
 import numpy as np
 import torch
@@ -116,6 +118,33 @@ def parse_args():
     )
     parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
     parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT, help="System prompt used for both small and large model generation.")
+    parser.add_argument(
+        "--large-backend",
+        choices=["hf", "vllm"],
+        default="hf",
+        help="Backend used for large-model handoff generation. Defaults to local Hugging Face generation.",
+    )
+    parser.add_argument(
+        "--vllm-base-url",
+        default="http://127.0.0.1:8000",
+        help="Base URL for an OpenAI-compatible vLLM server. Only used when --large-backend vllm.",
+    )
+    parser.add_argument(
+        "--vllm-api-key",
+        default="EMPTY",
+        help="API key for the vLLM OpenAI-compatible server. Only used when --large-backend vllm.",
+    )
+    parser.add_argument(
+        "--vllm-model-name",
+        default=None,
+        help="Served model name exposed by the vLLM server. Defaults to the basename of --large-model-path.",
+    )
+    parser.add_argument(
+        "--vllm-timeout",
+        type=float,
+        default=300.0,
+        help="HTTP timeout in seconds for vLLM calls.",
+    )
     return parser.parse_args()
 
 
@@ -344,7 +373,7 @@ def build_generation_messages(question, assistant_prefix=None, system_prompt=DEF
     return messages
 
 
-def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
+def build_generation_prompt_text(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
     normalized_prefix = None
     if assistant_prefix is not None:
         normalized_prefix = assistant_prefix.rstrip()
@@ -354,21 +383,29 @@ def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt
     generation_question = append_math500_instruction(question) if answer_type == "math500_qwen_boxed" else question
     messages = build_generation_messages(generation_question, assistant_prefix=normalized_prefix, system_prompt=system_prompt)
     if normalized_prefix is None:
-        return tokenizer.apply_chat_template(
+        prompt_text = tokenizer.apply_chat_template(
             messages,
-            tokenize=True,
-            return_dict=True,
-            return_tensors="pt",
+            tokenize=False,
             add_generation_prompt=True,
-        ), normalized_prefix
+        )
+    else:
+        prompt_text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            continue_final_message=True,
+        )
+    return prompt_text, normalized_prefix
 
-    return tokenizer.apply_chat_template(
-        messages,
-        tokenize=True,
-        return_dict=True,
-        return_tensors="pt",
-        continue_final_message=True,
-    ), normalized_prefix
+
+def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
+    prompt_text, normalized_prefix = build_generation_prompt_text(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=system_prompt,
+        answer_type=answer_type,
+    )
+    return tokenizer(prompt_text, return_tensors="pt"), normalized_prefix
 
 
 def prompt_token_count(tokenizer, question, system_prompt, answer_type):
@@ -385,6 +422,94 @@ def decode_tokens(tokenizer, token_ids):
     if not token_ids:
         return ""
     return tokenizer.decode(token_ids, skip_special_tokens=True)
+
+
+def chunk_generated_text_with_tokenizer(tokenizer, generated_text, min_chunk_tokens, max_chunk_tokens):
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    if not token_ids:
+        return []
+
+    chunks = []
+    current_token_ids = []
+    for token_id in token_ids:
+        current_token_ids.append(token_id)
+        token_text = tokenizer.decode([token_id], skip_special_tokens=False)
+        chunk_len = len(current_token_ids)
+        hit_punctuation = any(p in token_text for p in PUNCTUATIONS)
+
+        cut_reason = None
+        if hit_punctuation and chunk_len >= min_chunk_tokens:
+            cut_reason = "punctuation"
+        elif chunk_len >= max_chunk_tokens:
+            cut_reason = "max_tokens"
+
+        if cut_reason is None:
+            continue
+
+        chunks.append(
+            {
+                "token_ids": list(current_token_ids),
+                "chunk_text": decode_tokens(tokenizer, current_token_ids).strip(),
+                "generated_token_count": len(current_token_ids),
+                "cut_reason": cut_reason,
+            }
+        )
+        current_token_ids = []
+
+    if current_token_ids:
+        chunks.append(
+            {
+                "token_ids": list(current_token_ids),
+                "chunk_text": decode_tokens(tokenizer, current_token_ids).strip(),
+                "generated_token_count": len(current_token_ids),
+                "cut_reason": "tail",
+            }
+        )
+    return chunks
+
+
+def build_vllm_request_payload(args, prompt_text, max_new_tokens):
+    model_name = args.vllm_model_name or os.path.basename(args.large_model_path.rstrip("/\\"))
+    return {
+        "model": model_name,
+        "prompt": prompt_text,
+        "max_tokens": int(max_new_tokens),
+        "temperature": 0.0,
+        "top_p": 1.0,
+    }
+
+
+def run_vllm_completion(args, prompt_text, max_new_tokens):
+    base_url = args.vllm_base_url.rstrip("/")
+    url = f"{base_url}/v1/completions"
+    payload = build_vllm_request_payload(args, prompt_text, max_new_tokens)
+    body = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {args.vllm_api_key}",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=args.vllm_timeout) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"vLLM request failed with HTTP {exc.code}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"vLLM request failed: {exc}") from exc
+
+    choices = response_payload.get("choices", [])
+    if not choices:
+        raise RuntimeError(f"vLLM response did not contain choices: {response_payload}")
+    choice = choices[0]
+    return {
+        "text": choice.get("text", "") or "",
+        "finish_reason": choice.get("finish_reason"),
+    }
 
 
 def build_question_records(dataset, feature_key):
@@ -636,6 +761,14 @@ def run_chunk(
 
 
 def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
+    if args.large_backend == "vllm":
+        return run_large_handoff_vllm(
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            args=args,
+        )
+
     prefix = assistant_prefix
     total_generated_tokens = 0
     generated_chunks = 0
@@ -675,6 +808,53 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
         "full_reasoning": prefix,
         "generated_token_count": total_generated_tokens,
         "generated_chunks": generated_chunks,
+        "reached_eos": reached_eos,
+        "chunks": chunks,
+    }
+
+
+def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args):
+    prompt_text, normalized_prefix = build_generation_prompt_text(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+
+    max_request_tokens = max(1, args.large_handoff_chunks * args.max_chunk_tokens)
+    completion = run_vllm_completion(args, prompt_text, max_request_tokens)
+    generated_text = completion["text"]
+    chunk_candidates = chunk_generated_text_with_tokenizer(
+        tokenizer,
+        generated_text,
+        min_chunk_tokens=args.min_chunk_tokens,
+        max_chunk_tokens=args.max_chunk_tokens,
+    )
+
+    selected_chunks = chunk_candidates[: args.large_handoff_chunks]
+    continued_text = "".join(chunk["chunk_text"] for chunk in selected_chunks)
+    full_reasoning = (normalized_prefix or "") + continued_text
+    reached_eos = completion["finish_reason"] == "stop" and len(selected_chunks) == len(chunk_candidates)
+
+    chunks = []
+    total_generated_tokens = 0
+    for handoff_chunk_idx, chunk in enumerate(selected_chunks):
+        total_generated_tokens += chunk["generated_token_count"]
+        chunks.append(
+            {
+                "handoff_local_chunk_id": handoff_chunk_idx,
+                "chunk_text": chunk["chunk_text"],
+                "generated_token_count": chunk["generated_token_count"],
+                "cut_reason": chunk["cut_reason"],
+                "reached_eos": reached_eos and handoff_chunk_idx == len(selected_chunks) - 1,
+            }
+        )
+
+    return {
+        "full_reasoning": full_reasoning,
+        "generated_token_count": total_generated_tokens,
+        "generated_chunks": len(selected_chunks),
         "reached_eos": reached_eos,
         "chunks": chunks,
     }
@@ -1067,15 +1247,20 @@ def main():
     )
     small_model.eval()
 
-    print(f"Loading large model from: {args.large_model_path}")
     large_tokenizer = AutoTokenizer.from_pretrained(args.large_model_path, local_files_only=True)
-    large_model = AutoModelForCausalLM.from_pretrained(
-        args.large_model_path,
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
-        local_files_only=True,
-    )
-    large_model.eval()
+    if args.large_backend == "hf":
+        print(f"Loading large model from: {args.large_model_path}")
+        large_model = AutoModelForCausalLM.from_pretrained(
+            args.large_model_path,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+            local_files_only=True,
+        )
+        large_model.eval()
+    else:
+        large_model = None
+        served_name = args.vllm_model_name or os.path.basename(args.large_model_path.rstrip("/\\"))
+        print(f"Using vLLM backend for large handoff: {args.vllm_base_url} | served_model={served_name}")
 
     print(f"Simulating thresholds: {thresholds}")
     summaries = []
