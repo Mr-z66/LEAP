@@ -2,6 +2,7 @@ import re
 from typing import Callable, List, Optional, Tuple
 
 from core_package.answer_extraction import extract_final_answer
+from core_package.math500_protocol import extract_math500_answer, math500_answers_equal
 
 
 AnswerExtractor = Callable[[str], Tuple[str, bool]]
@@ -342,6 +343,9 @@ def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> b
     if not predicted_text or not actual_text:
         return False
 
+    if answer_type == "math500_qwen_boxed":
+        return math500_answers_equal(predicted_text, actual_text)
+
     if answer_type == "boxed":
         return _normalize_boxed_math(predicted_text) == _normalize_boxed_math(actual_text)
 
@@ -354,6 +358,7 @@ def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> b
 def get_answer_extractor(answer_type: str) -> AnswerExtractor:
     extractors = {
         "boxed": extract_boxed_answer,
+        "math500_qwen_boxed": extract_math500_answer,
         "legacy_math": extract_legacy_math_answer,
         "svamp_numeric": extract_svamp_numeric_answer,
     }
@@ -369,6 +374,6 @@ def resolve_answer_type(dataset_name: str, override: Optional[str] = None) -> st
     if dataset_name == "svamp":
         return "svamp_numeric"
     if dataset_name == "math500":
-        return "boxed"
+        return "math500_qwen_boxed"
 
     return "legacy_math"

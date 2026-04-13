@@ -7,6 +7,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import EVALUATION, MODELS
+from core_package.math500_protocol import append_math500_instruction
 
 DEFAULT_LABEL_PATH = EVALUATION.label_path
 DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
@@ -56,12 +57,14 @@ def parse_args():
 
 
 def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
-    if answer_type == "boxed" and system_prompt == DEFAULT_SYSTEM_PROMPT:
+    if answer_type in {"boxed", "math500_qwen_boxed"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
         return DEFAULT_BOXED_SYSTEM_PROMPT
     return system_prompt
 
 
-def build_inputs(tokenizer, question: str, system_prompt: str):
+def build_inputs(tokenizer, question: str, system_prompt: str, answer_type: str):
+    if answer_type == "math500_qwen_boxed":
+        question = append_math500_instruction(question)
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": question},
@@ -177,7 +180,7 @@ def main():
 
     for idx, qid in enumerate(eval_ids, start=1):
         rec = question_table[qid]
-        inputs = build_inputs(tokenizer, rec["question"], args.system_prompt)
+        inputs = build_inputs(tokenizer, rec["question"], args.system_prompt, args.answer_type)
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
 

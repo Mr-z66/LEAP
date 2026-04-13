@@ -21,11 +21,11 @@ class PathsConfig:
 class ModelConfig:
     small_model_name: str = "Qwen2.5-1.5B"
     large_model_name: str = "Qwen2.5-32B"
+    math_small_model_name: str = "Qwen2.5-Math-1.5B-Instruct"
+    math_large_model_name: str = "Qwen2.5-Math-32B-Instruct"
     system_prompt: str = "You are a helpful math assistant. Please reason step by step."
     boxed_math_system_prompt: str = (
-        "You are a helpful math assistant. Solve the problem step by step. "
-        "The last line of your response must be exactly of the form: "
-        "Final Answer: \\boxed{...}"
+        "Please reason step by step, and put your final answer within \\boxed{}."
     )
 
     @property
@@ -35,6 +35,14 @@ class ModelConfig:
     @property
     def large_model_path(self) -> str:
         return os.path.join(PATHS.models_dir, self.large_model_name)
+
+    @property
+    def math_small_model_path(self) -> str:
+        return os.path.join(PATHS.models_dir, self.math_small_model_name)
+
+    @property
+    def math_large_model_path(self) -> str:
+        return os.path.join(PATHS.models_dir, self.math_large_model_name)
 
 
 @dataclass(frozen=True)
