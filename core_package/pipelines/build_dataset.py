@@ -21,6 +21,7 @@ DEFAULT_MIN_TOKENS = DATASET_BUILD.min_tokens
 DEFAULT_MAX_TOKENS = DATASET_BUILD.max_tokens
 DEFAULT_PUNCTUATIONS = DATASET_BUILD.punctuations
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
 
 
 def parse_args():
@@ -45,6 +46,12 @@ def parse_args():
     )
     parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT)
     return parser.parse_args()
+
+
+def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
+    if answer_type == "boxed" and system_prompt == DEFAULT_SYSTEM_PROMPT:
+        return DEFAULT_BOXED_SYSTEM_PROMPT
+    return system_prompt
 
 
 def normalize_numeric_text(text: str) -> str:
@@ -348,6 +355,7 @@ def format_sample(row: Dict, idx: int, args, answer_type: str) -> Dict:
 def main():
     args = parse_args()
     answer_type = resolve_answer_type(args.dataset_name, args.answer_type)
+    args.system_prompt = resolve_system_prompt(answer_type, args.system_prompt)
     answer_extractor = get_answer_extractor(answer_type)
 
     punctuations = list(DEFAULT_PUNCTUATIONS)

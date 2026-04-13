@@ -12,6 +12,7 @@ DEFAULT_LABEL_PATH = EVALUATION.label_path
 DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
 DEFAULT_TRACE_PATH = EVALUATION.trace_path
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
 DEFAULT_ANSWER_TYPE = "legacy_math"
 
 class TorchMLPProbe(torch.nn.Module):
@@ -52,6 +53,12 @@ def parse_args():
     parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
     parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT, help="System prompt used during generation.")
     return parser.parse_args()
+
+
+def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
+    if answer_type == "boxed" and system_prompt == DEFAULT_SYSTEM_PROMPT:
+        return DEFAULT_BOXED_SYSTEM_PROMPT
+    return system_prompt
 
 
 def build_inputs(tokenizer, question: str, system_prompt: str):
@@ -142,6 +149,7 @@ def resolve_eval_ids(question_table: Dict[int, Dict], artifact_path: Optional[st
 
 def main():
     args = parse_args()
+    args.system_prompt = resolve_system_prompt(args.answer_type, args.system_prompt)
 
     print(f"Loading labeled dataset from: {args.label_path}")
     dataset = torch.load(args.label_path)

@@ -22,6 +22,11 @@ class ModelConfig:
     small_model_name: str = "Qwen2.5-1.5B"
     large_model_name: str = "Qwen2.5-32B"
     system_prompt: str = "You are a helpful math assistant. Please reason step by step."
+    boxed_math_system_prompt: str = (
+        "You are a helpful math assistant. Solve the problem step by step. "
+        "The last line of your response must be exactly of the form: "
+        "Final Answer: \\boxed{...}"
+    )
 
     @property
     def small_model_path(self) -> str:

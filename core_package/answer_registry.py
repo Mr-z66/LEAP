@@ -304,6 +304,14 @@ def _normalize_boxed_math(text: str) -> str:
     normalized = re.sub(r"\s+", "", normalized)
     normalized = normalized.rstrip(".")
     normalized = _strip_outer_braces(normalized)
+    normalized = re.sub(r"^([a-zA-Z])=", "", normalized)
+    normalized = re.sub(r"\\text\{\(([A-Za-z])\)\}", r"\\text{\1}", normalized)
+    normalized = re.sub(r"\\sqrt\{([^{}]+)\}", r"\\sqrt\1", normalized)
+    normalized = re.sub(r"^([+-]?\d+(?:\.\d+)?)\\text\{[^{}]*\}$", r"\1", normalized)
+    normalized = re.sub(r"^(.*?)(?:\\text\{degrees?\})$", r"\1", normalized)
+    if normalized.endswith("_8"):
+        normalized = normalized[:-2]
+    normalized = normalized.replace("\\pm", ",")
     return normalized
 
 

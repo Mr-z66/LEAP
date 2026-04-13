@@ -34,6 +34,7 @@ DEFAULT_MAX_HANDOFFS = SCHEDULER.max_handoffs
 DEFAULT_LARGE_HANDOFF_CHUNKS = SCHEDULER.large_handoff_chunks
 DEFAULT_PROBE_ARTIFACT_PATH = SCHEDULER.probe_artifact_path
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
 DEFAULT_ANSWER_TYPE = "legacy_math"
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
 # ========================================================
@@ -115,6 +116,12 @@ def parse_args():
     parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
     parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT, help="System prompt used for both small and large model generation.")
     return parser.parse_args()
+
+
+def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
+    if answer_type == "boxed" and system_prompt == DEFAULT_SYSTEM_PROMPT:
+        return DEFAULT_BOXED_SYSTEM_PROMPT
+    return system_prompt
 
 
 def tensor_to_numpy(value):
@@ -970,6 +977,7 @@ def print_summary(summary):
 
 def main():
     args = parse_args()
+    args.system_prompt = resolve_system_prompt(args.answer_type, args.system_prompt)
     thresholds = parse_csv_floats(args.thresholds)
 
     print(f"Loading training dataset from: {args.label_path}")
