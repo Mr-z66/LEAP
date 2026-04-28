@@ -107,6 +107,29 @@ def parse_args():
     parser.add_argument("--tail-bonus-weight", type=float, default=DEFAULT_TAIL_BONUS_WEIGHT, help="Add alpha * generation_progress to risk score.")
     parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
+    parser.add_argument(
+        "--adaptive-large-handoff",
+        action="store_true",
+        help="Use adaptive large-model handoff length based on whether a small-model re-entry probe looks stable.",
+    )
+    parser.add_argument(
+        "--min-large-handoff-chunks",
+        type=int,
+        default=1,
+        help="Minimum number of large-model chunks to generate before testing whether control can return to the small model.",
+    )
+    parser.add_argument(
+        "--max-adaptive-large-handoff-chunks",
+        type=int,
+        default=4,
+        help="Maximum number of large-model chunks to generate in a single adaptive handoff.",
+    )
+    parser.add_argument(
+        "--handoff-recovery-threshold",
+        type=float,
+        default=None,
+        help="Risk threshold below which a small-model re-entry probe is considered stable. Defaults to the main trigger threshold.",
+    )
     parser.add_argument("--cooldown-chunks", type=int, default=SCHEDULER.cooldown_chunks, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
     parser.add_argument(
         "--require-consecutive-risk",
@@ -807,13 +830,17 @@ def run_chunk(
     }
 
 
-def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
+def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_chunks=None, max_total_new_tokens=None):
+    target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
+    handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
     if args.large_backend == "vllm":
         return run_large_handoff_vllm(
             tokenizer=tokenizer,
             question=question,
             assistant_prefix=assistant_prefix,
             args=args,
+            num_chunks=target_chunks,
+            max_total_new_tokens=handoff_token_budget,
         )
 
     prefix = assistant_prefix
@@ -822,8 +849,8 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
     reached_eos = False
     chunks = []
 
-    for handoff_chunk_idx in range(args.large_handoff_chunks):
-        remaining_budget = max(args.max_new_tokens - total_generated_tokens, 1)
+    for handoff_chunk_idx in range(target_chunks):
+        remaining_budget = max(handoff_token_budget - total_generated_tokens, 1)
         chunk_result = run_chunk(
             model=model,
             tokenizer=tokenizer,
@@ -860,7 +887,7 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
     }
 
 
-def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args):
+def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args, num_chunks=None, max_total_new_tokens=None):
     prompt_text, normalized_prefix = build_generation_prompt_text(
         tokenizer,
         question,
@@ -869,7 +896,9 @@ def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args):
         answer_type=args.answer_type,
     )
 
-    max_request_tokens = max(1, args.large_handoff_chunks * args.max_chunk_tokens)
+    target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
+    handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
+    max_request_tokens = max(1, min(target_chunks * args.max_chunk_tokens, handoff_token_budget))
     completion = run_vllm_completion(args, prompt_text, max_request_tokens)
     generated_text = completion["text"]
     chunk_candidates = chunk_generated_text_with_tokenizer(
@@ -879,7 +908,7 @@ def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args):
         max_chunk_tokens=args.max_chunk_tokens,
     )
 
-    selected_chunks = chunk_candidates[: args.large_handoff_chunks]
+    selected_chunks = chunk_candidates[:target_chunks]
     continued_text = "".join(chunk["chunk_text"] for chunk in selected_chunks)
     full_reasoning = (normalized_prefix or "") + continued_text
     reached_eos = completion["finish_reason"] == "stop" and len(selected_chunks) == len(chunk_candidates)
@@ -907,6 +936,140 @@ def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args):
     }
 
 
+def run_adaptive_large_handoff(
+    question,
+    assistant_prefix,
+    current_total_tokens,
+    next_chunk_index,
+    runtime_small_chunks,
+    small_model,
+    small_tokenizer,
+    large_model,
+    large_tokenizer,
+    probe,
+    scaler,
+    threshold,
+    args,
+    artifact=None,
+):
+    prefix = assistant_prefix
+    total_generated_tokens = 0
+    generated_chunks = 0
+    reached_eos = False
+    trace_events = []
+    recovery_threshold = threshold if args.handoff_recovery_threshold is None else float(args.handoff_recovery_threshold)
+
+    while generated_chunks < args.max_adaptive_large_handoff_chunks:
+        remaining_budget = max(args.max_new_tokens - current_total_tokens - total_generated_tokens, 1)
+        large_result = run_large_handoff(
+            model=large_model,
+            tokenizer=large_tokenizer,
+            question=question,
+            assistant_prefix=prefix,
+            args=args,
+            num_chunks=1,
+            max_total_new_tokens=remaining_budget,
+        )
+        prefix = large_result["full_reasoning"]
+        total_generated_tokens += large_result["generated_token_count"]
+        generated_chunks += large_result["generated_chunks"]
+        reached_eos = large_result["reached_eos"]
+        trace_events.append(
+            {
+                "event": "adaptive_large_handoff_chunk",
+                "adaptive_large_chunk_count": generated_chunks,
+                "generated_token_count": large_result["generated_token_count"],
+                "generated_chunks": large_result["generated_chunks"],
+                "chunks": large_result["chunks"],
+            }
+        )
+
+        if reached_eos or large_result["generated_token_count"] == 0:
+            trace_events.append(
+                {
+                    "event": "adaptive_handoff_stop_reached_eos",
+                    "adaptive_large_chunk_count": generated_chunks,
+                }
+            )
+            break
+
+        if generated_chunks < args.min_large_handoff_chunks:
+            continue
+
+        observation_remaining_budget = max(args.max_new_tokens - current_total_tokens - total_generated_tokens, 1)
+        observation_chunk = run_chunk(
+            model=small_model,
+            tokenizer=small_tokenizer,
+            question=question,
+            assistant_prefix=prefix,
+            max_new_tokens=observation_remaining_budget,
+            min_chunk_tokens=args.min_chunk_tokens,
+            max_chunk_tokens=args.max_chunk_tokens,
+            system_prompt=args.system_prompt,
+            answer_type=args.answer_type,
+        )
+        observation_chunk["chunk_id"] = next_chunk_index + generated_chunks
+        if observation_chunk["generated_token_count"] == 0:
+            trace_events.append(
+                {
+                    "event": "adaptive_handoff_stop_empty_small_probe",
+                    "adaptive_large_chunk_count": generated_chunks,
+                }
+            )
+            break
+
+        total_chunks_for_features = max(len(runtime_small_chunks), int(observation_chunk["chunk_id"]) + 1)
+        risk_info = compute_chunk_risk_score(
+            observation_chunk,
+            prev_chunk=None,
+            total_chunks_for_features=total_chunks_for_features,
+            progress_ratio=(current_total_tokens + total_generated_tokens + observation_chunk["generated_token_count"]) / max(args.max_new_tokens, 1),
+            probe=probe,
+            scaler=scaler,
+            args=args,
+            artifact=artifact,
+        )
+        is_stable = risk_info["combined_score"] < recovery_threshold
+        trace_events.append(
+            {
+                "event": "small_reentry_probe",
+                "chunk_id": int(observation_chunk["chunk_id"]),
+                "chunk_text": observation_chunk["chunk_text"],
+                "generated_token_count": observation_chunk["generated_token_count"],
+                "trigger_score": float(risk_info["trigger_score"]),
+                "combined_score": float(risk_info["combined_score"]),
+                "progress_ratio": float((current_total_tokens + total_generated_tokens + observation_chunk["generated_token_count"]) / max(args.max_new_tokens, 1)),
+                "recovery_threshold": float(recovery_threshold),
+                "decision": "stable_return_to_small" if is_stable else "rollback_and_continue_large",
+                "cut_reason": observation_chunk["cut_reason"],
+            }
+        )
+        if is_stable:
+            trace_events.append(
+                {
+                    "event": "adaptive_handoff_stop_recovered",
+                    "adaptive_large_chunk_count": generated_chunks,
+                }
+            )
+            break
+
+    if not reached_eos and generated_chunks >= args.max_adaptive_large_handoff_chunks:
+        trace_events.append(
+            {
+                "event": "adaptive_handoff_stop_max_chunks",
+                "adaptive_large_chunk_count": generated_chunks,
+            }
+        )
+
+    return {
+        "full_reasoning": prefix,
+        "generated_token_count": total_generated_tokens,
+        "generated_chunks": generated_chunks,
+        "reached_eos": reached_eos,
+        "trace_events": trace_events,
+    }
+
+
 def safe_mean(values):
     return statistics.mean(values) if values else float("nan")
 
@@ -921,6 +1084,30 @@ def to_jsonable(value):
     if isinstance(value, np.generic):
         return value.item()
     return value
+
+
+def compute_chunk_risk_score(
+    chunk,
+    prev_chunk,
+    total_chunks_for_features,
+    progress_ratio,
+    probe,
+    scaler,
+    args,
+    artifact=None,
+):
+    feature_spec = artifact.get("feature_key", args.feature_key) if artifact is not None else args.feature_key
+    feature_vector = build_feature_vector(chunk, prev_chunk, total_chunks_for_features, feature_spec)
+    features = scaler.transform([feature_vector])
+    positive_prob = probe.predict_proba(features)[0, 1]
+    trigger_score = artifact_trigger_score(artifact, positive_prob) if artifact is not None else (1.0 - positive_prob)
+    combined_score = trigger_score + args.tail_bonus_weight * progress_ratio
+    return {
+        "feature_spec": feature_spec,
+        "positive_prob": float(positive_prob),
+        "trigger_score": float(trigger_score),
+        "combined_score": float(combined_score),
+    }
 
 
 def simulate_question(record, small_model, small_tokenizer, large_model, large_tokenizer, probe, scaler, threshold, args, artifact=None):
@@ -977,12 +1164,18 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         else:
             prev_chunk = runtime_small_chunks[-2] if len(runtime_small_chunks) >= 2 else None
         total_chunks_for_features = max(len(runtime_small_chunks), int(small_chunk["chunk_id"]) + 1)
-        feature_spec = artifact.get("feature_key", args.feature_key) if artifact is not None else args.feature_key
-        feature_vector = build_feature_vector(small_chunk, prev_chunk, total_chunks_for_features, feature_spec)
-        features = scaler.transform([feature_vector])
-        positive_prob = probe.predict_proba(features)[0, 1]
-        trigger_score = artifact_trigger_score(artifact, positive_prob) if artifact is not None else (1.0 - positive_prob)
-        combined_score = trigger_score + args.tail_bonus_weight * progress_ratio
+        risk_info = compute_chunk_risk_score(
+            small_chunk,
+            prev_chunk=prev_chunk,
+            total_chunks_for_features=total_chunks_for_features,
+            progress_ratio=progress_ratio,
+            probe=probe,
+            scaler=scaler,
+            args=args,
+            artifact=artifact,
+        )
+        trigger_score = risk_info["trigger_score"]
+        combined_score = risk_info["combined_score"]
         prev_score_for_trace = previous_combined_score
 
         # SVAMP false-alarm mitigation:
@@ -1027,26 +1220,60 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             total_tokens -= small_chunk["generated_token_count"]
             runtime_small_chunks.pop()
 
-            large_result = run_large_handoff(
-                model=large_model,
-                tokenizer=large_tokenizer,
-                question=question,
-                assistant_prefix=safe_prefix,
-                args=args,
-            )
+            if args.adaptive_large_handoff:
+                large_result = run_adaptive_large_handoff(
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    current_total_tokens=total_tokens,
+                    next_chunk_index=chunk_index,
+                    runtime_small_chunks=runtime_small_chunks,
+                    small_model=small_model,
+                    small_tokenizer=small_tokenizer,
+                    large_model=large_model,
+                    large_tokenizer=large_tokenizer,
+                    probe=probe,
+                    scaler=scaler,
+                    threshold=threshold,
+                    args=args,
+                    artifact=artifact,
+                )
+            else:
+                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                large_result = run_large_handoff(
+                    model=large_model,
+                    tokenizer=large_tokenizer,
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    args=args,
+                    num_chunks=args.large_handoff_chunks,
+                    max_total_new_tokens=remaining_handoff_budget,
+                )
             prefix = large_result["full_reasoning"]
             total_tokens += large_result["generated_token_count"]
             total_large_tokens += large_result["generated_token_count"]
             handoff_count += 1
-            route_trace.append(
-                {
-                    "event": "large_handoff",
-                    "handoff_index": handoff_count,
-                    "generated_token_count": large_result["generated_token_count"],
-                    "generated_chunks": large_result["generated_chunks"],
-                    "chunks": large_result["chunks"],
-                }
-            )
+            if args.adaptive_large_handoff:
+                route_trace.append(
+                    {
+                        "event": "large_handoff",
+                        "handoff_index": handoff_count,
+                        "mode": "adaptive",
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                    }
+                )
+                route_trace.extend(large_result["trace_events"])
+            else:
+                route_trace.append(
+                    {
+                        "event": "large_handoff",
+                        "handoff_index": handoff_count,
+                        "mode": "fixed",
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                        "chunks": large_result["chunks"],
+                    }
+                )
             chunk_index += large_result["generated_chunks"]
             reset_prev_chunk = True
             cooldown_remaining = args.cooldown_chunks
@@ -1212,6 +1439,7 @@ def print_route_trace(row):
         elif event["event"] == "large_handoff":
             print(
                 f"[{step_idx}] LARGE handoff#{event['handoff_index']} | "
+                f"mode={event.get('mode', 'fixed')} | "
                 f"chunks={event['generated_chunks']} | tokens={event['generated_token_count']}"
             )
             for chunk in event.get("chunks", []):
@@ -1219,6 +1447,24 @@ def print_route_trace(row):
                     f"      - large_chunk#{chunk['handoff_local_chunk_id']} | "
                     f"text={chunk['chunk_text']!r}"
                 )
+        elif event["event"] == "adaptive_large_handoff_chunk":
+            print(
+                f"[{step_idx}] LARGE adaptive_chunk_count={event['adaptive_large_chunk_count']} | "
+                f"chunks={event['generated_chunks']} | tokens={event['generated_token_count']}"
+            )
+            for chunk in event.get("chunks", []):
+                print(
+                    f"      - large_chunk#{chunk['handoff_local_chunk_id']} | "
+                    f"text={chunk['chunk_text']!r}"
+                )
+        elif event["event"] == "small_reentry_probe":
+            print(
+                f"[{step_idx}] SMALL reentry_probe chunk#{event['chunk_id']} | "
+                f"score={event['combined_score']:.4f} | decision={event['decision']} | "
+                f"text={event['chunk_text']!r}"
+            )
+        elif event["event"].startswith("adaptive_handoff_stop_"):
+            print(f"[{step_idx}] {event['event']} | adaptive_large_chunk_count={event['adaptive_large_chunk_count']}")
 
 
 def print_summary(summary):
