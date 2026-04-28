@@ -639,7 +639,7 @@ def artifact_trigger_score(artifact, positive_prob):
 def load_probe_artifact(args):
     if not args.probe_artifact_path or not os.path.exists(args.probe_artifact_path):
         return None
-    artifact = torch.load(args.probe_artifact_path)
+    artifact = torch.load(args.probe_artifact_path, weights_only=False)
     probe = artifact.get("probe")
     if probe is None and artifact.get("probe_state_dict") is not None:
         hidden_layers_text = artifact["config"]["hidden_layers"]
@@ -1192,7 +1192,7 @@ def main():
     thresholds = parse_csv_floats(args.thresholds)
 
     print(f"Loading training dataset from: {args.label_path}")
-    dataset = torch.load(args.label_path)
+    dataset = torch.load(args.label_path, weights_only=False)
 
     requested_feature_key = args.feature_key
     artifact = load_probe_artifact(args)
@@ -1210,7 +1210,7 @@ def main():
     eval_question_records = question_records
     if args.eval_data_path is not None:
         print(f"Loading separate evaluation dataset from: {args.eval_data_path}")
-        eval_dataset = torch.load(args.eval_data_path)
+        eval_dataset = torch.load(args.eval_data_path, weights_only=False)
         eval_question_records = build_question_records(eval_dataset, args.feature_key)
         updated_eval_small_records = apply_small_baseline_overrides(eval_question_records, args.small_baseline_path)
         print(f"Loaded eval questions with {args.feature_key}: {len(eval_question_records)}")
@@ -1221,10 +1221,23 @@ def main():
         probe = artifact.get("probe")
         scaler = artifact["scaler"]
         train_question_ids = list(artifact["train_question_ids"])
+        artifact_test_question_ids = [int(question_id) for question_id in artifact["test_question_ids"]]
         if args.eval_data_path is not None:
-            test_question_ids = sorted(eval_question_records.keys())
+            test_question_ids = [question_id for question_id in artifact_test_question_ids if question_id in eval_question_records]
+            missing_test_question_ids = [
+                question_id for question_id in artifact_test_question_ids if question_id not in eval_question_records
+            ]
+            print(
+                "Restricting eval to held-out artifact test split: "
+                f"{len(test_question_ids)}/{len(artifact_test_question_ids)} questions matched."
+            )
+            if missing_test_question_ids:
+                print(
+                    "Warning: "
+                    f"{len(missing_test_question_ids)} held-out test questions were not found in the eval dataset and were skipped."
+                )
         else:
-            test_question_ids = list(artifact["test_question_ids"])
+            test_question_ids = artifact_test_question_ids
     else:
         raise FileNotFoundError(
             "Multi-handoff scheduler now requires a trained takeover_beneficial artifact. "
