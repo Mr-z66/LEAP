@@ -16,6 +16,7 @@ This file summarizes the result artifacts currently kept in the repository after
 |---|---|---|---:|---:|---:|---:|---|
 | GSM8K | `traces/observe_rollback_traces_mainline_rerun_dense.json` | 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60 | 0.25 / 0.35 / 0.40 | 0.7900 | 0.8800 | +0.0900 | Main GSM8K scheduler trace; commonly referenced 0.25 setting is preserved |
 | SVAMP | `traces/observe_rollback_traces_svamp_test_mainline_fixed.json` | 0.25, 0.40, 0.50 | 0.50 | 0.8200 | 0.8633 | +0.0433 | Current fixed SVAMP scheduler trace |
+| MATH500 | `traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json` | 0.55 | 0.55 | 0.7200 | 0.7800 | +0.0600 | Current clean adaptive baseline with `boundary+mean`, adaptive handoff, and consecutive-risk trigger |
 
 ## Average Generated Tokens
 
@@ -29,5 +30,5 @@ This file summarizes the result artifacts currently kept in the repository after
 
 - GSM8K currently uses the `legacy_math` protocol.
 - SVAMP currently uses the `svamp_numeric` protocol.
-- MATH500 is being migrated to the new `math500_qwen_boxed` protocol.
-- The kept MATH500 JSON files are **not** the new Qwen2.5-Math-aligned results yet.
+- MATH500 mainline scheduler now uses the `math500_qwen_boxed` protocol.
+- The current kept MATH500 scheduler baseline is the clean adaptive `0.55` setting with `boundary+mean`.

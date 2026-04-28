@@ -67,7 +67,7 @@ class StrictLabelConfig:
 class ProbeTrainConfig:
     label_path: str = field(default_factory=lambda: os.path.join(PATHS.dataset_dir, "gsm8k_labeled_training_data_strict.pt"))
     output_path: str = field(default_factory=lambda: os.path.join(PATHS.artifacts_dir, "probe_artifact_torch.pt"))
-    feature_key: str = "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob"
+    feature_key: str = "boundary+mean"
     label_key: str = "label"
     test_size: float = 0.2
     val_size: float = 0.2
@@ -88,7 +88,7 @@ class ProbeTrainConfig:
 class SchedulerConfig:
     label_path: str = field(default_factory=lambda: os.path.join(PATHS.dataset_dir, "gsm8k_labeled_training_data_strict.pt"))
     probe_artifact_path: str = field(default_factory=lambda: os.path.join(PATHS.artifacts_dir, "probe_artifact_torch.pt"))
-    feature_key: str = "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob"
+    feature_key: str = "boundary+mean"
     test_size: float = 0.2
     random_state: int = 55
     mlp_hidden_layers: str = "512,128,32"
@@ -102,7 +102,7 @@ class SchedulerConfig:
     tail_bonus_weight: float = 0.0
     max_handoffs: int = 2
     large_handoff_chunks: int = 2
-    cooldown_chunks: int = 1
+    cooldown_chunks: int = 2
 
 
 @dataclass(frozen=True)

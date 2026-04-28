@@ -1,5 +1,33 @@
 # LEAP
 
+## Current Mainline Snapshot
+
+As of 2026-04-28, the repository mainline has been aligned to the clean observe-and-rollback baseline that reproduced the best recent MATH500 result.
+
+- Mainline probe feature spec: `boundary+mean`
+- Mainline scheduler trigger rule: `require-consecutive-risk`
+- Mainline adaptive handoff: enabled
+- Mainline adaptive settings:
+  - `min-large-handoff-chunks=1`
+  - `max-adaptive-large-handoff-chunks=4`
+  - `handoff-recovery-threshold=0.55`
+  - `cooldown-chunks=2`
+- Removed from the mainline scheduler:
+  - sparse-risk trigger
+  - multi-stable re-entry recovery
+  - setup-suppression heuristics
+
+### Current Best Clean MATH500 Setting
+
+- Trace file: `result/traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json`
+- Threshold: `0.55`
+- Small-only accuracy: `0.7200`
+- Scheduled accuracy: `0.7800`
+- Gain over small: `+0.0600`
+- Trigger rate: `0.7000`
+
+This is the current recommended clean baseline for MATH500 replication and follow-up ablations.
+
 这个仓库当前服务于一条固定的主线实验：
 
 - 小模型先生成 chunk 级推理轨迹
@@ -70,7 +98,7 @@ mkdir -p dataset result/artifacts result/analysis_outputs result/traces
 当前主线默认配置是：
 
 - probe 特征：
-  `boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob`
+  `boundary+mean`
 - probe 训练：
   `hidden_layers=128,32`
   `dropout=0.1`
@@ -156,7 +184,7 @@ python -m core_package.pipelines.referee_32b_labeling_strict \
 python -m core_package.probes.train_probe_artifact_torch \
   --label-path dataset/gsm8k_labeled_training_data_strict.pt \
   --output-path result/artifacts/probe_artifact_torch.pt \
-  --feature-key "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob" \
+  --feature-key "boundary+mean" \
   --hidden-layers 128,32 \
   --dropout 0.1 \
   --epochs 60 \
@@ -236,7 +264,6 @@ python -m core_package.pipelines.build_dataset \
   --model-path models/Qwen2.5-1.5B \
   --save-path dataset/svamp_15b_hidden_states.pt \
   --max-new-tokens 512
-<<<<<<< HEAD
 ```
 
 test:
@@ -249,8 +276,6 @@ python -m core_package.pipelines.build_dataset \
   --model-path models/Qwen2.5-1.5B \
   --save-path dataset/svamp_test_15b_hidden_states.pt \
   --max-new-tokens 512
-=======
->>>>>>> 4f796e5dbb1fcdad5c0ed4d222842c594d3dff2c
 ```
 
 ### 2. strict 标注
@@ -284,7 +309,7 @@ python -m core_package.pipelines.referee_32b_labeling_strict \
 python -m core_package.probes.train_probe_artifact_torch \
   --label-path dataset/svamp_labeled_training_data_strict.pt \
   --output-path result/artifacts/probe_artifact_svamp_torch.pt \
-  --feature-key "boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob" \
+  --feature-key "boundary+mean" \
   --hidden-layers 128,32 \
   --dropout 0.1 \
   --epochs 60 \
