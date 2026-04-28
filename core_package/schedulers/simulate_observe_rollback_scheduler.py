@@ -40,6 +40,11 @@ DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
 DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
 DEFAULT_ANSWER_TYPE = "legacy_math"
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
+DEFAULT_SETUP_SUPPRESSION_PATTERNS = (
+    r"^\s*(to solve (this )?problem|to determine|to find|given the|let'?s start|we need to)\b",
+    r"^\s*(first|next),?\s+let'?s\b",
+    r"^\s*let\s+(the|us)\b",
+)
 # ========================================================
 
 
@@ -107,6 +112,23 @@ def parse_args():
         "--require-consecutive-risk",
         action="store_true",
         help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
+    )
+    parser.add_argument(
+        "--suppress-setup-trigger",
+        action="store_true",
+        help="Suppress early trigger events on generic setup chunks such as 'To solve the problem'. Off by default for clean ablations.",
+    )
+    parser.add_argument(
+        "--setup-suppression-max-chunk-id",
+        type=int,
+        default=1,
+        help="Apply setup-trigger suppression only up to this chunk id when --suppress-setup-trigger is enabled.",
+    )
+    parser.add_argument(
+        "--setup-suppression-max-chars",
+        type=int,
+        default=160,
+        help="Ignore generic setup suppression when the chunk text is longer than this many characters.",
     )
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
     parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
@@ -196,6 +218,31 @@ DERIVED_SCALAR_FEATURES = {
 
 def chunk_text(chunk):
     return str(chunk.get("chunk_text", "") or "")
+
+
+def looks_like_generic_setup_chunk(text):
+    normalized = str(text or "").strip().lower()
+    if not normalized:
+        return False
+    for pattern in DEFAULT_SETUP_SUPPRESSION_PATTERNS:
+        if re.search(pattern, normalized):
+            return True
+    return False
+
+
+def should_suppress_setup_trigger(chunk, args):
+    if not args.suppress_setup_trigger:
+        return False
+    chunk_id = int(chunk.get("chunk_id", 0))
+    if chunk_id > args.setup_suppression_max_chunk_id:
+        return False
+
+    text = chunk_text(chunk)
+    if not text:
+        return False
+    if len(text) > args.setup_suppression_max_chars:
+        return False
+    return looks_like_generic_setup_chunk(text)
 
 
 def chunk_scalar_feature(chunk, token):
@@ -951,6 +998,11 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 and previous_combined_score >= threshold
             )
 
+        setup_trigger_suppressed = False
+        if meets_risk_trigger and should_suppress_setup_trigger(small_chunk, args):
+            setup_trigger_suppressed = True
+            meets_risk_trigger = False
+
         if meets_risk_trigger and handoff_count < args.max_handoffs and cooldown_remaining <= 0:
             triggered = True
             trigger_scores.append(combined_score)
@@ -1014,13 +1066,14 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
                 "progress_ratio": float(progress_ratio),
                 "cut_reason": small_chunk["cut_reason"],
+                "setup_trigger_suppressed": setup_trigger_suppressed,
             }
         )
         prefix = small_chunk["full_reasoning"]
         chunk_index += 1
         if cooldown_remaining > 0:
             cooldown_remaining -= 1
-        previous_combined_score = combined_score
+        previous_combined_score = None if setup_trigger_suppressed else combined_score
         if small_chunk["reached_eos"]:
             break
 
