@@ -7,6 +7,35 @@ import numpy as np
 import torch
 
 
+class TorchMLPProbe(torch.nn.Module):
+    def __init__(self, input_dim, hidden_layers, dropout=0.0):
+        super().__init__()
+        dims = [input_dim, *hidden_layers, 1]
+        layers = []
+        for idx in range(len(dims) - 2):
+            layers.append(torch.nn.Linear(dims[idx], dims[idx + 1]))
+            layers.append(torch.nn.ReLU())
+            if dropout > 0:
+                layers.append(torch.nn.Dropout(dropout))
+        layers.append(torch.nn.Linear(dims[-2], dims[-1]))
+        self.network = torch.nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x).squeeze(-1)
+
+    def predict_proba(self, X):
+        self.eval()
+        with torch.no_grad():
+            if isinstance(X, np.ndarray):
+                X_tensor = torch.from_numpy(X).to(torch.float32)
+            else:
+                X_tensor = X.to(torch.float32)
+            logits = self.forward(X_tensor)
+            pos_prob = torch.sigmoid(logits).cpu().numpy()
+        neg_prob = 1.0 - pos_prob
+        return np.stack([neg_prob, pos_prob], axis=1)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Export held-out chunk-level probe scores to CSV.")
     parser.add_argument("--label-path", required=True, help="Path to labeled chunk dataset (.pt).")
@@ -173,10 +202,38 @@ def artifact_positive_prob_to_trigger_score(artifact, positive_prob):
     return 1.0 - positive_prob
 
 
+def parse_hidden_layer_sizes(hidden_layers_text):
+    layer_sizes = []
+    for part in str(hidden_layers_text).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        layer_sizes.append(int(part))
+    if not layer_sizes:
+        raise ValueError("Hidden layers cannot be empty when reconstructing a TorchMLPProbe.")
+    return tuple(layer_sizes)
+
+
+def load_probe_artifact(path):
+    artifact = torch.load(path, weights_only=False)
+    probe = artifact.get("probe")
+    if probe is None and artifact.get("probe_state_dict") is not None:
+        hidden_layers = parse_hidden_layer_sizes(artifact["config"]["hidden_layers"])
+        dropout = float(artifact.get("config", {}).get("dropout", 0.0))
+        probe = TorchMLPProbe(
+            input_dim=int(artifact["feature_dim"]),
+            hidden_layers=hidden_layers,
+            dropout=dropout,
+        )
+        probe.load_state_dict(artifact["probe_state_dict"])
+        artifact["probe"] = probe
+    return artifact
+
+
 def main():
     args = parse_args()
 
-    artifact = torch.load(args.probe_artifact_path, weights_only=False)
+    artifact = load_probe_artifact(args.probe_artifact_path)
     probe = artifact["probe"]
     scaler = artifact["scaler"]
     feature_spec = artifact["feature_key"]
