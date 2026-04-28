@@ -21,12 +21,14 @@ def parse_args():
     parser.add_argument("--llm-token-proxy", type=float, default=384.0, help="LLM-only average generated tokens per question.")
     parser.add_argument("--slm-params-b", type=float, default=1.5, help="SLM parameter size in billions, used as per-token FLOPs proxy.")
     parser.add_argument("--llm-params-b", type=float, default=32.0, help="LLM parameter size in billions, used as per-token FLOPs proxy.")
-    parser.add_argument("--cost-mode", choices=["token_proxy", "approx_flops"], default="approx_flops", help="How to compute normalized cost.")
+    parser.add_argument("--cost-mode", choices=["token_proxy", "approx_flops", "rsd_flops"], default="approx_flops", help="How to compute normalized cost.")
     parser.add_argument("--prompt-token-proxy", type=float, default=0.0, help="Fallback prompt token count when trace rows do not contain prompt_token_count.")
     parser.add_argument("--slm-model-path", default=DEFAULT_SLM_MODEL_PATH, help="Local SLM directory containing config.json for approximate FLOPs mode.")
     parser.add_argument("--llm-model-path", default=DEFAULT_LLM_MODEL_PATH, help="Local LLM directory containing config.json for approximate FLOPs mode.")
     parser.add_argument("--base-param-flops-factor", type=float, default=2.0, help="Linear per-token parameter FLOPs factor for approximate decode/prefill.")
     parser.add_argument("--attn-flops-factor", type=float, default=4.0, help="Attention FLOPs factor used with hidden_size and num_hidden_layers.")
+    parser.add_argument("--probe-params-b", type=float, default=0.0, help="Optional probe/PRM parameter size in billions for RSD-style FLOPs accounting.")
+    parser.add_argument("--probe-tokens-per-call", type=float, default=0.0, help="Optional token-equivalent cost per probe call for RSD-style FLOPs accounting.")
     parser.add_argument("--emit-summary-json", default=None, help="Optional path to dump threshold summary JSON.")
     return parser.parse_args()
 
@@ -74,6 +76,12 @@ def estimate_decode_flops(prefix_tokens, new_tokens, params_b, model_dims, base_
     return param_term + attention_term
 
 
+def estimate_rsd_token_flops(token_count, params_b):
+    if token_count <= 0 or params_b is None or params_b <= 0:
+        return 0.0
+    return 2.0 * params_b * 1e9 * token_count
+
+
 def per_question_cost_breakdown(
     row,
     cost_mode,
@@ -86,6 +94,8 @@ def per_question_cost_breakdown(
     prompt_token_proxy=0.0,
     base_param_flops_factor=2.0,
     attn_flops_factor=4.0,
+    probe_params_b=0.0,
+    probe_tokens_per_call=0.0,
 ):
     prompt_tokens = float(row.get("prompt_token_count", prompt_token_proxy) or 0.0)
     committed_prefix_tokens = 0.0
@@ -98,6 +108,8 @@ def per_question_cost_breakdown(
     rollback_waste_cost = 0.0
     llm_prefix_rebuild_cost = 0.0
     llm_decode_cost = 0.0
+    probe_cost = 0.0
+    probe_calls = 0.0
 
     for event in row.get("route_trace", []):
         event_type = event.get("event")
@@ -108,6 +120,10 @@ def per_question_cost_breakdown(
             small_chunk_cost = slm_cost_ratio * token_count
             large_prefix_cost = committed_prefix_tokens
             large_decode_cost = token_count
+        elif cost_mode == "rsd_flops":
+            small_chunk_cost = estimate_rsd_token_flops(token_count, slm_params_b)
+            large_prefix_cost = estimate_rsd_token_flops(full_prefix_tokens, llm_params_b)
+            large_decode_cost = estimate_rsd_token_flops(token_count, llm_params_b)
         else:
             small_chunk_cost = estimate_decode_flops(
                 prefix_tokens=full_prefix_tokens,
@@ -137,20 +153,29 @@ def per_question_cost_breakdown(
             slm_decode_tokens += token_count
             slm_decode_cost += small_chunk_cost
             committed_prefix_tokens += token_count
+            probe_calls += 1.0
         elif event_type == "small_observe_rollback":
             slm_decode_tokens += token_count
             rollback_waste_tokens += token_count
             rollback_waste_cost += small_chunk_cost
+            probe_calls += 1.0
         elif event_type == "large_handoff":
             llm_prefix_rebuild_tokens += committed_prefix_tokens
             llm_decode_tokens += token_count
             llm_prefix_rebuild_cost += large_prefix_cost
             llm_decode_cost += large_decode_cost
             committed_prefix_tokens += token_count
+        elif event_type == "small_reentry_probe":
+            probe_calls += 1.0
+
+    if cost_mode == "rsd_flops" and probe_params_b > 0.0 and probe_tokens_per_call > 0.0:
+        probe_cost = estimate_rsd_token_flops(probe_calls * probe_tokens_per_call, probe_params_b)
 
     llm_only_prefix_tokens = prompt_tokens
     if cost_mode == "token_proxy":
         llm_only_cost = llm_token_proxy
+    elif cost_mode == "rsd_flops":
+        llm_only_cost = estimate_rsd_token_flops(llm_only_prefix_tokens + llm_token_proxy, llm_params_b)
     else:
         llm_only_cost = estimate_prefill_flops(
             total_tokens=llm_only_prefix_tokens,
@@ -177,6 +202,8 @@ def per_question_cost_breakdown(
         "rollback_waste_cost": rollback_waste_cost,
         "llm_prefix_rebuild_cost": llm_prefix_rebuild_cost,
         "llm_decode_cost": llm_decode_cost,
+        "probe_cost": probe_cost,
+        "probe_calls": probe_calls,
         "llm_only_cost": llm_only_cost,
     }
 
@@ -194,6 +221,8 @@ def build_points(
     llm_model_dims=None,
     base_param_flops_factor=2.0,
     attn_flops_factor=4.0,
+    probe_params_b=0.0,
+    probe_tokens_per_call=0.0,
 ):
     points = []
     for group in payload:
@@ -222,6 +251,8 @@ def build_points(
                 prompt_token_proxy=prompt_token_proxy,
                 base_param_flops_factor=base_param_flops_factor,
                 attn_flops_factor=attn_flops_factor,
+                probe_params_b=probe_params_b,
+                probe_tokens_per_call=probe_tokens_per_call,
             )
             for row in rows
         ]
@@ -235,6 +266,8 @@ def build_points(
         avg_rollback_waste_cost = sum(item["rollback_waste_cost"] for item in cost_breakdowns) / total
         avg_llm_prefix_rebuild_cost = sum(item["llm_prefix_rebuild_cost"] for item in cost_breakdowns) / total
         avg_llm_decode_cost = sum(item["llm_decode_cost"] for item in cost_breakdowns) / total
+        avg_probe_cost = sum(item["probe_cost"] for item in cost_breakdowns) / total
+        avg_probe_calls = sum(item["probe_calls"] for item in cost_breakdowns) / total
         avg_llm_only_cost = sum(item["llm_only_cost"] for item in cost_breakdowns) / total
 
         overall_flops_ratio = (
@@ -242,6 +275,7 @@ def build_points(
             + avg_rollback_waste_cost
             + avg_llm_prefix_rebuild_cost
             + avg_llm_decode_cost
+            + avg_probe_cost
         ) / avg_llm_only_cost
         llm_usage_ratio = avg_llm_decode_tokens / llm_token_proxy
 
@@ -262,6 +296,8 @@ def build_points(
                 "avg_rollback_waste_cost": avg_rollback_waste_cost,
                 "avg_llm_prefix_rebuild_cost": avg_llm_prefix_rebuild_cost,
                 "avg_large_takeover_cost": avg_llm_decode_cost,
+                "avg_probe_cost": avg_probe_cost,
+                "avg_probe_calls": avg_probe_calls,
                 "avg_llm_only_cost": avg_llm_only_cost,
                 "llm_usage_ratio": llm_usage_ratio,
                 "overall_flops_ratio": overall_flops_ratio,
@@ -362,6 +398,8 @@ def main():
         llm_model_dims=llm_model_dims,
         base_param_flops_factor=args.base_param_flops_factor,
         attn_flops_factor=args.attn_flops_factor,
+        probe_params_b=args.probe_params_b,
+        probe_tokens_per_call=args.probe_tokens_per_call,
     )
     if not points:
         raise ValueError(
@@ -405,6 +443,7 @@ def main():
             f"avg_rollback_waste={p['avg_rollback_waste_tokens']:.2f} | "
             f"avg_llm_prefix_rebuild={p['avg_llm_prefix_rebuild_tokens']:.2f} | "
             f"avg_large_tokens={p['avg_large_takeover_tokens']:.2f} | "
+            f"avg_probe_calls={p['avg_probe_calls']:.2f} | "
             f"llm_usage_ratio={p['llm_usage_ratio']:.4f} | "
             f"overall_flops_ratio={p['overall_flops_ratio']:.4f}"
         )
