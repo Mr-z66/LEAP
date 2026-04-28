@@ -40,11 +40,6 @@ DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
 DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
 DEFAULT_ANSWER_TYPE = "legacy_math"
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
-DEFAULT_SETUP_SUPPRESSION_PATTERNS = (
-    r"^\s*(to solve (this )?problem|to determine|to find|given the|let'?s start|we need to)\b",
-    r"^\s*(first|next),?\s+let'?s\b",
-    r"^\s*let\s+(the|us)\b",
-)
 # ========================================================
 
 
@@ -130,6 +125,12 @@ def parse_args():
         default=None,
         help="Risk threshold below which a small-model re-entry probe is considered stable. Defaults to the main trigger threshold.",
     )
+    parser.add_argument(
+        "--handoff-recovery-consecutive-stable-probes",
+        type=int,
+        default=1,
+        help="Require this many consecutive low-risk small-model re-entry probes before control returns to the small model.",
+    )
     parser.add_argument("--cooldown-chunks", type=int, default=SCHEDULER.cooldown_chunks, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
     parser.add_argument(
         "--require-consecutive-risk",
@@ -137,21 +138,21 @@ def parse_args():
         help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
     )
     parser.add_argument(
-        "--suppress-setup-trigger",
+        "--allow-sparse-risk-trigger",
         action="store_true",
-        help="Suppress early trigger events on generic setup chunks such as 'To solve the problem'. Off by default for clean ablations.",
+        help="Allow a trigger when the current chunk is high-risk and an earlier recent chunk was also high-risk, even if they are not consecutive.",
     )
     parser.add_argument(
-        "--setup-suppression-max-chunk-id",
+        "--sparse-risk-window",
         type=int,
-        default=1,
-        help="Apply setup-trigger suppression only up to this chunk id when --suppress-setup-trigger is enabled.",
+        default=3,
+        help="When --allow-sparse-risk-trigger is enabled, look back this many accepted small-model chunks for an earlier risky chunk.",
     )
     parser.add_argument(
-        "--setup-suppression-max-chars",
-        type=int,
-        default=160,
-        help="Ignore generic setup suppression when the chunk text is longer than this many characters.",
+        "--sparse-risk-min-score",
+        type=float,
+        default=None,
+        help="Optional minimum current chunk score required for sparse-risk triggering. Defaults to the main threshold.",
     )
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
     parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
@@ -243,29 +244,67 @@ def chunk_text(chunk):
     return str(chunk.get("chunk_text", "") or "")
 
 
-def looks_like_generic_setup_chunk(text):
-    normalized = str(text or "").strip().lower()
-    if not normalized:
+def compute_sparse_risk_trigger(combined_score, recent_combined_scores, threshold, args):
+    if not args.allow_sparse_risk_trigger:
         return False
-    for pattern in DEFAULT_SETUP_SUPPRESSION_PATTERNS:
-        if re.search(pattern, normalized):
+
+    min_score = threshold if args.sparse_risk_min_score is None else float(args.sparse_risk_min_score)
+    if combined_score < min_score:
+        return False
+
+    lookback_window = max(int(args.sparse_risk_window), 1)
+    for previous_score in recent_combined_scores[-lookback_window:]:
+        if previous_score is not None and previous_score >= threshold:
             return True
     return False
 
 
-def should_suppress_setup_trigger(chunk, args):
-    if not args.suppress_setup_trigger:
-        return False
-    chunk_id = int(chunk.get("chunk_id", 0))
-    if chunk_id > args.setup_suppression_max_chunk_id:
-        return False
+def decide_small_chunk_trigger(
+    combined_score,
+    previous_combined_score,
+    recent_combined_scores,
+    threshold,
+    args,
+):
+    meets_risk_trigger = combined_score >= threshold
+    trigger_rule = "single_chunk_risk"
+    sparse_risk_triggered = False
 
-    text = chunk_text(chunk)
-    if not text:
-        return False
-    if len(text) > args.setup_suppression_max_chars:
-        return False
-    return looks_like_generic_setup_chunk(text)
+    if args.require_consecutive_risk:
+        meets_risk_trigger = (
+            combined_score >= threshold
+            and previous_combined_score is not None
+            and previous_combined_score >= threshold
+        )
+        trigger_rule = "consecutive_two_chunk_risk"
+
+    if not meets_risk_trigger:
+        sparse_risk_triggered = compute_sparse_risk_trigger(
+            combined_score=combined_score,
+            recent_combined_scores=recent_combined_scores,
+            threshold=threshold,
+            args=args,
+        )
+        if sparse_risk_triggered:
+            meets_risk_trigger = True
+            trigger_rule = "sparse_window_risk"
+
+    return {
+        "meets_risk_trigger": meets_risk_trigger,
+        "sparse_risk_triggered": sparse_risk_triggered,
+        "trigger_rule": trigger_rule,
+    }
+
+
+def can_apply_large_handoff(meets_risk_trigger, handoff_count, cooldown_remaining, args):
+    return meets_risk_trigger and handoff_count < args.max_handoffs and cooldown_remaining <= 0
+
+
+def update_recent_combined_scores(recent_combined_scores, combined_score, args):
+    recent_combined_scores.append(combined_score)
+    max_recent_scores = max(int(args.sparse_risk_window), 1)
+    if len(recent_combined_scores) > max_recent_scores:
+        del recent_combined_scores[:-max_recent_scores]
 
 
 def chunk_scalar_feature(chunk, token):
@@ -958,6 +997,8 @@ def run_adaptive_large_handoff(
     reached_eos = False
     trace_events = []
     recovery_threshold = threshold if args.handoff_recovery_threshold is None else float(args.handoff_recovery_threshold)
+    required_stable_probes = max(int(args.handoff_recovery_consecutive_stable_probes), 1)
+    consecutive_stable_probes = 0
 
     while generated_chunks < args.max_adaptive_large_handoff_chunks:
         remaining_budget = max(args.max_new_tokens - current_total_tokens - total_generated_tokens, 1)
@@ -1030,6 +1071,10 @@ def run_adaptive_large_handoff(
             artifact=artifact,
         )
         is_stable = risk_info["combined_score"] < recovery_threshold
+        if is_stable:
+            consecutive_stable_probes += 1
+        else:
+            consecutive_stable_probes = 0
         trace_events.append(
             {
                 "event": "small_reentry_probe",
@@ -1040,11 +1085,13 @@ def run_adaptive_large_handoff(
                 "combined_score": float(risk_info["combined_score"]),
                 "progress_ratio": float((current_total_tokens + total_generated_tokens + observation_chunk["generated_token_count"]) / max(args.max_new_tokens, 1)),
                 "recovery_threshold": float(recovery_threshold),
-                "decision": "stable_return_to_small" if is_stable else "rollback_and_continue_large",
+                "required_consecutive_stable_probes": required_stable_probes,
+                "consecutive_stable_probes": consecutive_stable_probes,
+                "decision": "stable_return_to_small" if consecutive_stable_probes >= required_stable_probes else "rollback_and_continue_large",
                 "cut_reason": observation_chunk["cut_reason"],
             }
         )
-        if is_stable:
+        if consecutive_stable_probes >= required_stable_probes:
             trace_events.append(
                 {
                     "event": "adaptive_handoff_stop_recovered",
@@ -1133,6 +1180,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     cooldown_remaining = 0
     route_trace = []
     previous_combined_score = None
+    recent_combined_scores = []
 
     while total_tokens < args.max_new_tokens:
         safe_prefix = prefix
@@ -1178,25 +1226,17 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         combined_score = risk_info["combined_score"]
         prev_score_for_trace = previous_combined_score
 
-        # SVAMP false-alarm mitigation:
-        # When enabled, we only trigger after two consecutive risky chunks.
-        # This keeps the old behavior fully recoverable: do not pass
-        # --require-consecutive-risk and the scheduler falls back to the
-        # original single-chunk trigger rule.
-        meets_risk_trigger = combined_score >= threshold
-        if args.require_consecutive_risk:
-            meets_risk_trigger = (
-                combined_score >= threshold
-                and previous_combined_score is not None
-                and previous_combined_score >= threshold
-            )
+        trigger_decision = decide_small_chunk_trigger(
+            combined_score=combined_score,
+            previous_combined_score=previous_combined_score,
+            recent_combined_scores=recent_combined_scores,
+            threshold=threshold,
+            args=args,
+        )
+        meets_risk_trigger = trigger_decision["meets_risk_trigger"]
+        trigger_rule = trigger_decision["trigger_rule"]
 
-        setup_trigger_suppressed = False
-        if meets_risk_trigger and should_suppress_setup_trigger(small_chunk, args):
-            setup_trigger_suppressed = True
-            meets_risk_trigger = False
-
-        if meets_risk_trigger and handoff_count < args.max_handoffs and cooldown_remaining <= 0:
+        if can_apply_large_handoff(meets_risk_trigger, handoff_count, cooldown_remaining, args):
             triggered = True
             trigger_scores.append(combined_score)
             trigger_progresses.append(progress_ratio)
@@ -1212,7 +1252,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
                     "progress_ratio": float(progress_ratio),
                     "cut_reason": small_chunk["cut_reason"],
-                    "trigger_rule": "consecutive_two_chunk_risk" if args.require_consecutive_risk else "single_chunk_risk",
+                    "trigger_rule": trigger_rule,
                 }
             )
 
@@ -1278,6 +1318,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             reset_prev_chunk = True
             cooldown_remaining = args.cooldown_chunks
             previous_combined_score = None
+            recent_combined_scores = []
             if large_result["reached_eos"]:
                 break
             continue
@@ -1293,14 +1334,14 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
                 "progress_ratio": float(progress_ratio),
                 "cut_reason": small_chunk["cut_reason"],
-                "setup_trigger_suppressed": setup_trigger_suppressed,
             }
         )
         prefix = small_chunk["full_reasoning"]
         chunk_index += 1
         if cooldown_remaining > 0:
             cooldown_remaining -= 1
-        previous_combined_score = None if setup_trigger_suppressed else combined_score
+        previous_combined_score = combined_score
+        update_recent_combined_scores(recent_combined_scores, combined_score, args)
         if small_chunk["reached_eos"]:
             break
 
