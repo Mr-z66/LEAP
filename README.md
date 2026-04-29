@@ -28,107 +28,133 @@ As of 2026-04-28, the repository mainline has been aligned to the clean observe-
 
 This is the current recommended clean baseline for MATH500 replication and follow-up ablations.
 
-这个仓库当前服务于一条固定的主线实验：
+Exact reproduction command:
 
-- 小模型先生成 chunk 级推理轨迹
-- 32B strict judge 做 chunk-level prefix correctness 标注
-- probe 学习风险信号
-- observe-and-rollback scheduler 动态接管
-
-现在仓库已经整理成适合跨数据集复用的结构，后续跑 `GSM8K / SVAMP / MATH500` 时，尽量沿着同一条流程走。
-
-## 仓库结构
-
-- `core_package/`
-  主线代码。
-- `dataset/`
-  原始数据、chunk 轨迹、strict 标注数据。
-- `evaluation/`
-  单模型评测、FLOPs、失败分析、可视化。
-- `result/`
-  probe artifact、trace、json 输出、图。
-- `unsorted/`
-  历史材料和非主线代码。
-
-## 配置方式
-
-统一默认参数放在：
-
-- [core_package/config.py](e:/软工/LEAP/core_package/config.py)
-
-这里集中管理了：
-
-- 模型默认路径
-- system prompt
-- dataset build 默认参数
-- strict label 默认参数
-- probe 训练默认参数
-- scheduler 默认参数
-- evaluation 默认参数
-
-推荐原则：
-
-- 想改全局默认值，就改 `core_package/config.py`
-- 想做单次实验覆盖，就继续在命令行里传参数
-
-这样既统一口径，也不会影响你灵活做实验。
-
-## 运行前准备
-
-以下命令默认都在仓库根目录执行，也就是：
-
-```powershell
-cd e:\软工\LEAP
+```bash
+python -m core_package.schedulers.simulate_observe_rollback_scheduler \
+  --label-path dataset/math500_labeled_data_strict_hf_t2048.pt \
+  --eval-data-path dataset/math500_test_15b_hidden_states_hf_t2048.pt \
+  --probe-artifact-path result/artifacts/probe_artifact_math500_hf_t2048_hidden_only.pt \
+  --small-baseline-path result/analysis_outputs/qwen25_math_15b_only_math500_hf_t2048.json \
+  --small-model-path models/Qwen2.5-Math-1.5B-Instruct \
+  --large-model-path models/Qwen2.5-32B \
+  --large-backend vllm \
+  --vllm-base-url http://127.0.0.1:8000 \
+  --vllm-api-key EMPTY \
+  --vllm-model-name Qwen2.5-32B \
+  --thresholds 0.55 \
+  --max-new-tokens 2048 \
+  --max-handoffs 2 \
+  --large-handoff-chunks 2 \
+  --adaptive-large-handoff \
+  --min-large-handoff-chunks 1 \
+  --max-adaptive-large-handoff-chunks 4 \
+  --handoff-recovery-threshold 0.55 \
+  --cooldown-chunks 2 \
+  --require-consecutive-risk \
+  --answer-type math500_qwen_boxed \
+  --trace-export-path result/traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json
 ```
 
-远程 Linux 环境对应一般是：
+This repository currently supports one main experimental workflow:
+
+- a small model generates chunk-level reasoning trajectories
+- a 32B judge produces strict chunk-level correctness labels
+- a probe learns routing signals from those chunk features
+- an observe-and-rollback scheduler decides when to hand off to the large model
+
+The same workflow can be reused across `GSM8K`, `SVAMP`, and `MATH500` with minimal changes.
+
+## Repository Structure
+
+- `core_package/`
+  main pipeline and scheduler code
+- `dataset/`
+  raw data, chunk trajectories, and strict labels
+- `evaluation/`
+  model-only evaluation, FLOPs analysis, failure analysis, and visualization
+- `result/`
+  probe artifacts, traces, JSON outputs, and figures
+- `unsorted/`
+  historical material and non-mainline code
+
+## Configuration
+
+Shared defaults live in:
+
+- `core_package/config.py`
+
+This file centralizes:
+
+- default model paths
+- system prompts
+- dataset build defaults
+- strict labeling defaults
+- probe training defaults
+- scheduler defaults
+- evaluation defaults
+
+Recommended practice:
+
+- change `core_package/config.py` when you want to update global defaults
+- override arguments on the command line for one-off experiments
+
+## Before Running
+
+All commands below assume you are in the repository root:
+
+```powershell
+cd <repo-root>
+```
+
+On the Linux server this is typically:
 
 ```bash
 cd ~/care_experiment
 ```
 
-建议先确保这些目录存在：
+Make sure these directories exist:
 
 ```bash
 mkdir -p dataset result/artifacts result/analysis_outputs result/traces
 ```
 
-## 主线默认配置
+## Mainline Defaults
 
-当前主线默认配置是：
+The current mainline defaults are:
 
-- probe 特征：
+- probe features:
   `boundary+mean`
-- probe 训练：
+- probe training:
   `hidden_layers=128,32`
   `dropout=0.1`
   `epochs=60`
   `batch_size=256`
   `learning_rate=5e-4`
   `weight_decay=1e-3`
-- 低熵错误加权：
+- low-entropy error weighting:
   `final_entropy <= 1.0`
   `final_top1_prob >= 0.9`
   `weight = 4.0`
-- scheduler：
+- scheduler:
   `max_handoffs=2`
   `large_handoff_chunks=2`
-  `cooldown_chunks=1`
+  `cooldown_chunks=2`
   `tail_bonus_weight=0.0`
 
-如果你要完全复现主线，优先保持这些不变。
+If you want to reproduce the mainline, keep these unchanged unless you are intentionally running an ablation.
 
-## 一条完整实验链怎么跑
+## End-to-End Workflow
 
-无论什么数据集，主线都尽量走这 5 步：
+Across datasets, the mainline generally follows these five steps:
 
-1. 构建 1.5B chunk hidden-state 轨迹
-2. 用 32B strict judge 标注 chunk
-3. 训练 probe
-4. 跑单模型 baseline
-5. 跑 scheduler
+1. build 1.5B chunk hidden-state trajectories
+2. label chunks with a 32B strict judge
+3. train the probe
+4. run model-only baselines
+5. run the scheduler
 
-下面分数据集写具体操作。
+Dataset-specific commands are listed below.
 
 ---
 
