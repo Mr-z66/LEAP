@@ -64,6 +64,23 @@ def parse_args():
         action="store_true",
         help="Run local SLM/LLM comparisons and emit decode-choice labels.",
     )
+    parser.add_argument(
+        "--skip-empty-current-chunk",
+        action="store_true",
+        default=True,
+        help=(
+            "Skip rollout samples where the re-generated current chunk is empty for either branch. "
+            "Enabled by default to avoid end-of-trajectory pseudo-positive samples."
+        ),
+    )
+    parser.add_argument(
+        "--decisive-only",
+        action="store_true",
+        help=(
+            "After rollout labeling, keep only decisive training samples: "
+            "utility_label in {0, 2}."
+        ),
+    )
     parser.add_argument("--small-model-path", default=DEFAULT_SMALL_MODEL_PATH, help="Path to the small model.")
     parser.add_argument("--large-model-path", default=DEFAULT_LARGE_MODEL_PATH, help="Path to the large model.")
     parser.add_argument(
@@ -139,6 +156,7 @@ def build_candidate_row(record: Dict, chunk_index: int) -> Dict:
         "small_final_answer": record.get("model_final_answer"),
         "small_is_correct": bool(record.get("is_final_correct", False)),
         "total_chunks": len(chunks),
+        "chunk_id": int(chunk["chunk_id"]),
         "candidate_chunk_id": int(chunk["chunk_id"]),
         "relative_position": float(chunk_index / max(len(chunks) - 1, 1)),
         "prefix_before_current_chunk": previous_prefix,
@@ -147,6 +165,12 @@ def build_candidate_row(record: Dict, chunk_index: int) -> Dict:
         "small_chunk_token_count_reference": int(chunk.get("token_count", chunk.get("generated_token_count", 0)) or 0),
         "chunk_cut_reason_reference": str(chunk.get("cut_reason", "") or ""),
         "source_meta": record.get("source_meta", {}),
+        "boundary_hidden_state": chunk.get("boundary_hidden_state"),
+        "mean_hidden_state": chunk.get("mean_hidden_state"),
+        "final_entropy": chunk.get("final_entropy"),
+        "final_top1_prob": chunk.get("final_top1_prob"),
+        "final_margin": chunk.get("final_margin"),
+        "mean_entropy": chunk.get("mean_entropy"),
         "reference_confidence": {
             "final_entropy": scalarize_tensor(chunk.get("final_entropy")),
             "final_top1_prob": scalarize_tensor(chunk.get("final_top1_prob")),
@@ -290,6 +314,7 @@ def label_candidate_rows(rows: List[Dict], args) -> List[Dict]:
     answer_extractor = get_answer_extractor(args.answer_type)
 
     labeled_rows = []
+    skipped_empty_current_chunk = 0
     for row in rows:
         question = row["question"]
         prefix_before = row["prefix_before_current_chunk"]
@@ -329,6 +354,16 @@ def label_candidate_rows(rows: List[Dict], args) -> List[Dict]:
             num_chunks=1,
             max_total_new_tokens=args.max_new_tokens,
         )
+
+        llm_current_chunk_text = large_chunk.get("chunks", [{}])[0].get("chunk_text", "") if large_chunk.get("chunks") else ""
+        llm_current_chunk_tokens = int(large_chunk.get("generated_token_count", 0))
+        if args.skip_empty_current_chunk and (
+            int(small_chunk["generated_token_count"]) == 0
+            or llm_current_chunk_tokens == 0
+        ):
+            skipped_empty_current_chunk += 1
+            continue
+
         llm_branch = continue_with_small_model(
             small_model=small_model,
             small_tokenizer=small_tokenizer,
@@ -362,8 +397,8 @@ def label_candidate_rows(rows: List[Dict], args) -> List[Dict]:
                 "cut_reason": small_chunk["cut_reason"],
             },
             "llm_current_chunk": {
-                "chunk_text": large_chunk.get("chunks", [{}])[0].get("chunk_text", "") if large_chunk.get("chunks") else "",
-                "generated_token_count": int(large_chunk.get("generated_token_count", 0)),
+                "chunk_text": llm_current_chunk_text,
+                "generated_token_count": llm_current_chunk_tokens,
                 "generated_chunks": int(large_chunk.get("generated_chunks", 0)),
             },
             "small_branch": {
@@ -383,8 +418,38 @@ def label_candidate_rows(rows: List[Dict], args) -> List[Dict]:
             "utility_label": utility_label,
             "llm_preferred": llm_preferred,
         }
+        enriched["label"] = 1 if hard_label == "LLM" else 0
+        enriched["utility_label"] = int(utility_label)
+        enriched["llm_preferred"] = bool(llm_preferred)
         labeled_rows.append(enriched)
+
+    if skipped_empty_current_chunk:
+        print(
+            f"Skipped {skipped_empty_current_chunk} rollout samples because the current chunk "
+            f"re-generated as empty in at least one branch."
+        )
+
+    if args.decisive_only:
+        decisive_rows = [row for row in labeled_rows if int(row["utility_label"]) in {0, 2}]
+        print(
+            f"Keeping decisive-only rows: {len(decisive_rows)}/{len(labeled_rows)} "
+            f"(utility_label in {{0, 2}})."
+        )
+        labeled_rows = decisive_rows
     return labeled_rows
+
+
+def to_jsonable(value):
+    if isinstance(value, torch.Tensor):
+        flat = value.detach().cpu().to(torch.float32)
+        if flat.numel() == 1:
+            return float(flat.reshape(-1)[0].item())
+        return flat.tolist()
+    if isinstance(value, dict):
+        return {key: to_jsonable(inner) for key, inner in value.items()}
+    if isinstance(value, list):
+        return [to_jsonable(item) for item in value]
+    return value
 
 
 def save_rows(rows: List[Dict], output_path: str):
@@ -394,7 +459,7 @@ def save_rows(rows: List[Dict], output_path: str):
         return
     with open(output_path, "w", encoding="utf-8") as handle:
         for row in rows:
-            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+            handle.write(json.dumps(to_jsonable(row), ensure_ascii=False) + "\n")
 
 
 def main():
