@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument(
         "--candidate-policy",
         default="uniform_plus_ends",
-        choices=["uniform_plus_ends", "all"],
+        choices=["uniform_plus_ends", "risk_guided_plus_ends", "all"],
         help="How to choose candidate current-chunk boundaries per question.",
     )
     parser.add_argument(
@@ -58,6 +58,18 @@ def parse_args():
         type=int,
         default=4,
         help="Target number of internal candidate chunk boundaries per question for the uniform policy.",
+    )
+    parser.add_argument(
+        "--wrong-question-candidate-count",
+        type=int,
+        default=None,
+        help="Optional override for how many internal candidate chunk boundaries to keep when the small model is wrong.",
+    )
+    parser.add_argument(
+        "--correct-question-candidate-count",
+        type=int,
+        default=None,
+        help="Optional override for how many internal candidate chunk boundaries to keep when the small model is correct.",
     )
     parser.add_argument(
         "--label-with-rollouts",
@@ -124,7 +136,34 @@ def select_question_records(dataset: List[Dict], args) -> List[Dict]:
     return selected
 
 
-def choose_candidate_chunk_ids(chunks: List[Dict], policy: str, candidate_count: int) -> List[int]:
+def chunk_risk_proxy(chunk: Dict) -> float:
+    entropy = scalarize_tensor(chunk.get("final_entropy"))
+    if entropy is None:
+        entropy = scalarize_tensor(chunk.get("mean_entropy"))
+    if entropy is None:
+        entropy = 0.0
+
+    top1 = scalarize_tensor(chunk.get("final_top1_prob"))
+    if top1 is None:
+        top1 = 1.0
+
+    margin = scalarize_tensor(chunk.get("final_margin"))
+    if margin is None:
+        margin = 1.0
+
+    score = float(entropy)
+    score += 0.5 * max(0.0, 1.0 - float(top1))
+    score += 0.5 * max(0.0, 1.0 - float(margin))
+    return score
+
+
+def choose_candidate_chunk_ids(
+    chunks: List[Dict],
+    policy: str,
+    candidate_count: int,
+    *,
+    small_is_correct: bool,
+) -> List[int]:
     total = len(chunks)
     if total == 0:
         return []
@@ -136,6 +175,37 @@ def choose_candidate_chunk_ids(chunks: List[Dict], policy: str, candidate_count:
         return sorted(indices)
 
     target_count = max(candidate_count, 0)
+    if policy == "risk_guided_plus_ends":
+        scored = []
+        previous_score = None
+        for idx, chunk in enumerate(chunks):
+            score = chunk_risk_proxy(chunk)
+            delta = 0.0 if previous_score is None else score - previous_score
+            scored.append((idx, score, delta))
+            previous_score = score
+
+        # Prefer early decisive intervention on wrong questions, and sparse,
+        # cautionary negatives on already-correct questions.
+        scored_by_risk = sorted(scored, key=lambda item: (-item[1], item[0]))
+        scored_by_delta = sorted(scored, key=lambda item: (-item[2], item[0]))
+
+        picks = []
+        for idx, _, _ in scored_by_risk[:target_count]:
+            picks.append(idx)
+        for idx, _, _ in scored_by_delta[: max(1, target_count // 2)]:
+            picks.append(idx)
+
+        if not small_is_correct:
+            # Bias toward earlier correction anchors on wrong questions.
+            picks.extend([1, max(1, total // 4), max(1, total // 3)])
+        else:
+            # Keep a small number of mid-trajectory negatives for correct questions.
+            picks.extend([max(1, total // 3)])
+
+        for idx in picks:
+            indices.add(min(max(idx, 0), total - 1))
+        return sorted(indices)
+
     for rank in range(1, target_count + 1):
         rel = rank / float(target_count + 1)
         idx = int(round(rel * (total - 1)))
@@ -477,7 +547,20 @@ def main():
         chunks = record.get("chunks", [])
         if not chunks:
             continue
-        candidate_chunk_ids = choose_candidate_chunk_ids(chunks, args.candidate_policy, args.candidate_count)
+        per_question_candidate_count = args.candidate_count
+        if bool(record.get("is_final_correct", False)):
+            if args.correct_question_candidate_count is not None:
+                per_question_candidate_count = args.correct_question_candidate_count
+        else:
+            if args.wrong_question_candidate_count is not None:
+                per_question_candidate_count = args.wrong_question_candidate_count
+
+        candidate_chunk_ids = choose_candidate_chunk_ids(
+            chunks,
+            args.candidate_policy,
+            per_question_candidate_count,
+            small_is_correct=bool(record.get("is_final_correct", False)),
+        )
         for chunk_id in candidate_chunk_ids:
             rows.append(build_candidate_row(record, chunk_id))
 
