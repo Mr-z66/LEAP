@@ -44,35 +44,45 @@ and emit a first-pass hard/soft label package for the current chunk.
 Build candidate rows only:
 
 ```bash
-python experimental/chunk_decode_router/build_decode_choice_dataset.py ^
-  --trajectory-path dataset/math500_test_15b_hidden_states_hf_t2048.pt ^
-  --output-path experimental/chunk_decode_router/math500_test100_decode_choice_candidates.jsonl ^
-  --dataset-name math500 ^
-  --answer-type math500_qwen_boxed ^
-  --num-questions 100 ^
-  --candidate-policy uniform_plus_ends ^
+python -m experimental.chunk_decode_router.build_decode_choice_dataset \
+  --trajectory-path dataset/math500_test_15b_hidden_states_hf_t2048.pt \
+  --output-path experimental/chunk_decode_router/math500_test100_decode_choice_candidates.jsonl \
+  --dataset-name math500 \
+  --answer-type math500_qwen_boxed \
+  --num-questions 100 \
+  --candidate-policy uniform_plus_ends \
   --candidate-count 4
 ```
 
 Build candidates and run current-chunk rollout comparisons:
 
 ```bash
-python experimental/chunk_decode_router/build_decode_choice_dataset.py ^
-  --trajectory-path dataset/math500_test_15b_hidden_states_hf_t2048.pt ^
-  --output-path experimental/chunk_decode_router/math500_test100_decode_choice_labeled.jsonl ^
-  --dataset-name math500 ^
-  --answer-type math500_qwen_boxed ^
-  --num-questions 100 ^
-  --candidate-policy uniform_plus_ends ^
-  --candidate-count 4 ^
-  --label-with-rollouts ^
-  --small-model-path models/Qwen2.5-Math-1.5B-Instruct ^
-  --large-model-path models/Qwen2.5-32B ^
-  --large-backend vllm ^
-  --vllm-base-url http://127.0.0.1:8000 ^
-  --vllm-api-key token-abc123 ^
+python -m experimental.chunk_decode_router.build_decode_choice_dataset \
+  --trajectory-path dataset/math500_test_15b_hidden_states_hf_t2048.pt \
+  --output-path experimental/chunk_decode_router/math500_test100_decode_choice_labeled.jsonl \
+  --dataset-name math500 \
+  --answer-type math500_qwen_boxed \
+  --num-questions 100 \
+  --candidate-policy uniform_plus_ends \
+  --candidate-count 4 \
+  --label-with-rollouts \
+  --small-model-path models/Qwen2.5-Math-1.5B-Instruct \
+  --large-model-path models/Qwen2.5-32B \
+  --large-backend vllm \
+  --vllm-base-url http://127.0.0.1:8000 \
+  --vllm-api-key token-abc123 \
   --vllm-model-name Qwen2.5-32B
 ```
+
+## Helper scripts
+
+- `run_vllm_32b.sh`
+  starts a `Qwen2.5-32B` vLLM server for decode-choice labeling and keeps the same large-model setting as the current LEAP mainline.
+- `label_math500_decode_choice_test10.sh`
+  runs a first 10-question labeled decode-choice pass on MATH500 using:
+  - `Qwen2.5-Math-1.5B-Instruct` for `SLM_chunk + SLM_rest`
+  - `Qwen2.5-32B` for `LLM_chunk`
+  - `vLLM` as the large-model backend
 
 ## Files in this workspace
 
