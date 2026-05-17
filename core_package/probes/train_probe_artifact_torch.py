@@ -144,6 +144,11 @@ def chunk_scalar_feature(chunk, token):
 
 
 def low_entropy_error_weight(chunk, label_key, args):
+    if "sample_weight" in chunk:
+        try:
+            return float(chunk["sample_weight"])
+        except (TypeError, ValueError):
+            pass
     if label_key != "label":
         return 1.0
     if int(chunk.get(label_key, 1)) != 0:

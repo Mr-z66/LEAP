@@ -22,6 +22,39 @@ Use a small MATH500 subset first.
 1. Define candidate chunk boundaries.
 2. Build offline labels for current-chunk decode choice.
 3. Train a lightweight router.
+
+## Mixed-utility training flow
+
+When decisive-only labels are too sparse, we can convert labeled JSONL into a weighted `.pt`
+dataset where:
+
+- `utility_label = 2` stays as a high-confidence positive (`LLM`)
+- `utility_label = 0` stays as a high-confidence negative (`SLM`)
+- `utility_label = 1` is retained as a low-weight gray sample
+
+Prepare the weighted dataset:
+
+```bash
+python -m experimental.chunk_decode_router.prepare_mixed_training_dataset \
+  --input-path experimental/chunk_decode_router/math500_test100_decode_choice_labeled_full.jsonl \
+  --output-path experimental/chunk_decode_router/math500_test100_decode_choice_mixed.pt \
+  --mode mixed_utility \
+  --gray-weight 0.35 \
+  --positive-weight 1.0 \
+  --negative-weight 1.0
+```
+
+Then train with the existing probe trainer. It now respects a top-level `sample_weight`
+field when present:
+
+```bash
+python -m core_package.probes.train_probe_artifact_torch \
+  --label-path experimental/chunk_decode_router/math500_test100_decode_choice_mixed.pt \
+  --output-path result/artifacts/chunk_decode_router_probe_math500_mixed.pt \
+  --feature-key boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob \
+  --label-key label \
+  --pos-weight 1.0
+```
 4. Add an inference loop that routes the current chunk before decoding.
 
 ## Implemented first pass
@@ -38,6 +71,22 @@ It supports two stages:
    - `LLM_chunk + SLM_rest`
 
 and emit a first-pass hard/soft label package for the current chunk.
+
+The dataset now stores training-ready feature fields for the current candidate chunk:
+
+- `boundary_hidden_state`
+- `mean_hidden_state`
+- `relative_position`
+- `final_entropy`
+- `final_top1_prob`
+- `final_margin`
+- `mean_entropy`
+
+When rollout labeling is enabled, it also writes:
+
+- top-level `label` (`1` means `LLM`, `0` means `SLM`)
+- top-level `utility_label`
+- full comparison metadata under `comparison`
 
 ## Example usage
 
@@ -83,6 +132,26 @@ python -m experimental.chunk_decode_router.build_decode_choice_dataset \
   - `Qwen2.5-Math-1.5B-Instruct` for `SLM_chunk + SLM_rest`
   - `Qwen2.5-32B` for `LLM_chunk`
   - `vLLM` as the large-model backend
+- `analyze_decode_choice_labels.py`
+  summarizes candidate density, hard-label counts, utility-label counts, and optional `LLM` examples from a labeled decode-choice jsonl.
+
+Inspect a labeled subset:
+
+```bash
+python -m experimental.chunk_decode_router.analyze_decode_choice_labels \
+  --input-path experimental/chunk_decode_router/math500_test10_decode_choice_labeled.jsonl \
+  --show-examples 3
+```
+
+Train a first-pass decode router with the existing probe trainer:
+
+```bash
+python -m core_package.probes.train_probe_artifact_torch \
+  --label-path experimental/chunk_decode_router/math500_test10_decode_choice_labeled.pt \
+  --output-path result/artifacts/chunk_decode_router_probe_test10.pt \
+  --feature-key boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob \
+  --label-key label
+```
 
 ## Files in this workspace
 
