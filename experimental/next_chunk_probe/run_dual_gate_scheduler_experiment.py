@@ -487,6 +487,13 @@ def main():
 
     base_feature_key = base_artifact.get("feature_key")
     aux_feature_key = aux_artifact.get("feature_key")
+    # The legacy scheduler helper eagerly evaluates args.feature_key even when
+    # the artifact already carries its own feature_key. Populate a safe default
+    # here so old artifacts can still be scored without touching the baseline
+    # scheduler implementation.
+    args.feature_key = base_feature_key
+    args.base_feature_key = base_feature_key
+    args.aux_feature_key = aux_feature_key
     print(f"Base feature key: {base_feature_key}")
     print(f"Aux feature key: {aux_feature_key}")
 
