@@ -1,11 +1,13 @@
 import argparse
 import json
 import os
+import sys
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.config import MODELS
 from core_package.schedulers.simulate_observe_rollback_scheduler import (
+    TorchMLPProbe,
     apply_small_baseline_overrides,
     build_question_records,
     load_probe_artifact,
@@ -70,6 +72,10 @@ def parse_args():
 
 
 def main():
+    # Backward-compatibility for torch.load on artifacts that serialized the full
+    # probe object under a __main__.TorchMLPProbe reference.
+    setattr(sys.modules["__main__"], "TorchMLPProbe", TorchMLPProbe)
+
     args = parse_args()
     args.system_prompt = resolve_system_prompt(args.answer_type, args.system_prompt)
     thresholds = parse_csv_floats(args.thresholds)
