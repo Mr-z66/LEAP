@@ -72,7 +72,7 @@ The same workflow can be reused across `GSM8K`, `SVAMP`, and `MATH500` with mini
 - `dataset/`
   raw data, chunk trajectories, and strict labels
 - `evaluation/`
-  model-only evaluation, FLOPs analysis, failure analysis, and visualization
+  model-only evaluation, FLOPs analysis, latency benchmarking, failure analysis, and visualization
 - `result/`
   probe artifacts, traces, JSON outputs, and figures
 - `unsorted/`
@@ -98,6 +98,26 @@ Recommended practice:
 
 - change `core_package/config.py` when you want to update global defaults
 - override arguments on the command line for one-off experiments
+
+## Accuracy, Cost, and Latency
+
+The repository currently uses three distinct reporting axes:
+
+- **Accuracy**
+  question-level final answer correctness
+- **Compute cost**
+  normalized total inference FLOPs relative to the `LLM-only` baseline
+- **Latency**
+  end-to-end per-question wall-clock runtime under a fixed environment
+
+Detailed definitions and the current benchmarking workflow are documented in:
+
+- [`evaluation/LATENCY_AND_COST.md`](evaluation/LATENCY_AND_COST.md)
+
+The reusable latency benchmarking entrypoints are:
+
+- [`evaluation/benchmark_latency_compare.py`](evaluation/benchmark_latency_compare.py)
+- [`evaluation/latency_benchmark.example.json`](evaluation/latency_benchmark.example.json)
 
 ## Before Running
 

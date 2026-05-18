@@ -1,0 +1,29 @@
+{
+  "baseline_name": "small-only",
+  "methods": [
+    {
+      "name": "small-only",
+      "result_type": "model_only_json",
+      "result_path": "result/analysis_outputs/qwen25_math_15b_only_math500_hf_t2048.json",
+      "questions_total": 100,
+      "workdir": ".",
+      "command": "python -m evaluation.evaluate_model_only_accuracy --eval-data-path dataset/math500_test_15b_hidden_states_hf_t2048.pt --model-path models/Qwen2.5-Math-1.5B-Instruct --answer-type math500_qwen_boxed --output-path result/analysis_outputs/qwen25_math_15b_only_math500_hf_t2048.json"
+    },
+    {
+      "name": "large-only",
+      "result_type": "model_only_json",
+      "result_path": "result/analysis_outputs/qwen25_math_32b_only_math500_hf_t2048.json",
+      "questions_total": 100,
+      "workdir": ".",
+      "command": "python -m evaluation.evaluate_large_only_accuracy --eval-data-path dataset/math500_test_15b_hidden_states_hf_t2048.pt --model-path models/Qwen2.5-32B --backend vllm --vllm-base-url http://127.0.0.1:8000 --vllm-api-key token-abc123 --vllm-model-name Qwen2.5-32B --answer-type math500_qwen_boxed --output-path result/analysis_outputs/qwen25_math_32b_only_math500_hf_t2048.json"
+    },
+    {
+      "name": "leap-clean055",
+      "result_type": "observe_rollback_trace_json",
+      "result_path": "result/traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json",
+      "questions_total": 100,
+      "workdir": ".",
+      "command": "python -m core_package.schedulers.simulate_observe_rollback_scheduler --label-path dataset/math500_labeled_data_strict_hf_t2048.pt --eval-data-path dataset/math500_test_15b_hidden_states_hf_t2048.pt --probe-artifact-path result/artifacts/probe_artifact_math500_hf_t2048_hidden_only.pt --small-baseline-path result/analysis_outputs/qwen25_math_15b_only_math500_hf_t2048.json --small-model-path models/Qwen2.5-Math-1.5B-Instruct --large-model-path models/Qwen2.5-32B --large-backend vllm --vllm-base-url http://127.0.0.1:8000 --vllm-api-key token-abc123 --vllm-model-name Qwen2.5-32B --thresholds 0.55 --max-new-tokens 2048 --max-handoffs 2 --large-handoff-chunks 2 --adaptive-large-handoff --min-large-handoff-chunks 1 --max-adaptive-large-handoff-chunks 4 --handoff-recovery-threshold 0.55 --cooldown-chunks 2 --require-consecutive-risk --answer-type math500_qwen_boxed --trace-export-path result/traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json"
+    }
+  ]
+}
