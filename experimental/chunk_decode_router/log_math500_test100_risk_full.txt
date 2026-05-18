@@ -1,0 +1,7 @@
+Loading trajectories from: dataset/math500_test_15b_hidden_states_hf_t2048.pt
+Selected questions: 100
+Built candidate rows: 674
+Running dual-branch rollout labeling for current-chunk decode choice...
+`torch_dtype` is deprecated! Use `dtype` instead!
+Skipped 40 rollout samples because the current chunk re-generated as empty in at least one branch.
+Saved decode-choice dataset to: experimental/chunk_decode_router/math500_test100_decode_choice_risk_full.jsonl
