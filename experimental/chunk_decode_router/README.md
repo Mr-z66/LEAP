@@ -55,6 +55,37 @@ python -m core_package.probes.train_probe_artifact_torch \
   --label-key label \
   --pos-weight 1.0
 ```
+
+## Preference-core training flow (Option C)
+
+When utility-aware mixing remains unstable, we can switch to a lighter-weight
+pairwise-preference view of the same rollout data:
+
+- `utility_label = 2` -> `LLM preferred`
+- `utility_label = 0` -> `SLM preferred`
+- `utility_label = 1` -> excluded from the first-pass preference core
+
+Prepare the preference-core dataset:
+
+```bash
+python -m experimental.chunk_decode_router.prepare_mixed_training_dataset \
+  --input-path experimental/chunk_decode_router/math500_test100_decode_choice_risk_full.jsonl \
+  --output-path experimental/chunk_decode_router/math500_test100_decode_choice_C_preference.pt \
+  --mode preference_core \
+  --positive-weight 1.0 \
+  --negative-weight 1.0
+```
+
+Train the first-pass preference probe:
+
+```bash
+python -m core_package.probes.train_probe_artifact_torch \
+  --label-path experimental/chunk_decode_router/math500_test100_decode_choice_C_preference.pt \
+  --output-path result/artifacts/chunk_decode_router_probe_C_preference.pt \
+  --feature-key boundary+mean+relative_position+final_entropy+final_margin+final_top1_prob \
+  --label-key label \
+  --pos-weight 1.0
+```
 4. Add an inference loop that routes the current chunk before decoding.
 
 ## Implemented first pass

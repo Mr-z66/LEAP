@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument(
         "--mode",
         default="mixed_utility",
-        choices=["mixed_utility", "decisive_only"],
+        choices=["mixed_utility", "decisive_only", "preference_core"],
         help="How to map utility labels into binary labels and sample weights.",
     )
     parser.add_argument(
@@ -105,25 +105,29 @@ def derive_training_fields(row, args, gray_risk_threshold):
     record["chunk_id"] = int(record["candidate_chunk_id"])
     record["utility_label"] = int(utility_label)
 
-    if args.mode == "decisive_only":
+    if args.mode in {"decisive_only", "preference_core"}:
         if utility_label not in {0, 2}:
             return None
         record["label"] = 1 if hard_label == "LLM" else 0
+        record["preference_label"] = record["label"]
         record["sample_weight"] = args.positive_weight if record["label"] == 1 else args.negative_weight
         return record
 
     # mixed_utility
     if utility_label == 2:
         record["label"] = 1
+        record["preference_label"] = 1
         record["sample_weight"] = args.positive_weight
     elif utility_label == 0:
         record["label"] = 0
+        record["preference_label"] = 0
         record["sample_weight"] = args.negative_weight
     elif utility_label == 1:
         if not keep_gray_row(record, args, gray_risk_threshold):
             return None
         # Use the preference-derived hard label but downweight this gray region.
         record["label"] = 1 if hard_label == "LLM" else 0
+        record["preference_label"] = record["label"]
         record["sample_weight"] = float(args.gray_weight)
     else:
         raise ValueError(f"Unexpected utility_label={utility_label}")
@@ -176,6 +180,11 @@ def main():
         print(
             "Weights | positive decisive="
             f"{args.positive_weight:.3f} | negative decisive={args.negative_weight:.3f} | gray={args.gray_weight:.3f}"
+        )
+    else:
+        print(
+            "Preference core | positive decisive="
+            f"{args.positive_weight:.3f} | negative decisive={args.negative_weight:.3f}"
         )
 
 
