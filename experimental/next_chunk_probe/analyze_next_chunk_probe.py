@@ -19,6 +19,11 @@ def parse_args():
     parser.add_argument("--label-path", required=True, help="Path to the relabeled .pt dataset.")
     parser.add_argument("--artifact-path", required=True, help="Path to the trained probe artifact.")
     parser.add_argument("--threshold", type=float, default=0.5, help="Positive probability threshold.")
+    parser.add_argument(
+        "--threshold-grid",
+        default=None,
+        help="Optional comma-separated thresholds to scan, e.g. 0.2,0.25,0.3,0.35.",
+    )
     parser.add_argument("--show-questions", type=int, default=10, help="Top risky questions to print.")
     return parser.parse_args()
 
@@ -38,6 +43,17 @@ def load_probe(artifact):
     probe.load_state_dict(artifact["probe_state_dict"])
     probe.eval()
     return probe
+
+
+def parse_threshold_grid(text):
+    values = []
+    for part in str(text).split(","):
+        part = part.strip()
+        if part:
+            values.append(float(part))
+    if not values:
+        raise ValueError("Expected at least one threshold in --threshold-grid.")
+    return values
 
 
 def rows_from_dataset(dataset, feature_key):
@@ -94,6 +110,29 @@ def main():
     y_test = np.asarray([row["raw_label"] for row in test_rows], dtype=np.int64)
     X_test_scaled = scaler.transform(X_test)
     pos_probs = probe.predict_proba(X_test_scaled)[:, 1]
+
+    if args.threshold_grid:
+        print(f"Artifact: {artifact_path}")
+        print(f"Label data: {label_path}")
+        print(f"Feature key: {feature_key}")
+        print(f"Test questions: {len(test_question_ids)} | Test rows: {len(test_rows)}")
+        print(f"True label distribution: {dict(zip(*np.unique(y_test, return_counts=True)))}")
+        print("Threshold scan:")
+        print("threshold | pred_risk_rate | precision_1 | recall_1 | f1_1 | tn fp fn tp")
+        for threshold in parse_threshold_grid(args.threshold_grid):
+            pred_labels = (pos_probs >= threshold).astype(np.int64)
+            cm = confusion_matrix(y_test, pred_labels, labels=[0, 1])
+            tn, fp, fn, tp = cm.ravel()
+            precision = tp / max(tp + fp, 1)
+            recall = tp / max(tp + fn, 1)
+            f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
+            print(
+                f"{threshold:.3f} | {pred_labels.mean():.4f} | "
+                f"{precision:.4f} | {recall:.4f} | {f1:.4f} | "
+                f"{tn} {fp} {fn} {tp}"
+            )
+        return
+
     pred_labels = (pos_probs >= args.threshold).astype(np.int64)
 
     print(f"Artifact: {artifact_path}")
