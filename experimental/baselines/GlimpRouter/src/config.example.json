@@ -1,0 +1,10 @@
+{
+  "dataset_name": "aime25",
+  "repeat_num": 1,
+  "score_method": "first_token_entropy",
+  "token_budget": 1024,
+  "output_dir": "./large32b_small4b_first_token_entropy_0.9_results",
+  "model_size": "32b",
+  "small_model_size": "4b",
+  "score_threshold": 0.9
+}
