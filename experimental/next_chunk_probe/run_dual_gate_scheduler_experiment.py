@@ -472,6 +472,8 @@ def main():
     base_artifact = load_probe_artifact(args)
     if base_artifact is None:
         raise FileNotFoundError(f"Base probe artifact not found: {args.base_probe_artifact_path}")
+    if "feature_key" not in base_artifact or not base_artifact.get("feature_key"):
+        base_artifact["feature_key"] = "boundary+mean"
 
     print(f"Loading auxiliary next-2 training label dataset from: {args.aux_label_path}")
     aux_train_dataset = torch.load(args.aux_label_path, weights_only=False)
@@ -480,6 +482,8 @@ def main():
     aux_artifact = load_probe_artifact(args)
     if aux_artifact is None:
         raise FileNotFoundError(f"Auxiliary probe artifact not found: {args.aux_probe_artifact_path}")
+    if "feature_key" not in aux_artifact or not aux_artifact.get("feature_key"):
+        aux_artifact["feature_key"] = "boundary+mean+delta_prev+relative_position"
 
     base_feature_key = base_artifact.get("feature_key")
     aux_feature_key = aux_artifact.get("feature_key")
