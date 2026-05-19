@@ -109,7 +109,7 @@ def generate_new_step(problem, steps_so_far, model_size, options=None, stop_toke
     return step_str, finished, num_output_tokens
 
 
-def generate_answer(problem, steps_so_far, model_size, options=None):
+def generate_answer(problem, steps_so_far, model_size, options=None, max_tokens=2048):
     client = clients[model_size]
     
     steps_so_far_str = "\n\n".join(steps_so_far)
@@ -126,7 +126,7 @@ def generate_answer(problem, steps_so_far, model_size, options=None):
         model=get_model(model_size),
         messages=messages,
         temperature=0.6, top_p=0.95,
-        max_tokens=2048,
+        max_tokens=max_tokens,
         extra_body=extra_body,
     )
 
@@ -311,8 +311,10 @@ def glimprouter(
                 break
 
         # Generation of Final Answer
+        used_tokens = sum(m["final_num_output_tokens"] for m in metadata_list)
+        remaining_budget = max(1, token_budget - used_tokens)
         base_model_step, finished, num_output_tokens_base = generate_answer(
-            problem, steps_so_far, model_size, options=options
+            problem, steps_so_far, model_size, options=options, max_tokens=remaining_budget
         )
         small_model_step, num_output_tokens_small = None, None
         score, justification = None, None
