@@ -28,11 +28,13 @@ def get_model(model_size):
 # %%
 model_names = {
     "32b": os.getenv("GLIMP_MODEL_32B", os.getenv("GLIMP_LARGE_MODEL", "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B")),
+    "7b": os.getenv("GLIMP_MODEL_7B", os.getenv("GLIMP_LARGE_MODEL", "Qwen/Qwen2.5-7B-Instruct")),
     "4b": os.getenv("GLIMP_MODEL_4B", os.getenv("GLIMP_SMALL_MODEL", "Qwen/Qwen3-4B-Thinking-2507")),
     "1.5b": os.getenv("GLIMP_MODEL_1P5B", "Qwen/Qwen2.5-Math-1.5B-Instruct"),
 }
 ports = {
     "32b": os.getenv("GLIMP_PORT_32B", os.getenv("GLIMP_LARGE_PORT", "17125")),
+    "7b": os.getenv("GLIMP_PORT_7B", os.getenv("GLIMP_LARGE_PORT", "8001")),
     "4b": os.getenv("GLIMP_PORT_4B", os.getenv("GLIMP_SMALL_PORT", "17130")),
     "1.5b": os.getenv("GLIMP_PORT_1P5B", "17131"),
 }
@@ -41,7 +43,7 @@ api_key = os.getenv("GLIMP_API_KEY", "glimp_router")
 clients = {}
 for size, full_name in model_names.items():
     default_base_url = f"http://localhost:{ports[size]}/v1"
-    if size == "32b":
+    if size in {"32b", "7b"}:
         base_url = os.getenv("GLIMP_BASE_URL_32B", os.getenv("GLIMP_LARGE_BASE_URL", default_base_url))
     elif size == "4b":
         base_url = os.getenv("GLIMP_BASE_URL_4B", os.getenv("GLIMP_SMALL_BASE_URL", default_base_url))
