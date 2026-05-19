@@ -1,0 +1,2 @@
+dataset_name,questions_total,correct,accuracy,model_size,small_model_size,score_method,score_threshold,token_budget,latency_mean_s,latency_median_s,latency_p90_s,sec_per_question_mean,avg_small_tokens,avg_large_tokens,avg_score_calls,avg_large_steps,avg_reasoning_steps,avg_large_step_fraction,avg_param_weighted_token_cost
+math500,500,141,0.282,32b,1.5b,first_token_entropy,1.0,384,5.709174024105072,3.7747339010238647,11.115468692779542,5.709174024105072,333.146,60.454,7.854,1.538,7.854,0.19924010856704355,2446.028
