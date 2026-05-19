@@ -1304,9 +1304,10 @@ def main():
         )
         large_model.eval()
     else:
+        served_model_name = args.vllm_model_name or os.path.basename(args.large_model_path.rstrip("/\\"))
         print(
             "Using vLLM large backend: "
-            f"{args.vllm_base_url.rstrip('/')} | served_model={args.vllm_model_name or os.path.basename(args.large_model_path.rstrip('/\\'))}"
+            f"{args.vllm_base_url.rstrip('/')} | served_model={served_model_name}"
         )
 
     print(f"Simulating thresholds: {thresholds}")
