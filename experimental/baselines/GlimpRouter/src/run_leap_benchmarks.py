@@ -20,7 +20,7 @@ from core_package.answer_registry import (  # noqa: E402
     get_answer_extractor,
     resolve_answer_type,
 )
-from glimprouter import glimprouter  # noqa: E402
+from glimp_router import glimprouter  # noqa: E402
 
 
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "result" / "baselines" / "glimprouter"
