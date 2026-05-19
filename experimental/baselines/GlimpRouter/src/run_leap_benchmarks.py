@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument("--small-backend", choices=["api", "hf"], default="api", help="Backend for small-model scoring and generation.")
     parser.add_argument("--small-model-path", default=None, help="Local/HF path for the small model when --small-backend hf.")
     parser.add_argument("--answer-type", default=None, help="Optional answer protocol override, e.g. svamp_boxed_numeric.")
+    parser.add_argument("--final-answer-min-tokens", type=int, default=128, help="Minimum token budget reserved for the final answer step.")
     parser.add_argument("--gsm8k-token-budget", type=int, default=2048)
     parser.add_argument("--svamp-token-budget", type=int, default=2048)
     parser.add_argument("--math500-token-budget", type=int, default=4096)
@@ -196,6 +197,7 @@ def run_dataset(dataset_name, args):
             model_size=args.model_size,
             small_model_size=args.small_model_size,
             small_backend=args.small_backend,
+            final_answer_min_tokens=args.final_answer_min_tokens,
         )
         elapsed = time.time() - start
         latencies.append(elapsed)
@@ -223,6 +225,8 @@ def run_dataset(dataset_name, args):
                 "gold_found": gold_found,
                 "is_correct": is_correct,
                 "latency_s": elapsed,
+                "final_answer_text": raw_answer,
+                "metadata_path": str(output_dir / f"{dataset_name}/{idx}/0.json"),
                 **cost_stats,
             }
         )
@@ -239,6 +243,7 @@ def run_dataset(dataset_name, args):
         "small_model_size": args.small_model_size,
         "small_backend": args.small_backend,
         "answer_type": answer_type,
+        "final_answer_min_tokens": args.final_answer_min_tokens,
         "token_budget": dataset_token_budget(dataset_name, args),
         "latency_mean_s": statistics.mean(latencies) if latencies else None,
         "latency_median_s": statistics.median(latencies) if latencies else None,
@@ -284,6 +289,7 @@ def write_overall_summary(output_root, summaries):
         "small_model_size",
         "small_backend",
         "answer_type",
+        "final_answer_min_tokens",
         "score_method",
         "score_threshold",
         "token_budget",

@@ -206,7 +206,8 @@ def generate_new_step(problem, steps_so_far, model_size, options=None, stop_toke
     response = client.chat.completions.create(
         model=get_model(model_size),
         messages=messages,
-        temperature=0.6, top_p=0.95,
+        temperature=float(os.getenv("GLIMP_GENERATION_TEMPERATURE", "0.0")),
+        top_p=float(os.getenv("GLIMP_GENERATION_TOP_P", "1.0")),
         max_tokens=512,
         stop=[stop_token],
         extra_body=extra_body,
@@ -235,7 +236,8 @@ def generate_answer(problem, steps_so_far, model_size, options=None, max_tokens=
     response = client.chat.completions.create(
         model=get_model(model_size),
         messages=messages,
-        temperature=0.6, top_p=0.95,
+        temperature=float(os.getenv("GLIMP_GENERATION_TEMPERATURE", "0.0")),
+        top_p=float(os.getenv("GLIMP_GENERATION_TOP_P", "1.0")),
         max_tokens=max_tokens,
         extra_body=extra_body,
     )
@@ -345,6 +347,7 @@ def glimprouter(
     model_size="32b",
     small_model_size="4b",
     small_backend="api",
+    final_answer_min_tokens=128,
 ):
     problem_uid = f"{dataset_name}/{problem_id}"
     output_filename = os.path.join(output_dir, f"{problem_uid}/{repeat_id}")
@@ -423,8 +426,10 @@ def glimprouter(
             if len(steps_so_far) > 2:
                 finished = finished or steps_so_far[-1] == steps_so_far[-2]
 
-            if finished or sum(m["final_num_output_tokens"] for m in metadata_list) >= token_budget:
-                if sum(m["final_num_output_tokens"] for m in metadata_list) >= token_budget:
+            used_tokens = sum(m["final_num_output_tokens"] for m in metadata_list)
+            reasoning_budget = max(1, token_budget - final_answer_min_tokens)
+            if finished or used_tokens >= reasoning_budget:
+                if used_tokens >= reasoning_budget:
                     metadata_list[-1]["stop_reason"] = "budget"
                 else:
                     metadata_list[-1]["stop_reason"] = "finished"
@@ -432,7 +437,7 @@ def glimprouter(
 
         # Generation of Final Answer
         used_tokens = sum(m["final_num_output_tokens"] for m in metadata_list)
-        remaining_budget = max(1, token_budget - used_tokens)
+        remaining_budget = max(final_answer_min_tokens, token_budget - used_tokens)
         base_model_step, finished, num_output_tokens_base = generate_answer(
             problem, steps_so_far, model_size, options=options, max_tokens=remaining_budget
         )
