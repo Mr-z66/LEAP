@@ -3,6 +3,7 @@ import json
 import os
 import re
 import statistics
+import time
 
 import numpy as np
 import torch
@@ -115,6 +116,8 @@ def parse_args():
         help="Optional JSON produced by evaluation/evaluate_model_only_accuracy.py to override stored small-model correctness.",
     )
     parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
+    parser.add_argument("--small-model-params-b", type=float, default=None, help="Small model parameter count in billions for token-cost reporting.")
+    parser.add_argument("--large-model-params-b", type=float, default=None, help="Large model parameter count in billions for token-cost reporting.")
     return parser.parse_args()
 
 
@@ -239,6 +242,26 @@ def parse_csv_floats(text):
     if not values:
         raise ValueError("Expected at least one numeric value.")
     return values
+
+
+def infer_model_params_b(model_path):
+    matches = re.findall(r"(\d+(?:\.\d+)?)\s*b", str(model_path).lower())
+    if not matches:
+        return None
+    return float(matches[-1])
+
+
+def percentile(values, p):
+    if not values:
+        return None
+    if len(values) == 1:
+        return values[0]
+    ordered = sorted(values)
+    idx = (len(ordered) - 1) * p
+    lo = int(idx)
+    hi = min(lo + 1, len(ordered) - 1)
+    frac = idx - lo
+    return ordered[lo] * (1.0 - frac) + ordered[hi] * frac
 
 
 def parse_hidden_layer_sizes(hidden_layers_text):
@@ -698,6 +721,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     )
     prefix = None
     total_tokens = 0
+    total_small_tokens = 0
     total_large_tokens = 0
     handoff_count = 0
     chunk_index = 0
@@ -730,6 +754,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             break
 
         total_tokens += small_chunk["generated_token_count"]
+        total_small_tokens += small_chunk["generated_token_count"]
         progress_ratio = total_tokens / max(args.max_new_tokens, 1)
         small_chunk["chunk_id"] = chunk_index
         runtime_small_chunks.append(small_chunk)
@@ -857,6 +882,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         "prompt_token_count": question_prompt_token_count,
         "triggered": triggered,
         "handoff_count": handoff_count,
+        "small_generated_tokens": total_small_tokens,
         "large_generated_tokens": total_large_tokens,
         "avg_trigger_score": safe_mean(trigger_scores),
         "avg_trigger_progress": safe_mean(trigger_progresses),
@@ -872,7 +898,11 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
     triggered_wrong_questions = 0
     false_alarm_correct_questions = 0
     handoff_counts = []
+    latencies = []
+    small_generated_tokens = []
+    large_generated_tokens = []
     large_takeover_tokens = []
+    param_weighted_token_costs = []
     trigger_progresses = []
     per_question_rows = []
 
@@ -884,6 +914,7 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
         else:
             error_questions += 1
 
+        item_start = time.time()
         result = simulate_question(
             record=record,
             small_model=small_model,
@@ -896,12 +927,26 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
             args=args,
             artifact=artifact,
         )
+        latency_s = time.time() - item_start
+        latencies.append(latency_s)
+
+        small_tokens = int(result["small_generated_tokens"])
+        large_tokens = int(result["large_generated_tokens"])
+        small_generated_tokens.append(small_tokens)
+        large_generated_tokens.append(large_tokens)
+        param_weighted_token_cost = None
+        if args.small_model_params_b is not None and args.large_model_params_b is not None:
+            param_weighted_token_cost = (
+                args.small_model_params_b * small_tokens
+                + args.large_model_params_b * large_tokens
+            )
+            param_weighted_token_costs.append(param_weighted_token_cost)
 
         scheduled_correct += int(result["scheduled_is_correct"])
         if result["triggered"]:
             triggered_questions += 1
             handoff_counts.append(result["handoff_count"])
-            large_takeover_tokens.append(result["large_generated_tokens"])
+            large_takeover_tokens.append(large_tokens)
             if not np.isnan(result["avg_trigger_progress"]):
                 trigger_progresses.append(result["avg_trigger_progress"])
             if not small_is_correct:
@@ -917,8 +962,12 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
                 "scheduled_is_correct": result["scheduled_is_correct"],
                 "triggered": result["triggered"],
                 "handoff_count": result["handoff_count"],
+                "latency_s": latency_s,
                 "avg_trigger_score": result["avg_trigger_score"],
                 "avg_trigger_progress": result["avg_trigger_progress"],
+                "small_generated_tokens": small_tokens,
+                "large_generated_tokens": large_tokens,
+                "param_weighted_token_cost": param_weighted_token_cost,
                 "small_final_answer": record["small_final_answer"],
                 "scheduled_final_answer": result["scheduled_final_answer"],
                 "route_trace": result["route_trace"],
@@ -940,7 +989,16 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
         "error_questions_triggered": triggered_wrong_questions,
         "false_alarm_correct_question_rate": false_alarm_correct_questions / correct_questions if correct_questions else float("nan"),
         "avg_handoff_count": safe_mean(handoff_counts),
+        "avg_small_generated_tokens": safe_mean(small_generated_tokens),
+        "avg_large_generated_tokens": safe_mean(large_generated_tokens),
         "avg_large_takeover_tokens": safe_mean(large_takeover_tokens),
+        "latency_mean_s": safe_mean(latencies),
+        "latency_median_s": statistics.median(latencies) if latencies else float("nan"),
+        "latency_p90_s": percentile(latencies, 0.9),
+        "sec_per_question_mean": safe_mean(latencies),
+        "small_model_params_b": args.small_model_params_b,
+        "large_model_params_b": args.large_model_params_b,
+        "avg_param_weighted_token_cost": safe_mean(param_weighted_token_costs),
         "avg_trigger_progress": safe_mean(trigger_progresses),
         "per_question_rows": per_question_rows,
     }
@@ -993,13 +1051,33 @@ def print_summary(summary):
     print(f"False-alarm correct-question rate: {summary['false_alarm_correct_question_rate']:.4f}")
     print(f"Avg handoff count: {summary['avg_handoff_count']:.2f}")
     print(f"Avg trigger progress: {summary['avg_trigger_progress']:.4f}")
+    print(f"Avg small generated tokens: {summary['avg_small_generated_tokens']:.2f}")
+    print(f"Avg large generated tokens: {summary['avg_large_generated_tokens']:.2f}")
     print(f"Avg large takeover tokens: {summary['avg_large_takeover_tokens']:.2f}")
+    print(
+        f"Avg latency: {summary['latency_mean_s']:.4f}s | "
+        f"median: {summary['latency_median_s']:.4f}s | "
+        f"p90: {summary['latency_p90_s']:.4f}s"
+    )
+    if not np.isnan(summary["avg_param_weighted_token_cost"]):
+        print(f"Avg param-weighted token cost: {summary['avg_param_weighted_token_cost']:.2f}")
 
 
 def main():
     args = parse_args()
     args.system_prompt = resolve_system_prompt(args.answer_type, DEFAULT_SYSTEM_PROMPT)
     thresholds = parse_csv_floats(args.thresholds)
+    if args.small_model_params_b is None:
+        args.small_model_params_b = infer_model_params_b(args.small_model_path)
+    if args.large_model_params_b is None:
+        args.large_model_params_b = infer_model_params_b(args.large_model_path)
+    if args.small_model_params_b is not None and args.large_model_params_b is not None:
+        print(
+            "Using token-cost params: "
+            f"small={args.small_model_params_b}B | large={args.large_model_params_b}B"
+        )
+    else:
+        print("Token-cost params unavailable; pass --small-model-params-b and --large-model-params-b to report cost.")
 
     print(f"Loading training dataset from: {args.label_path}")
     dataset = torch.load(args.label_path)
@@ -1088,10 +1166,10 @@ def main():
     if args.trace_export_path:
         export_rows = []
         for summary in summaries:
+            summary_metrics = {key: value for key, value in summary.items() if key != "per_question_rows"}
             export_rows.append(
                 {
-                    "threshold": summary["threshold"],
-                    "tail_bonus_weight": summary["tail_bonus_weight"],
+                    **summary_metrics,
                     "per_question_rows": summary["per_question_rows"],
                 }
             )
