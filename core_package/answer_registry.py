@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal, InvalidOperation
 from typing import Callable, List, Optional, Tuple
 
 from core_package.answer_extraction import extract_final_answer
@@ -337,6 +338,31 @@ def extract_svamp_numeric_answer(text: str) -> Tuple[str, bool]:
     return str(answer), True
 
 
+def extract_svamp_boxed_numeric_answer(text: str) -> Tuple[str, bool]:
+    if not text:
+        return "", False
+
+    normalized_text = _preprocess_text(text)
+    boxed = _extract_boxed_content(normalized_text)
+    if boxed:
+        boxed_value = _extract_last_number(boxed)
+        if boxed_value is not None:
+            return _normalize_extracted_number(boxed_value), True
+
+    return extract_svamp_numeric_answer(text)
+
+
+def _numeric_answers_equal(predicted: str, actual: str) -> bool:
+    pred = _normalize_extracted_number(predicted)
+    gold = _normalize_extracted_number(actual)
+    if pred is None or gold is None:
+        return False
+    try:
+        return Decimal(pred) == Decimal(gold)
+    except InvalidOperation:
+        return pred == gold
+
+
 def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> bool:
     predicted_text = _normalize_answer_text(predicted)
     actual_text = _normalize_answer_text(actual)
@@ -348,6 +374,9 @@ def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> b
 
     if answer_type == "boxed":
         return _normalize_boxed_math(predicted_text) == _normalize_boxed_math(actual_text)
+
+    if answer_type == "svamp_boxed_numeric":
+        return _numeric_answers_equal(predicted_text, actual_text)
 
     if answer_type in {"legacy_math", "svamp_numeric"}:
         return predicted_text == actual_text
@@ -361,6 +390,7 @@ def get_answer_extractor(answer_type: str) -> AnswerExtractor:
         "math500_qwen_boxed": extract_math500_answer,
         "legacy_math": extract_legacy_math_answer,
         "svamp_numeric": extract_svamp_numeric_answer,
+        "svamp_boxed_numeric": extract_svamp_boxed_numeric_answer,
     }
     if answer_type not in extractors:
         raise ValueError(f"Unsupported answer type: {answer_type}")

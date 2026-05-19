@@ -16,6 +16,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import MODELS, SCHEDULER
 from core_package.math500_protocol import append_math500_instruction
+from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 # ================= Default Configuration =================
 DEFAULT_LABEL_PATH = SCHEDULER.label_path
@@ -172,7 +173,7 @@ def parse_args():
 
 
 def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
-    if answer_type in {"boxed", "math500_qwen_boxed"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
         return DEFAULT_BOXED_SYSTEM_PROMPT
     return system_prompt
 
@@ -430,7 +431,12 @@ def build_generation_prompt_text(tokenizer, question, assistant_prefix, system_p
         if not normalized_prefix:
             normalized_prefix = None
 
-    generation_question = append_math500_instruction(question) if answer_type == "math500_qwen_boxed" else question
+    if answer_type == "math500_qwen_boxed":
+        generation_question = append_math500_instruction(question)
+    elif answer_type == "svamp_boxed_numeric":
+        generation_question = append_svamp_boxed_instruction(question)
+    else:
+        generation_question = question
     messages = build_generation_messages(generation_question, assistant_prefix=normalized_prefix, system_prompt=system_prompt)
     if normalized_prefix is None:
         prompt_text = tokenizer.apply_chat_template(

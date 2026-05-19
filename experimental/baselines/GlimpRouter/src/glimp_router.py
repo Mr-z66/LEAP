@@ -12,6 +12,8 @@ import json
 import random
 import re
 
+hf_models = {}
+
 def get_avg_score(scores):
     # Mean over non-null scores.
     return statistics.mean([x for x in scores if x is not None])
@@ -52,6 +54,27 @@ for size, full_name in model_names.items():
         base_url=base_url,
     )
 
+
+def get_hf_model(model_size):
+    if model_size in hf_models:
+        return hf_models[model_size]
+
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    model_path = get_model(model_size)
+    local_files_only = os.getenv("GLIMP_HF_LOCAL_FILES_ONLY", "1") != "0"
+    tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=local_files_only)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        torch_dtype=torch.bfloat16,
+        device_map=os.getenv("GLIMP_HF_DEVICE_MAP", "auto"),
+        local_files_only=local_files_only,
+    )
+    model.eval()
+    hf_models[model_size] = (tokenizer, model)
+    return hf_models[model_size]
+
 def get_first_user_msg(problem, options=None):
     if options == "aime" or options == "math":
         system_prompt = "Solve the following math problem and return ONLY the final answer.\nPlease reason step by step, separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.\n\n"
@@ -77,6 +100,91 @@ def get_first_user_msg(problem, options=None):
         raise NotImplementedError
 
 # %%
+def build_hf_prompt(tokenizer, problem, steps_so_far, options=None):
+    if steps_so_far == []:
+        messages = [
+            {"role": "user", "content": get_first_user_msg(problem, options)},
+        ]
+        return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+    steps_so_far_str = "\n\n".join(steps_so_far) + "\n\n"
+    messages = [
+        {"role": "user", "content": get_first_user_msg(problem, options)},
+        {"role": "assistant", "content": f"<think>{steps_so_far_str}"},
+    ]
+    try:
+        return tokenizer.apply_chat_template(messages, tokenize=False, continue_final_message=True)
+    except TypeError:
+        return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+
+
+def generate_hf_text_until_stop(tokenizer, model, prompt_text, max_tokens=512, stop_token="\n\n"):
+    import torch
+
+    inputs = tokenizer(prompt_text, return_tensors="pt").to(model.device)
+    input_ids = inputs.input_ids
+    attention_mask = inputs.attention_mask
+    generated_ids = []
+    past_key_values = None
+    reached_eos = False
+
+    for _ in range(max_tokens):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask if past_key_values is None else None,
+                past_key_values=past_key_values,
+                use_cache=True,
+            )
+        past_key_values = outputs.past_key_values
+        next_id = int(torch.argmax(outputs.logits[0, -1, :]).item())
+        if next_id == tokenizer.eos_token_id:
+            reached_eos = True
+            break
+        generated_ids.append(next_id)
+        decoded = tokenizer.decode(generated_ids, skip_special_tokens=True)
+        if stop_token and stop_token in decoded:
+            decoded = decoded.split(stop_token, 1)[0] + stop_token
+            token_count = len(tokenizer(decoded, add_special_tokens=False).input_ids)
+            return decoded, reached_eos, token_count
+        input_ids = torch.tensor([[next_id]], device=model.device)
+        attention_mask = None
+
+    decoded = tokenizer.decode(generated_ids, skip_special_tokens=True)
+    return decoded, reached_eos, len(generated_ids)
+
+
+def generate_new_step_hf(problem, steps_so_far, model_size, options=None, stop_token="\n\n"):
+    tokenizer, model = get_hf_model(model_size)
+    prompt_text = build_hf_prompt(tokenizer, problem, steps_so_far, options=options)
+    step_str, reached_eos, num_output_tokens = generate_hf_text_until_stop(
+        tokenizer,
+        model,
+        prompt_text,
+        max_tokens=512,
+        stop_token=stop_token,
+    )
+    finished = reached_eos or "</think>" in step_str
+    return step_str, finished, num_output_tokens
+
+
+def get_score_first_token_entropy_hf(problem, steps_so_far, model_size="4b", options=None):
+    import torch
+
+    tokenizer, model = get_hf_model(model_size)
+    prompt_text = build_hf_prompt(tokenizer, problem, steps_so_far, options=options)
+    inputs = tokenizer(prompt_text, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        outputs = model(**inputs)
+
+    logits = outputs.logits[0, -1, :].to(torch.float32)
+    top_values, top_indices = torch.topk(logits, k=min(20, logits.shape[-1]))
+    probs = torch.softmax(top_values, dim=-1)
+    entropy = float(-(probs * torch.log(probs)).sum().item())
+    content = tokenizer.decode([int(top_indices[0].item())], skip_special_tokens=True)
+    return entropy, content, None
+
+
 def generate_new_step(problem, steps_so_far, model_size, options=None, stop_token="\n\n"):
     client = clients[model_size]
     
@@ -167,7 +275,10 @@ def process_logprobs(response, method, temp=1.0):
         raise NotImplementedError
 
 
-def get_score_first_token_entropy(problem, steps_so_far, model_size="4b", options=None):
+def get_score_first_token_entropy(problem, steps_so_far, model_size="4b", options=None, backend="api"):
+    if backend == "hf":
+        return get_score_first_token_entropy_hf(problem, steps_so_far, model_size=model_size, options=options)
+
     client = clients[model_size]
     
     if steps_so_far == []:  # first step
@@ -211,9 +322,9 @@ def get_score_first_token_entropy(problem, steps_so_far, model_size="4b", option
     return entropy, content, response
 
 
-def get_score(score_method, problem, steps_so_far, model_size="32b", options=None):
+def get_score(score_method, problem, steps_so_far, model_size="32b", options=None, backend="api"):
     if score_method=='first_token_entropy':
-        return get_score_first_token_entropy(problem, steps_so_far, model_size=model_size, options=options)
+        return get_score_first_token_entropy(problem, steps_so_far, model_size=model_size, options=options, backend=backend)
     else:
         raise NotImplementedError
 
@@ -231,6 +342,7 @@ def glimprouter(
     first_n_steps_base_model=0,
     model_size="32b",
     small_model_size="4b",
+    small_backend="api",
 ):
     problem_uid = f"{dataset_name}/{problem_id}"
     output_filename = os.path.join(output_dir, f"{problem_uid}/{repeat_id}")
@@ -262,6 +374,7 @@ def glimprouter(
                     steps_so_far,
                     model_size=small_model_size,
                     options=options,
+                    backend=small_backend,
                 )
 
                 if score is not None and score >= score_threshold:
@@ -273,9 +386,14 @@ def glimprouter(
                     step_str = base_model_step
                 else:
                     # small model generates
-                    small_model_step, finished, num_output_tokens_small = generate_new_step(
-                        problem, steps_so_far, small_model_size, options=options
-                    )
+                    if small_backend == "hf":
+                        small_model_step, finished, num_output_tokens_small = generate_new_step_hf(
+                            problem, steps_so_far, small_model_size, options=options
+                        )
+                    else:
+                        small_model_step, finished, num_output_tokens_small = generate_new_step(
+                            problem, steps_so_far, small_model_size, options=options
+                        )
                     base_model_step, num_output_tokens_base = None, None
                     step_str = small_model_step
                 steps_so_far.append(step_str)

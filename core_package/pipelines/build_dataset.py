@@ -13,6 +13,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor, resolve_answer_type
 from core_package.config import DATASET_BUILD, MODELS
 from core_package.math500_protocol import append_math500_instruction
+from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 
 DEFAULT_MODEL_PATH = MODELS.small_model_path
@@ -50,7 +51,7 @@ def parse_args():
 
 
 def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
-    if answer_type in {"boxed", "math500_qwen_boxed"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
         return DEFAULT_BOXED_SYSTEM_PROMPT
     return system_prompt
 
@@ -58,6 +59,8 @@ def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
 def format_generation_question(question: str, answer_type: str) -> str:
     if answer_type == "math500_qwen_boxed":
         return append_math500_instruction(question)
+    if answer_type == "svamp_boxed_numeric":
+        return append_svamp_boxed_instruction(question)
     return question
 
 
@@ -80,7 +83,7 @@ def normalize_answer_text(value, answer_type: str) -> Optional[str]:
     if not text:
         return None
 
-    if answer_type in {"boxed", "math500_qwen_boxed"}:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric"}:
         return text
 
     numeric = extract_last_number(text)

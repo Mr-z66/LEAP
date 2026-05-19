@@ -8,12 +8,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import EVALUATION, MODELS
+from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 
 DEFAULT_LABEL_PATH = EVALUATION.label_path
 DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
 DEFAULT_TRACE_PATH = EVALUATION.trace_path
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
 DEFAULT_ANSWER_TYPE = "svamp_numeric"
 
 
@@ -40,9 +42,17 @@ def parse_args():
     return parser.parse_args()
 
 
-def build_inputs(tokenizer, question: str):
+def resolve_system_prompt(answer_type: str) -> str:
+    if answer_type == "svamp_boxed_numeric":
+        return DEFAULT_BOXED_SYSTEM_PROMPT
+    return DEFAULT_SYSTEM_PROMPT
+
+
+def build_inputs(tokenizer, question: str, answer_type: str):
+    if answer_type == "svamp_boxed_numeric":
+        question = append_svamp_boxed_instruction(question)
     messages = [
-        {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
+        {"role": "system", "content": resolve_system_prompt(answer_type)},
         {"role": "user", "content": question},
     ]
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -154,7 +164,7 @@ def main():
 
     for idx, qid in enumerate(eval_ids, start=1):
         rec = question_table[qid]
-        inputs = build_inputs(tokenizer, rec["question"])
+        inputs = build_inputs(tokenizer, rec["question"], args.answer_type)
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
 

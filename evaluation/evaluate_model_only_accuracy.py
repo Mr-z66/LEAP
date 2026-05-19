@@ -8,6 +8,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import EVALUATION, MODELS
 from core_package.math500_protocol import append_math500_instruction
+from core_package.svamp_protocol import append_svamp_boxed_instruction
 from core_package.vllm_utils import build_openai_messages, infer_served_model_name, request_vllm_chat_completion
 
 DEFAULT_LABEL_PATH = EVALUATION.label_path
@@ -63,7 +64,7 @@ def parse_args():
 
 
 def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
-    if answer_type in {"boxed", "math500_qwen_boxed"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
         return DEFAULT_BOXED_SYSTEM_PROMPT
     return system_prompt
 
@@ -71,6 +72,8 @@ def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
 def build_inputs(tokenizer, question: str, system_prompt: str, answer_type: str):
     if answer_type == "math500_qwen_boxed":
         question = append_math500_instruction(question)
+    elif answer_type == "svamp_boxed_numeric":
+        question = append_svamp_boxed_instruction(question)
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": question},
@@ -83,6 +86,8 @@ def build_inputs(tokenizer, question: str, system_prompt: str, answer_type: str)
 def build_question_text(question: str, answer_type: str) -> str:
     if answer_type == "math500_qwen_boxed":
         return append_math500_instruction(question)
+    if answer_type == "svamp_boxed_numeric":
+        return append_svamp_boxed_instruction(question)
     return question
 
 

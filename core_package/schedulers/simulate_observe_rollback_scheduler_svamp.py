@@ -13,6 +13,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import MODELS, SCHEDULER
+from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 # ================= Default Configuration =================
 DEFAULT_LABEL_PATH = SCHEDULER.label_path
@@ -34,6 +35,7 @@ DEFAULT_MAX_HANDOFFS = SCHEDULER.max_handoffs
 DEFAULT_LARGE_HANDOFF_CHUNKS = SCHEDULER.large_handoff_chunks
 DEFAULT_PROBE_ARTIFACT_PATH = SCHEDULER.probe_artifact_path
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
 DEFAULT_ANSWER_TYPE = "svamp_numeric"
 PUNCTUATIONS = [".", ",", "!", "?", "\n"]
 # ========================================================
@@ -114,6 +116,12 @@ def parse_args():
     )
     parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
     return parser.parse_args()
+
+
+def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
+    if answer_type == "svamp_boxed_numeric" and system_prompt == DEFAULT_SYSTEM_PROMPT:
+        return DEFAULT_BOXED_SYSTEM_PROMPT
+    return system_prompt
 
 
 def tensor_to_numpy(value):
@@ -335,13 +343,15 @@ def build_generation_messages(question, assistant_prefix=None, system_prompt=DEF
     return messages
 
 
-def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT):
+def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
     normalized_prefix = None
     if assistant_prefix is not None:
         normalized_prefix = assistant_prefix.rstrip()
         if not normalized_prefix:
             normalized_prefix = None
 
+    if answer_type == "svamp_boxed_numeric":
+        question = append_svamp_boxed_instruction(question)
     messages = build_generation_messages(question, assistant_prefix=normalized_prefix, system_prompt=system_prompt)
     if normalized_prefix is None:
         return tokenizer.apply_chat_template(
@@ -361,8 +371,14 @@ def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt
     ), normalized_prefix
 
 
-def prompt_token_count(tokenizer, question):
-    inputs, _ = build_generation_inputs(tokenizer, question, assistant_prefix=None, system_prompt=DEFAULT_SYSTEM_PROMPT)
+def prompt_token_count(tokenizer, question, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
+    inputs, _ = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix=None,
+        system_prompt=system_prompt,
+        answer_type=answer_type,
+    )
     return int(inputs["input_ids"].shape[1])
 
 def decode_tokens(tokenizer, token_ids):
@@ -514,8 +530,14 @@ def load_probe_artifact(args):
     return artifact
 
 
-def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_chunk_tokens, max_chunk_tokens, system_prompt=DEFAULT_SYSTEM_PROMPT):
-    inputs, normalized_prefix = build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=system_prompt)
+def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_chunk_tokens, max_chunk_tokens, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=system_prompt,
+        answer_type=answer_type,
+    )
     input_ids = inputs.input_ids.to(model.device)
     past_key_values = None
 
@@ -620,6 +642,8 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args):
             max_new_tokens=remaining_budget,
             min_chunk_tokens=args.min_chunk_tokens,
             max_chunk_tokens=args.max_chunk_tokens,
+            system_prompt=args.system_prompt,
+            answer_type=args.answer_type,
         )
         prefix = chunk_result["full_reasoning"]
         total_generated_tokens += chunk_result["generated_token_count"]
@@ -666,7 +690,12 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     question = record["question"]
     ground_truth_final_answer = record["ground_truth_final_answer"]
     answer_extractor = get_answer_extractor(args.answer_type)
-    question_prompt_token_count = prompt_token_count(small_tokenizer, question)
+    question_prompt_token_count = prompt_token_count(
+        small_tokenizer,
+        question,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
     prefix = None
     total_tokens = 0
     total_large_tokens = 0
@@ -692,6 +721,8 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             max_new_tokens=remaining_budget,
             min_chunk_tokens=args.min_chunk_tokens,
             max_chunk_tokens=args.max_chunk_tokens,
+            system_prompt=args.system_prompt,
+            answer_type=args.answer_type,
         )
 
         if small_chunk["generated_token_count"] == 0:
@@ -967,6 +998,7 @@ def print_summary(summary):
 
 def main():
     args = parse_args()
+    args.system_prompt = resolve_system_prompt(args.answer_type, DEFAULT_SYSTEM_PROMPT)
     thresholds = parse_csv_floats(args.thresholds)
 
     print(f"Loading training dataset from: {args.label_path}")

@@ -20,7 +20,7 @@ from core_package.answer_registry import (  # noqa: E402
     get_answer_extractor,
     resolve_answer_type,
 )
-from glimp_router import glimprouter  # noqa: E402
+from glimp_router import glimprouter, model_names  # noqa: E402
 
 
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "result" / "baselines" / "glimprouter"
@@ -41,6 +41,9 @@ def parse_args():
     parser.add_argument("--score-threshold", type=float, default=1.0, help="GlimpRouter entropy threshold.")
     parser.add_argument("--model-size", default="32b", help="Large model size alias.")
     parser.add_argument("--small-model-size", default="1.5b", help="Small model size alias.")
+    parser.add_argument("--small-backend", choices=["api", "hf"], default="api", help="Backend for small-model scoring and generation.")
+    parser.add_argument("--small-model-path", default=None, help="Local/HF path for the small model when --small-backend hf.")
+    parser.add_argument("--answer-type", default=None, help="Optional answer protocol override, e.g. svamp_boxed_numeric.")
     parser.add_argument("--gsm8k-token-budget", type=int, default=2048)
     parser.add_argument("--svamp-token-budget", type=int, default=2048)
     parser.add_argument("--math500-token-budget", type=int, default=4096)
@@ -122,6 +125,14 @@ def percentile(values, p):
     return values[lo] * (1.0 - frac) + values[hi] * frac
 
 
+def model_size_to_params_b(size_text, default):
+    text = str(size_text).lower().replace("b", "")
+    try:
+        return float(text)
+    except ValueError:
+        return default
+
+
 def summarize_metadata(metadata, small_params_b=1.5, large_params_b=32.0):
     reasoning_steps = metadata[:-1]
     small_tokens = sum(int(step.get("num_output_tokens_small") or 0) for step in metadata)
@@ -153,9 +164,14 @@ def dataset_token_budget(dataset_name, args):
 
 def run_dataset(dataset_name, args):
     rows = load_rows(dataset_name, args)
-    answer_type = resolve_answer_type(dataset_name)
+    answer_type = args.answer_type or resolve_answer_type(dataset_name)
     extractor = get_answer_extractor(answer_type)
-    output_dir = Path(args.output_root) / f"{dataset_name}_large{args.model_size}_small{args.small_model_size}_thr{str(args.score_threshold).replace('.', 'p')}"
+    run_tag = f"{dataset_name}_large{args.model_size}_small{args.small_model_size}_thr{str(args.score_threshold).replace('.', 'p')}"
+    if args.small_backend != "api":
+        run_tag += f"_small{args.small_backend}"
+    if args.answer_type:
+        run_tag += f"_{args.answer_type}"
+    output_dir = Path(args.output_root) / run_tag
     output_dir.mkdir(parents=True, exist_ok=True)
 
     per_question_rows = []
@@ -179,6 +195,7 @@ def run_dataset(dataset_name, args):
             first_n_steps_base_model=16384 if args.score_method == "zeroshot" else 0,
             model_size=args.model_size,
             small_model_size=args.small_model_size,
+            small_backend=args.small_backend,
         )
         elapsed = time.time() - start
         latencies.append(elapsed)
@@ -191,7 +208,11 @@ def run_dataset(dataset_name, args):
         is_correct = pred_found and check_answer_correctness(pred_answer, gold_answer, answer_type)
         correct += int(is_correct)
 
-        cost_stats = summarize_metadata(metadata)
+        cost_stats = summarize_metadata(
+            metadata,
+            small_params_b=model_size_to_params_b(args.small_model_size, 1.5),
+            large_params_b=model_size_to_params_b(args.model_size, 32.0),
+        )
         per_question_rows.append(
             {
                 "index": idx,
@@ -216,6 +237,8 @@ def run_dataset(dataset_name, args):
         "score_threshold": args.score_threshold,
         "model_size": args.model_size,
         "small_model_size": args.small_model_size,
+        "small_backend": args.small_backend,
+        "answer_type": answer_type,
         "token_budget": dataset_token_budget(dataset_name, args),
         "latency_mean_s": statistics.mean(latencies) if latencies else None,
         "latency_median_s": statistics.median(latencies) if latencies else None,
@@ -259,6 +282,8 @@ def write_overall_summary(output_root, summaries):
         "accuracy",
         "model_size",
         "small_model_size",
+        "small_backend",
+        "answer_type",
         "score_method",
         "score_threshold",
         "token_budget",
@@ -283,6 +308,8 @@ def write_overall_summary(output_root, summaries):
 
 def main():
     args = parse_args()
+    if args.small_model_path:
+        model_names[args.small_model_size] = args.small_model_path
     datasets = [item.strip() for item in args.datasets.split(",") if item.strip()]
     summaries = [run_dataset(dataset_name, args) for dataset_name in datasets]
     write_overall_summary(args.output_root, summaries)
