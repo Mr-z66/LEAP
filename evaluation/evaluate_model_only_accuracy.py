@@ -1,6 +1,9 @@
 ﻿import argparse
 import json
 import os
+import re
+import statistics
+import time
 from typing import Dict, List, Optional
 
 import torch
@@ -60,6 +63,7 @@ def parse_args():
     parser.add_argument("--vllm-api-key", default="EMPTY", help="API key for the vLLM OpenAI-compatible server.")
     parser.add_argument("--vllm-model-name", default=None, help="Served model name exposed by the vLLM server.")
     parser.add_argument("--vllm-timeout", type=float, default=300.0, help="HTTP timeout in seconds for vLLM calls.")
+    parser.add_argument("--model-params-b", type=float, default=None, help="Model parameter count in billions for token-cost reporting.")
     return parser.parse_args()
 
 
@@ -89,6 +93,26 @@ def build_question_text(question: str, answer_type: str) -> str:
     if answer_type == "svamp_boxed_numeric":
         return append_svamp_boxed_instruction(question)
     return question
+
+
+def infer_model_params_b(model_path: str) -> Optional[float]:
+    matches = re.findall(r"(\d+(?:\.\d+)?)\s*b", str(model_path).lower())
+    if not matches:
+        return None
+    return float(matches[-1])
+
+
+def percentile(values, p):
+    if not values:
+        return None
+    if len(values) == 1:
+        return values[0]
+    ordered = sorted(values)
+    idx = (len(ordered) - 1) * p
+    lo = int(idx)
+    hi = min(lo + 1, len(ordered) - 1)
+    frac = idx - lo
+    return ordered[lo] * (1.0 - frac) + ordered[hi] * frac
 
 
 def load_question_table(dataset) -> Dict[int, Dict]:
@@ -199,8 +223,15 @@ def main():
 
     rows = []
     correct = 0
+    latencies = []
+    model_params_b = args.model_params_b
+    if model_params_b is None:
+        model_params_b = infer_model_params_b(args.model_path)
+    if model_params_b is not None:
+        print(f"Using model_params_b={model_params_b} for token-cost reporting")
 
     for idx, qid in enumerate(eval_ids, start=1):
+        item_start = time.time()
         rec = question_table[qid]
         question_text = build_question_text(rec["question"], args.answer_type)
         if args.backend == "hf":
@@ -232,10 +263,15 @@ def main():
             )
             reasoning = response["text"].strip()
             generated_token_count = len(tokenizer.encode(reasoning, add_special_tokens=False))
+        latency_s = time.time() - item_start
+        latencies.append(latency_s)
         pred, has_answer = answer_extractor(reasoning)
         gt = rec["ground_truth_final_answer"]
         is_correct = has_answer and check_answer_correctness(pred, gt, args.answer_type)
         correct += int(is_correct)
+        param_weighted_token_cost = (
+            model_params_b * generated_token_count if model_params_b is not None else None
+        )
 
         rows.append(
             {
@@ -245,6 +281,8 @@ def main():
                 "ground_truth_final_answer": gt,
                 "is_correct": is_correct,
                 "generated_token_count": generated_token_count,
+                "latency_s": latency_s,
+                "param_weighted_token_cost": param_weighted_token_cost,
                 "reasoning": reasoning,
             }
         )
@@ -254,6 +292,11 @@ def main():
 
     acc = correct / max(len(eval_ids), 1)
     avg_tokens = sum(row["generated_token_count"] for row in rows) / max(len(rows), 1)
+    avg_latency = statistics.mean(latencies) if latencies else None
+    median_latency = statistics.median(latencies) if latencies else None
+    p90_latency = percentile(latencies, 0.9)
+    cost_rows = [row["param_weighted_token_cost"] for row in rows if row["param_weighted_token_cost"] is not None]
+    avg_cost = sum(cost_rows) / len(cost_rows) if cost_rows else None
 
     print("\nModel-only evaluation summary")
     print("=" * 50)
@@ -261,6 +304,10 @@ def main():
     print(f"Model path: {args.model_path}")
     print(f"Model-only accuracy: {acc:.4f}")
     print(f"Avg generated tokens: {avg_tokens:.2f}")
+    if avg_latency is not None:
+        print(f"Avg latency: {avg_latency:.4f}s | median: {median_latency:.4f}s | p90: {p90_latency:.4f}s")
+    if avg_cost is not None:
+        print(f"Avg param-weighted token cost: {avg_cost:.2f}")
 
     if args.output_path:
         payload = {
@@ -269,6 +316,12 @@ def main():
             "backend": args.backend,
             "model_only_accuracy": acc,
             "avg_generated_tokens": avg_tokens,
+            "latency_mean_s": avg_latency,
+            "latency_median_s": median_latency,
+            "latency_p90_s": p90_latency,
+            "sec_per_question_mean": avg_latency,
+            "model_params_b": model_params_b,
+            "avg_param_weighted_token_cost": avg_cost,
             "eval_question_ids": eval_ids,
             "rows": rows,
         }
