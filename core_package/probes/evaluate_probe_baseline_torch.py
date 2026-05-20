@@ -2,6 +2,7 @@ import argparse
 import argparse
 import os
 import re
+import sys
 
 import numpy as np
 import torch
@@ -46,6 +47,9 @@ class TorchMLPProbe(torch.nn.Module):
             pos_prob = torch.sigmoid(logits).cpu().numpy()
         neg_prob = 1.0 - pos_prob
         return np.stack([neg_prob, pos_prob], axis=1)
+
+
+setattr(sys.modules["__main__"], "TorchMLPProbe", TorchMLPProbe)
 
 
 def parse_args():
