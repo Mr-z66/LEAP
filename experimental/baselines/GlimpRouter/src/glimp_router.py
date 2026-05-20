@@ -170,6 +170,36 @@ def generate_new_step_hf(problem, steps_so_far, model_size, options=None, stop_t
     return step_str, finished, num_output_tokens
 
 
+def generate_answer_hf(problem, steps_so_far, model_size, options=None, max_tokens=2048):
+    tokenizer, model = get_hf_model(model_size)
+
+    steps_so_far_str = "\n\n".join(steps_so_far)
+    steps_so_far_str = steps_so_far_str.split("</think>")[0] if "</think>" in steps_so_far_str else steps_so_far_str
+    messages = [
+        {"role": "user", "content": get_first_user_msg(problem, options)},
+        {"role": "assistant", "content": f"<think>{steps_so_far_str}\n</think>\n\n"},
+    ]
+    try:
+        prompt_text = tokenizer.apply_chat_template(messages, tokenize=False, continue_final_message=True)
+    except TypeError:
+        prompt_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+
+    step_str, reached_eos, num_output_tokens = generate_hf_text_until_stop(
+        tokenizer,
+        model,
+        prompt_text,
+        max_tokens=max_tokens,
+        stop_token=None,
+    )
+    if options == "lcb":
+        s = re.findall(r'```(?:python)?\n(.*?)```', step_str, re.DOTALL | re.IGNORECASE)
+        finished = len(s) >= 1
+    else:
+        finished = reached_eos or any([x in step_str for x in ["boxed", "Answer:", "ANSWER:"]])
+
+    return step_str, finished, num_output_tokens
+
+
 def get_score_first_token_entropy_hf(problem, steps_so_far, model_size="4b", options=None):
     import torch
 
@@ -347,6 +377,7 @@ def glimprouter(
     model_size="32b",
     small_model_size="4b",
     small_backend="api",
+    large_backend="api",
     final_answer_min_tokens=128,
 ):
     problem_uid = f"{dataset_name}/{problem_id}"
@@ -365,9 +396,14 @@ def glimprouter(
         while True:
             warning_flag = False
             if step_id < first_n_steps_base_model: # zeroshot
-                base_model_step, finished, num_output_tokens_base = generate_new_step(
-                    problem, steps_so_far, model_size, options=options
-                )
+                if large_backend == "hf":
+                    base_model_step, finished, num_output_tokens_base = generate_new_step_hf(
+                        problem, steps_so_far, model_size, options=options
+                    )
+                else:
+                    base_model_step, finished, num_output_tokens_base = generate_new_step(
+                        problem, steps_so_far, model_size, options=options
+                    )
                 small_model_step, num_output_tokens_small = None, None
                 score, justification = None, None
                 step_str = base_model_step
@@ -384,9 +420,14 @@ def glimprouter(
 
                 if score is not None and score >= score_threshold:
                     # large model generates
-                    base_model_step, finished, num_output_tokens_base = generate_new_step(
-                        problem, steps_so_far, model_size, options=options
-                    )
+                    if large_backend == "hf":
+                        base_model_step, finished, num_output_tokens_base = generate_new_step_hf(
+                            problem, steps_so_far, model_size, options=options
+                        )
+                    else:
+                        base_model_step, finished, num_output_tokens_base = generate_new_step(
+                            problem, steps_so_far, model_size, options=options
+                        )
                     small_model_step, num_output_tokens_small = None, None
                     step_str = base_model_step
                 else:
@@ -438,9 +479,14 @@ def glimprouter(
         # Generation of Final Answer
         used_tokens = sum(m["final_num_output_tokens"] for m in metadata_list)
         remaining_budget = max(final_answer_min_tokens, token_budget - used_tokens)
-        base_model_step, finished, num_output_tokens_base = generate_answer(
-            problem, steps_so_far, model_size, options=options, max_tokens=remaining_budget
-        )
+        if large_backend == "hf":
+            base_model_step, finished, num_output_tokens_base = generate_answer_hf(
+                problem, steps_so_far, model_size, options=options, max_tokens=remaining_budget
+            )
+        else:
+            base_model_step, finished, num_output_tokens_base = generate_answer(
+                problem, steps_so_far, model_size, options=options, max_tokens=remaining_budget
+            )
         small_model_step, num_output_tokens_small = None, None
         score, justification = None, None
         step_str = base_model_step

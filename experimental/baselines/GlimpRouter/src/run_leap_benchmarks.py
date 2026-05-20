@@ -42,7 +42,9 @@ def parse_args():
     parser.add_argument("--model-size", default="32b", help="Large model size alias.")
     parser.add_argument("--small-model-size", default="1.5b", help="Small model size alias.")
     parser.add_argument("--small-backend", choices=["api", "hf"], default="api", help="Backend for small-model scoring and generation.")
+    parser.add_argument("--large-backend", choices=["api", "hf"], default="api", help="Backend for large-model step and final-answer generation.")
     parser.add_argument("--small-model-path", default=None, help="Local/HF path for the small model when --small-backend hf.")
+    parser.add_argument("--large-model-path", default=None, help="Local/HF path for the large model when --large-backend hf.")
     parser.add_argument("--answer-type", default=None, help="Optional answer protocol override, e.g. svamp_boxed_numeric.")
     parser.add_argument("--final-answer-min-tokens", type=int, default=128, help="Minimum token budget reserved for the final answer step.")
     parser.add_argument("--gsm8k-token-budget", type=int, default=2048)
@@ -170,6 +172,8 @@ def run_dataset(dataset_name, args):
     run_tag = f"{dataset_name}_large{args.model_size}_small{args.small_model_size}_thr{str(args.score_threshold).replace('.', 'p')}"
     if args.small_backend != "api":
         run_tag += f"_small{args.small_backend}"
+    if args.large_backend != "api":
+        run_tag += f"_large{args.large_backend}"
     if args.answer_type:
         run_tag += f"_{args.answer_type}"
     output_dir = Path(args.output_root) / run_tag
@@ -197,6 +201,7 @@ def run_dataset(dataset_name, args):
             model_size=args.model_size,
             small_model_size=args.small_model_size,
             small_backend=args.small_backend,
+            large_backend=args.large_backend,
             final_answer_min_tokens=args.final_answer_min_tokens,
         )
         elapsed = time.time() - start
@@ -242,6 +247,7 @@ def run_dataset(dataset_name, args):
         "model_size": args.model_size,
         "small_model_size": args.small_model_size,
         "small_backend": args.small_backend,
+        "large_backend": args.large_backend,
         "answer_type": answer_type,
         "final_answer_min_tokens": args.final_answer_min_tokens,
         "token_budget": dataset_token_budget(dataset_name, args),
@@ -288,6 +294,7 @@ def write_overall_summary(output_root, summaries):
         "model_size",
         "small_model_size",
         "small_backend",
+        "large_backend",
         "answer_type",
         "final_answer_min_tokens",
         "score_method",
@@ -316,6 +323,8 @@ def main():
     args = parse_args()
     if args.small_model_path:
         model_names[args.small_model_size] = args.small_model_path
+    if args.large_model_path:
+        model_names[args.model_size] = args.large_model_path
     datasets = [item.strip() for item in args.datasets.split(",") if item.strip()]
     summaries = [run_dataset(dataset_name, args) for dataset_name in datasets]
     write_overall_summary(args.output_root, summaries)
