@@ -15,6 +15,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import MODELS, SCHEDULER
+from core_package.gsm8k_protocol import append_gsm8k_boxed_instruction
 from core_package.math500_protocol import append_math500_instruction
 from core_package.svamp_protocol import append_svamp_boxed_instruction
 
@@ -173,7 +174,7 @@ def parse_args():
 
 
 def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
-    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric", "gsm8k_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
         return DEFAULT_BOXED_SYSTEM_PROMPT
     return system_prompt
 
@@ -433,6 +434,8 @@ def build_generation_prompt_text(tokenizer, question, assistant_prefix, system_p
 
     if answer_type == "math500_qwen_boxed":
         generation_question = append_math500_instruction(question)
+    elif answer_type == "gsm8k_boxed_numeric":
+        generation_question = append_gsm8k_boxed_instruction(question)
     elif answer_type == "svamp_boxed_numeric":
         generation_question = append_svamp_boxed_instruction(question)
     else:

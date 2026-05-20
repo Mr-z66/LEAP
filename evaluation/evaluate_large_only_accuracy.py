@@ -5,14 +5,19 @@ from typing import Dict, List, Optional
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from core_package.answer_extraction import extract_final_answer
+from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import EVALUATION, MODELS
+from core_package.gsm8k_protocol import append_gsm8k_boxed_instruction
+from core_package.math500_protocol import append_math500_instruction
+from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 DEFAULT_LABEL_PATH = EVALUATION.label_path
 DEFAULT_MODEL_PATH = MODELS.large_model_path
 DEFAULT_ARTIFACT_PATH = EVALUATION.artifact_path
 DEFAULT_TRACE_PATH = EVALUATION.trace_path
 DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
+DEFAULT_ANSWER_TYPE = "legacy_math"
 
 
 def parse_args():
@@ -24,13 +29,31 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=EVALUATION.max_new_tokens, help="Max new tokens for large-model generation.")
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on number of test questions.")
     parser.add_argument("--output-path", default=None, help="Optional JSON output path for per-question predictions.")
+    parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
+    parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT, help="System prompt used during generation.")
     return parser.parse_args()
 
 
-def build_inputs(tokenizer, question: str):
+def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric", "gsm8k_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
+        return DEFAULT_BOXED_SYSTEM_PROMPT
+    return system_prompt
+
+
+def format_question(question: str, answer_type: str) -> str:
+    if answer_type == "math500_qwen_boxed":
+        return append_math500_instruction(question)
+    if answer_type == "gsm8k_boxed_numeric":
+        return append_gsm8k_boxed_instruction(question)
+    if answer_type == "svamp_boxed_numeric":
+        return append_svamp_boxed_instruction(question)
+    return question
+
+
+def build_inputs(tokenizer, question: str, system_prompt: str, answer_type: str):
     messages = [
-        {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
-        {"role": "user", "content": question},
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": format_question(question, answer_type)},
     ]
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt")
@@ -115,6 +138,8 @@ def resolve_eval_ids(question_table: Dict[int, Dict], artifact_path: Optional[st
 
 def main():
     args = parse_args()
+    args.system_prompt = resolve_system_prompt(args.answer_type, args.system_prompt)
+    answer_extractor = get_answer_extractor(args.answer_type)
 
     print(f"Loading labeled dataset from: {args.label_path}")
     dataset = torch.load(args.label_path)
@@ -141,7 +166,7 @@ def main():
 
     for idx, qid in enumerate(eval_ids, start=1):
         rec = question_table[qid]
-        inputs = build_inputs(tokenizer, rec["question"])
+        inputs = build_inputs(tokenizer, rec["question"], args.system_prompt, args.answer_type)
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
 
@@ -157,15 +182,16 @@ def main():
 
         gen_ids = output_ids[0, input_ids.shape[1]:]
         reasoning = tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
-        pred = extract_final_answer(reasoning)
+        pred, has_answer = answer_extractor(reasoning)
         gt = rec["ground_truth_final_answer"]
-        is_correct = pred == gt
+        is_correct = has_answer and check_answer_correctness(pred, gt, args.answer_type)
         correct += int(is_correct)
 
         rows.append(
             {
                 "question_id": qid,
                 "pred_final_answer": pred,
+                "has_extracted_answer": has_answer,
                 "ground_truth_final_answer": gt,
                 "is_correct": is_correct,
                 "generated_token_count": int(gen_ids.shape[0]),

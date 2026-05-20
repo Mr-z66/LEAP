@@ -12,6 +12,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor, resolve_answer_type
 from core_package.config import DATASET_BUILD, MODELS
+from core_package.gsm8k_protocol import append_gsm8k_boxed_instruction
 from core_package.math500_protocol import append_math500_instruction
 from core_package.svamp_protocol import append_svamp_boxed_instruction
 
@@ -44,14 +45,14 @@ def parse_args():
     parser.add_argument(
         "--answer-type",
         default=None,
-        help="Optional answer protocol override. Defaults keep GSM8K on the legacy extractor and route SVAMP to the SVAMP-specific extractor.",
+        help="Optional answer protocol override. Defaults route GSM8K to boxed numeric, SVAMP to its numeric extractor, and MATH500 to boxed math.",
     )
     parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT)
     return parser.parse_args()
 
 
 def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
-    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric", "gsm8k_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
         return DEFAULT_BOXED_SYSTEM_PROMPT
     return system_prompt
 
@@ -59,6 +60,8 @@ def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
 def format_generation_question(question: str, answer_type: str) -> str:
     if answer_type == "math500_qwen_boxed":
         return append_math500_instruction(question)
+    if answer_type == "gsm8k_boxed_numeric":
+        return append_gsm8k_boxed_instruction(question)
     if answer_type == "svamp_boxed_numeric":
         return append_svamp_boxed_instruction(question)
     return question

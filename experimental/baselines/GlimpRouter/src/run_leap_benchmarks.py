@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument("--large-backend", choices=["api", "hf"], default="api", help="Backend for large-model step and final-answer generation.")
     parser.add_argument("--small-model-path", default=None, help="Local/HF path for the small model when --small-backend hf.")
     parser.add_argument("--large-model-path", default=None, help="Local/HF path for the large model when --large-backend hf.")
-    parser.add_argument("--answer-type", default=None, help="Optional answer protocol override, e.g. svamp_boxed_numeric.")
+    parser.add_argument("--answer-type", default=None, help="Optional answer protocol override, e.g. gsm8k_boxed_numeric or svamp_boxed_numeric.")
     parser.add_argument("--final-answer-min-tokens", type=int, default=128, help="Minimum token budget reserved for the final answer step.")
     parser.add_argument("--gsm8k-token-budget", type=int, default=2048)
     parser.add_argument("--svamp-token-budget", type=int, default=2048)
