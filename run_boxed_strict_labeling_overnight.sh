@@ -59,18 +59,13 @@ backup_if_exists "${GSM8K_LABELS}"
 backup_if_exists "${SVAMP_LABELS}"
 
 if [[ ! -f "${GSM8K_TRAJ}" ]]; then
-  echo "[build] missing ${GSM8K_TRAJ}; building GSM8K boxed trajectories"
-  python -m core_package.pipelines.build_dataset \
-    --dataset-name gsm8k \
-    --dataset-split "train[:${GSM8K_TARGET}]" \
-    --model-path "${SMALL_MODEL_PATH}" \
-    --save-path "${GSM8K_TRAJ}" \
-    --answer-type gsm8k_boxed_numeric \
-    --max-new-tokens 768 \
-    2>&1 | tee "${LOG_DIR}/01_build_gsm8k_boxed.log"
+  echo "[error] GSM8K trajectory file is missing: ${GSM8K_TRAJ}"
+  echo "[error] This overnight script is meant to resume the current GSM8K labeling run, not start a different GSM8K trajectory."
+  exit 1
 fi
 
-echo "[label] GSM8K boxed strict labels -> ${GSM8K_LABELS}"
+echo "[label] Resume current GSM8K boxed strict labels -> ${GSM8K_LABELS}"
+echo "[label] Target is first ${GSM8K_TARGET} questions. Existing labels are kept; missing question_ids are appended."
 python -m core_package.pipelines.referee_32b_labeling_strict \
   --input-path "${GSM8K_TRAJ}" \
   --output-path "${GSM8K_LABELS}" \
