@@ -132,11 +132,6 @@ def parse_args():
         help="Risk threshold below which a small-model re-entry probe is considered stable. Defaults to the main trigger threshold.",
     )
     parser.add_argument("--cooldown-chunks", type=int, default=SCHEDULER.cooldown_chunks, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
-    parser.add_argument(
-        "--require-consecutive-risk",
-        action="store_true",
-        help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
-    )
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
     parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
     parser.add_argument("--trace-export-path", default=None, help="Optional JSON path to export per-question routing traces.")
@@ -1127,18 +1122,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         combined_score = risk_info["combined_score"]
         prev_score_for_trace = previous_combined_score
 
-        # SVAMP false-alarm mitigation:
-        # When enabled, we only trigger after two consecutive risky chunks.
-        # This keeps the old behavior fully recoverable: do not pass
-        # --require-consecutive-risk and the scheduler falls back to the
-        # original single-chunk trigger rule.
         meets_risk_trigger = combined_score >= threshold
-        if args.require_consecutive_risk:
-            meets_risk_trigger = (
-                combined_score >= threshold
-                and previous_combined_score is not None
-                and previous_combined_score >= threshold
-            )
 
         if meets_risk_trigger and handoff_count < args.max_handoffs and cooldown_remaining <= 0:
             triggered = True
@@ -1156,7 +1140,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
                     "progress_ratio": float(progress_ratio),
                     "cut_reason": small_chunk["cut_reason"],
-                    "trigger_rule": "consecutive_two_chunk_risk" if args.require_consecutive_risk else "single_chunk_risk",
+                    "trigger_rule": "single_chunk_risk",
                 }
             )
 
