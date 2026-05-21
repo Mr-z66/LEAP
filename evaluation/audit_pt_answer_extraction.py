@@ -1,8 +1,14 @@
 import argparse
 import json
+import os
 import re
+import sys
 
 import torch
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 
