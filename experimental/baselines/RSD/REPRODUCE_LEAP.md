@@ -15,6 +15,11 @@ needed for direct comparison with LEAP and GlimpRouter:
 - latency summary
 - JSON/CSV outputs under `result/baselines/rsd`
 
+The upstream bundled evaluation datasets under
+`external/qwen25_math_evaluation/data/` are intentionally not vendored here.
+For LEAP-comparable experiments, use the repository-level `dataset/` files
+through `run_leap_benchmarks.py`.
+
 ## Required Services
 
 RSD online mode expects three OpenAI-compatible vLLM services:

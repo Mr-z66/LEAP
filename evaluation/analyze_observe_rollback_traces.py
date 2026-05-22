@@ -12,7 +12,7 @@ DEFAULT_TRACE_PATH = os.path.join(
     PROJECT_ROOT,
     "result",
     "traces",
-    "observe_rollback_traces_math500_vllm_hidden_only_t2048.json",
+    "observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json",
 )
 DEFAULT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "result", "analysis_outputs", "observe_rollback_trace_analysis")
 
