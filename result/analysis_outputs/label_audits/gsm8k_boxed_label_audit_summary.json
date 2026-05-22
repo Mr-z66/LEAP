@@ -1,0 +1,35 @@
+{
+  "label_path": "dataset/gsm8k_labeled_training_data_strict_boxed.pt",
+  "label_key": "label",
+  "rows_total": 6987,
+  "rows_used": 6987,
+  "rows_skipped": 0,
+  "questions": 300,
+  "label_counts": {
+    "1": 6120,
+    "0": 867
+  },
+  "error_chunk_prevalence": 0.12408759124087591,
+  "final_wrong_questions": 53,
+  "final_correct_questions": 247,
+  "final_wrong_but_no_error_chunk": 2,
+  "final_correct_but_has_error_chunk": 60,
+  "zero_to_one_label_flip_questions": 73,
+  "low_judge_confidence_questions": 1,
+  "cut_reasons": {
+    "punctuation": 6628,
+    "max_tokens": 325,
+    "tail": 34
+  },
+  "judge_error_types": {
+    "none": 6120,
+    "logic": 592,
+    "arithmetic": 269,
+    "format": 5,
+    "unknown": 1
+  },
+  "judge_parse_statuses": {
+    "json": 6986,
+    "fallback": 1
+  }
+}
