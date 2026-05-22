@@ -1,0 +1,31 @@
+{
+  "label_path": "dataset/gsm8k_clean_step_v2_20_judge7b.pt",
+  "label_key": "label",
+  "rows_total": 219,
+  "rows_used": 217,
+  "rows_skipped": 2,
+  "questions": 20,
+  "label_counts": {
+    "1": 199,
+    "0": 18
+  },
+  "error_chunk_prevalence": 0.08294930875576037,
+  "final_wrong_questions": 20,
+  "final_correct_questions": 0,
+  "final_wrong_but_no_error_chunk": 18,
+  "final_correct_but_has_error_chunk": 0,
+  "zero_to_one_label_flip_questions": 0,
+  "low_judge_confidence_questions": 0,
+  "cut_reasons": {
+    "semantic_boundary": 213,
+    "tail": 4
+  },
+  "judge_error_types": {
+    "none": 202,
+    "arithmetic": 1,
+    "logic": 14
+  },
+  "judge_parse_statuses": {
+    "json": 217
+  }
+}
