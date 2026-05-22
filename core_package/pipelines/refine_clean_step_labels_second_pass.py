@@ -42,6 +42,11 @@ def parse_args():
     parser.add_argument("--low-confidence-threshold", type=float, default=0.55)
     parser.add_argument("--only-question-ids", default=None, help="Optional comma-separated question ids to refine.")
     parser.add_argument("--max-questions", type=int, default=None)
+    parser.add_argument(
+        "--refine-existing-errors",
+        action="store_true",
+        help="Also review final-wrong questions that already contain label=0. Useful for correcting first-error location.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Run judging and print changes without saving.")
     parser.add_argument("--vllm-base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--vllm-api-key", default="EMPTY")
@@ -86,7 +91,7 @@ def is_false(value):
     return not bool(value)
 
 
-def candidate_questions(groups, allowed_ids=None):
+def candidate_questions(groups, allowed_ids=None, refine_existing_errors=False):
     candidates = []
     for question_id, indexed_chunks in sorted(groups.items()):
         if allowed_ids is not None and question_id not in allowed_ids:
@@ -97,7 +102,7 @@ def candidate_questions(groups, allowed_ids=None):
         if not is_false(chunks[0].get("is_final_correct", False)):
             continue
         labels = [int(chunk.get("label", -1)) for chunk in chunks]
-        if 0 in labels:
+        if 0 in labels and not refine_existing_errors:
             continue
         if not any(label == 1 for label in labels):
             continue
@@ -138,19 +143,26 @@ Full small-model reasoning split into chunks:
 {compact_chunks(chunks)}
 
 Labeling policy:
-- Return earliest_error_chunk_id = the first chunk id where an explicit error appears.
-- Explicit errors include arithmetic mistakes, invalid equations, wrong variable relations, wrong setup, wrong interpretation of the question, comparing the wrong objective, using the wrong quantity or unit, or introducing an unsupported assumption.
-- A chunk can be locally arithmetic-correct but still erroneous if it changes the target. Example: the question asks to maximize profit, but the reasoning decides by comparing future value.
-- Do not mark a chunk wrong merely because the solution is incomplete, verbose, redundant, or has not reached the final answer yet.
-- If the trajectory is wrong only at the final answer/conclusion, return that final/conclusion chunk id.
-- If you genuinely cannot locate an error, return earliest_error_chunk_id = -1 and error_type = "unknown".
+- Separate three notions:
+  1. earliest_semantic_error_chunk_id: the first chunk where the reasoning misreads the task, changes event order, uses the wrong quantity/unit/objective, chooses the wrong setup, or introduces an unsupported assumption.
+  2. earliest_computational_error_chunk_id: the first chunk where an arithmetic, algebraic, comparison, or equation-manipulation error appears.
+  3. recommended_training_error_chunk_id: the first chunk that should become label=0 for training a process-risk probe.
+- For LEAP training, prefer the earliest semantic/setup/objective error when it exists, because the scheduler should learn to trigger before downstream computations inherit the wrong trajectory.
+- If the first real error is a wrong comparison/conclusion after correct calculations, use that comparison/conclusion chunk.
+- Do not mark a chunk wrong merely because it is incomplete, verbose, redundant, or has not reached the final answer yet.
+- Do not mark a locally correct setup as wrong just because a later chunk will misuse it.
+- "Every second item costs X%" usually means each even-numbered item is discounted, not that prices recursively decay.
+- In return-trip/distance problems, distinguish distance traveled from remaining distance to the origin.
+- If you genuinely cannot locate an error, return all three ids as -1 and error_type = "unknown".
 
 Return JSON only:
 {{
-  "earliest_error_chunk_id": an integer chunk_id or -1,
+  "earliest_semantic_error_chunk_id": an integer chunk_id or -1,
+  "earliest_computational_error_chunk_id": an integer chunk_id or -1,
+  "recommended_training_error_chunk_id": an integer chunk_id or -1,
   "error_type": "arithmetic" | "logic" | "setup" | "semantic" | "objective_mismatch" | "unit_or_quantity" | "unsupported_assumption" | "format" | "unknown",
   "confidence": a number between 0 and 1,
-  "reason": "one short sentence explaining the first error"
+  "reason": "one short sentence explaining why the recommended chunk is the first training error"
 }}"""
 
 
@@ -178,25 +190,38 @@ def parse_second_pass_response(raw_text):
     if payload is None:
         return {
             "earliest_error_chunk_id": -1,
+            "earliest_semantic_error_chunk_id": -1,
+            "earliest_computational_error_chunk_id": -1,
+            "recommended_training_error_chunk_id": -1,
             "error_type": "unknown",
             "confidence": 0.0,
             "reason": (raw_text or "").strip(),
             "parse_status": "fallback",
         }
-    try:
-        earliest = int(payload.get("earliest_error_chunk_id", -1))
-    except (TypeError, ValueError):
-        earliest = -1
+    semantic = to_int(payload.get("earliest_semantic_error_chunk_id", -1), default=-1)
+    computational = to_int(payload.get("earliest_computational_error_chunk_id", -1), default=-1)
+    recommended = to_int(payload.get("recommended_training_error_chunk_id", payload.get("earliest_error_chunk_id", -1)), default=-1)
+    earliest = recommended
     error_type = str(payload.get("error_type", "unknown")).strip() or "unknown"
     if error_type not in ERROR_TYPES:
         error_type = "unknown"
     return {
         "earliest_error_chunk_id": earliest,
+        "earliest_semantic_error_chunk_id": semantic,
+        "earliest_computational_error_chunk_id": computational,
+        "recommended_training_error_chunk_id": recommended,
         "error_type": error_type,
         "confidence": clamp_confidence(payload.get("confidence", 0.0)),
         "reason": str(payload.get("reason", "")).strip(),
         "parse_status": "json",
     }
+
+
+def to_int(value, default=-1):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def judge_second_pass(prompt, tokenizer, model, args):
@@ -253,6 +278,9 @@ def apply_monotone_error_labels(indexed_chunks, judge_result, raw_response, min_
         for _, chunk in indexed_chunks:
             chunk["second_pass_reviewed"] = True
             chunk["second_pass_earliest_error_chunk_id"] = earliest
+            chunk["second_pass_earliest_semantic_error_chunk_id"] = judge_result["earliest_semantic_error_chunk_id"]
+            chunk["second_pass_earliest_computational_error_chunk_id"] = judge_result["earliest_computational_error_chunk_id"]
+            chunk["second_pass_recommended_training_error_chunk_id"] = judge_result["recommended_training_error_chunk_id"]
             chunk["second_pass_error_type"] = judge_result["error_type"]
             chunk["second_pass_confidence"] = judge_result["confidence"]
             chunk["second_pass_reason"] = judge_result["reason"]
@@ -265,6 +293,9 @@ def apply_monotone_error_labels(indexed_chunks, judge_result, raw_response, min_
         chunk_id = int(chunk["chunk_id"])
         chunk["second_pass_reviewed"] = True
         chunk["second_pass_earliest_error_chunk_id"] = earliest
+        chunk["second_pass_earliest_semantic_error_chunk_id"] = judge_result["earliest_semantic_error_chunk_id"]
+        chunk["second_pass_earliest_computational_error_chunk_id"] = judge_result["earliest_computational_error_chunk_id"]
+        chunk["second_pass_recommended_training_error_chunk_id"] = judge_result["recommended_training_error_chunk_id"]
         chunk["second_pass_error_type"] = judge_result["error_type"]
         chunk["second_pass_confidence"] = judge_result["confidence"]
         chunk["second_pass_reason"] = judge_result["reason"]
@@ -283,12 +314,46 @@ def apply_monotone_error_labels(indexed_chunks, judge_result, raw_response, min_
     return changed
 
 
+def restore_second_pass_repairs(indexed_chunks):
+    restored = 0
+    for _, chunk in indexed_chunks:
+        if chunk.get("label_source") != "second_pass_monotone_repair":
+            continue
+        if "original_label_before_second_pass" not in chunk:
+            continue
+        original_label = chunk.get("original_label_before_second_pass")
+        if original_label is None:
+            continue
+        chunk["label"] = int(original_label)
+        chunk["label_source"] = "judge"
+        if "original_judge_error_type_before_second_pass" in chunk:
+            chunk["judge_error_type"] = str(chunk.get("original_judge_error_type_before_second_pass", ""))
+        if "original_judge_reason_before_second_pass" in chunk:
+            chunk["judge_reason"] = str(chunk.get("original_judge_reason_before_second_pass", ""))
+        restored += 1
+    return restored
+
+
+def is_actionable_judge_result(indexed_chunks, judge_result, min_confidence):
+    valid_chunk_ids = {int(chunk["chunk_id"]) for _, chunk in indexed_chunks}
+    earliest = int(judge_result["earliest_error_chunk_id"])
+    return (
+        earliest in valid_chunk_ids
+        and judge_result["parse_status"] == "json"
+        and judge_result["confidence"] >= min_confidence
+    )
+
+
 def main():
     args = parse_args()
     rows = load_rows(args.input_path)
     groups = group_by_question(rows)
     allowed_ids = parse_question_id_filter(args.only_question_ids)
-    candidates = candidate_questions(groups, allowed_ids=allowed_ids)
+    candidates = candidate_questions(
+        groups,
+        allowed_ids=allowed_ids,
+        refine_existing_errors=args.refine_existing_errors,
+    )
     if args.max_questions is not None:
         candidates = candidates[: args.max_questions]
     print(f"Loaded rows={len(rows)} questions={len(groups)} candidates={len(candidates)}")
@@ -300,10 +365,17 @@ def main():
 
     for question_id in tqdm(candidates, desc="Second-pass label refinement"):
         indexed_chunks = groups[question_id]
+        restored = 0
         chunks = [row for _, row in indexed_chunks]
         prompt = build_second_pass_prompt(chunks)
         raw_response = judge_second_pass(prompt, tokenizer, model, args)
         judge_result = parse_second_pass_response(raw_response)
+        if args.refine_existing_errors and is_actionable_judge_result(
+            indexed_chunks,
+            judge_result,
+            min_confidence=args.low_confidence_threshold,
+        ):
+            restored = restore_second_pass_repairs(indexed_chunks)
         changed = apply_monotone_error_labels(
             indexed_chunks,
             judge_result,
@@ -319,8 +391,12 @@ def main():
                 {
                     "question_id": question_id,
                     "earliest_error_chunk_id": judge_result["earliest_error_chunk_id"],
+                    "earliest_semantic_error_chunk_id": judge_result["earliest_semantic_error_chunk_id"],
+                    "earliest_computational_error_chunk_id": judge_result["earliest_computational_error_chunk_id"],
+                    "recommended_training_error_chunk_id": judge_result["recommended_training_error_chunk_id"],
                     "error_type": judge_result["error_type"],
                     "confidence": judge_result["confidence"],
+                    "restored_chunks": restored,
                     "changed_chunks": changed,
                     "reason": judge_result["reason"],
                 },
