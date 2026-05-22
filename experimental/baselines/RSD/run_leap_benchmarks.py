@@ -160,6 +160,15 @@ def mean(values):
     return statistics.mean(values) if values else 0.0
 
 
+def format_duration(seconds):
+    seconds = int(max(0, seconds))
+    hours, rem = divmod(seconds, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours:d}h{minutes:02d}m{secs:02d}s"
+    return f"{minutes:d}m{secs:02d}s"
+
+
 def summarize_cost(token_counts, turn_info, reward_count, args):
     draft_tokens, target_tokens, discarded_draft_tokens = [int(value) for value in token_counts]
     target_steps = sum(1 for _, client_id in turn_info if int(client_id) == 2)
@@ -412,8 +421,11 @@ def run_dataset(dataset_name, clients, tokenizers, args):
     per_question_rows = []
     latencies = []
     correct = 0
-    print(f"\n=== Running RSD on {dataset_name} | questions={len(rows)} | threshold={args.prm_threshold} ===")
-    for idx, row in tqdm(list(enumerate(rows)), total=len(rows), desc=dataset_name):
+    total = len(rows)
+    print(f"\n=== Running RSD on {dataset_name} | questions={total} | threshold={args.prm_threshold} ===")
+    dataset_start = time.time()
+    progress = tqdm(list(enumerate(rows)), total=len(rows), desc=dataset_name, dynamic_ncols=True)
+    for idx, row in progress:
         prompt = build_prompt(draft_tokenizer, row["problem"], answer_type, args.system_prompt)
         start = time.time()
         outputs, token_counts, turn_info, rewards = GET_RESPONSES(
@@ -454,8 +466,19 @@ def run_dataset(dataset_name, clients, tokenizers, args):
                 **cost_stats,
             }
         )
+        done = idx + 1
+        elapsed_total = time.time() - dataset_start
+        avg_latency = elapsed_total / done if done else 0.0
+        eta = avg_latency * (total - done)
+        progress.set_postfix(
+            {
+                "acc": f"{correct / done:.3f}",
+                "avg_s/q": f"{avg_latency:.1f}",
+                "elapsed": format_duration(elapsed_total),
+                "eta": format_duration(eta),
+            }
+        )
 
-    total = len(rows)
     summary = {
         "dataset_name": dataset_name,
         "questions_total": total,
@@ -555,6 +578,7 @@ def main():
         from openai import OpenAI
         from main_online import get_responses
 
+        print("[RSD] backend=vllm | connecting to OpenAI-compatible services")
         GET_RESPONSES = get_responses
         clients = (
             OpenAI(api_key=args.api_key, base_url=args.draft_base_url),
@@ -571,34 +595,49 @@ def main():
         from external.skywork_o1_prm_inference.model_utils.prm_model import PRM_MODEL
         from transformers import AutoModelForCausalLM
 
+        print("[RSD] backend=hf | loading local tokenizers and models")
         GET_RESPONSES = get_responses_hf
         dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+        load_start = time.time()
+        print(f"[RSD] loading draft tokenizer: {args.draft_model_path}")
+        draft_tokenizer = AutoTokenizer.from_pretrained(args.draft_model_path, trust_remote_code=True)
+        print(f"[RSD] loading target tokenizer: {args.target_model_path}")
+        target_tokenizer = AutoTokenizer.from_pretrained(args.target_model_path, trust_remote_code=True)
+        print(f"[RSD] loading PRM tokenizer: {args.prm_model_path}")
+        prm_tokenizer = AutoTokenizer.from_pretrained(args.prm_model_path, trust_remote_code=True)
         tokenizers = (
-            AutoTokenizer.from_pretrained(args.draft_model_path, trust_remote_code=True),
-            AutoTokenizer.from_pretrained(args.target_model_path, trust_remote_code=True),
-            AutoTokenizer.from_pretrained(args.prm_model_path, trust_remote_code=True),
+            draft_tokenizer,
+            target_tokenizer,
+            prm_tokenizer,
         )
         for tokenizer in tokenizers:
             if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
                 tokenizer.pad_token = tokenizer.eos_token
+        print(f"[RSD] loading draft model: {args.draft_model_path}")
+        draft_model = AutoModelForCausalLM.from_pretrained(
+            args.draft_model_path,
+            trust_remote_code=True,
+            torch_dtype=dtype,
+            device_map="auto",
+        ).eval()
+        print(f"[RSD] loading target model: {args.target_model_path}")
+        target_model = AutoModelForCausalLM.from_pretrained(
+            args.target_model_path,
+            trust_remote_code=True,
+            torch_dtype=dtype,
+            device_map="auto",
+        ).eval()
+        print(f"[RSD] loading PRM model: {args.prm_model_path}")
+        prm_model = PRM_MODEL.from_pretrained(
+            args.prm_model_path,
+            torch_dtype=dtype,
+            device_map="auto",
+        ).eval()
+        print(f"[RSD] HF models loaded in {format_duration(time.time() - load_start)}")
         clients = (
-            AutoModelForCausalLM.from_pretrained(
-                args.draft_model_path,
-                trust_remote_code=True,
-                torch_dtype=dtype,
-                device_map="auto",
-            ).eval(),
-            AutoModelForCausalLM.from_pretrained(
-                args.target_model_path,
-                trust_remote_code=True,
-                torch_dtype=dtype,
-                device_map="auto",
-            ).eval(),
-            PRM_MODEL.from_pretrained(
-                args.prm_model_path,
-                torch_dtype=dtype,
-                device_map="auto",
-            ).eval(),
+            draft_model,
+            target_model,
+            prm_model,
         )
     datasets = [item.strip() for item in args.datasets.split(",") if item.strip()]
     summaries = [run_dataset(dataset_name, clients, tokenizers, args) for dataset_name in datasets]
