@@ -1,0 +1,887 @@
+{
+  "trace_path": "result\\traces\\observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json",
+  "trace_name": "observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds",
+  "threshold_reports": [
+    {
+      "threshold": 0.3,
+      "questions_total": 300,
+      "scheduled_accuracy": 0.86,
+      "trigger_rate": 0.8933333333333333,
+      "avg_handoff_count": 1.4813432835820894,
+      "avg_param_weighted_token_cost": 651.6333333333333,
+      "latency_mean_s": 7.765533188978831,
+      "latency_median_s": 7.023479223251343,
+      "latency_p90_s": 13.30872848033905,
+      "per_row_means": {
+        "n_events_mean": 19.65,
+        "n_probe_mean": 3.37,
+        "n_large_chunk_mean": 5.273333333333333,
+        "n_rollback_mean": 1.3233333333333333,
+        "n_small_accept_mean": 8.266666666666667
+      },
+      "handoff_dist": {
+        "2": 129,
+        "1": 139,
+        "0": 32
+      },
+      "adaptive_stop_reasons": {
+        "adaptive_handoff_stop_max_chunks": 212,
+        "adaptive_handoff_stop_empty_small_probe": 124,
+        "adaptive_handoff_stop_recovered": 39,
+        "adaptive_handoff_stop_reached_eos": 50
+      },
+      "slowest_questions": [
+        {
+          "question_id": 255,
+          "latency_s": 25.006988286972046,
+          "handoff_count": 2,
+          "small_generated_tokens": 417,
+          "large_generated_tokens": 182,
+          "n_events": 47,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 25
+        },
+        {
+          "question_id": 190,
+          "latency_s": 19.682196617126465,
+          "handoff_count": 2,
+          "small_generated_tokens": 299,
+          "large_generated_tokens": 168,
+          "n_events": 36,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 14
+        },
+        {
+          "question_id": 216,
+          "latency_s": 19.348454236984253,
+          "handoff_count": 2,
+          "small_generated_tokens": 258,
+          "large_generated_tokens": 154,
+          "n_events": 35,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 13
+        },
+        {
+          "question_id": 195,
+          "latency_s": 17.555221557617188,
+          "handoff_count": 2,
+          "small_generated_tokens": 192,
+          "large_generated_tokens": 159,
+          "n_events": 31,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 9
+        },
+        {
+          "question_id": 138,
+          "latency_s": 17.519346237182617,
+          "handoff_count": 2,
+          "small_generated_tokens": 198,
+          "large_generated_tokens": 179,
+          "n_events": 32,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        },
+        {
+          "question_id": 289,
+          "latency_s": 17.041361331939697,
+          "handoff_count": 2,
+          "small_generated_tokens": 211,
+          "large_generated_tokens": 181,
+          "n_events": 31,
+          "n_probe": 7,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 9
+        },
+        {
+          "question_id": 221,
+          "latency_s": 16.878317832946777,
+          "handoff_count": 2,
+          "small_generated_tokens": 277,
+          "large_generated_tokens": 117,
+          "n_events": 35,
+          "n_probe": 6,
+          "n_large_chunk": 8,
+          "n_rollback": 2,
+          "n_small_accept": 17
+        },
+        {
+          "question_id": 278,
+          "latency_s": 16.33955478668213,
+          "handoff_count": 2,
+          "small_generated_tokens": 165,
+          "large_generated_tokens": 174,
+          "n_events": 30,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 8
+        },
+        {
+          "question_id": 189,
+          "latency_s": 16.09808373451233,
+          "handoff_count": 2,
+          "small_generated_tokens": 141,
+          "large_generated_tokens": 163,
+          "n_events": 29,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 7
+        },
+        {
+          "question_id": 245,
+          "latency_s": 15.990605354309082,
+          "handoff_count": 2,
+          "small_generated_tokens": 189,
+          "large_generated_tokens": 154,
+          "n_events": 37,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 15
+        },
+        {
+          "question_id": 154,
+          "latency_s": 15.943631172180176,
+          "handoff_count": 2,
+          "small_generated_tokens": 351,
+          "large_generated_tokens": 81,
+          "n_events": 36,
+          "n_probe": 5,
+          "n_large_chunk": 7,
+          "n_rollback": 2,
+          "n_small_accept": 20
+        },
+        {
+          "question_id": 291,
+          "latency_s": 15.912947177886963,
+          "handoff_count": 2,
+          "small_generated_tokens": 136,
+          "large_generated_tokens": 159,
+          "n_events": 28,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 6
+        }
+      ]
+    },
+    {
+      "threshold": 0.35,
+      "questions_total": 300,
+      "scheduled_accuracy": 0.8533333333333334,
+      "trigger_rate": 0.7933333333333333,
+      "avg_handoff_count": 1.411764705882353,
+      "avg_param_weighted_token_cost": 599.5616666666666,
+      "latency_mean_s": 8.09019265651703,
+      "latency_median_s": 7.220330357551575,
+      "latency_p90_s": 14.597954320907592,
+      "per_row_means": {
+        "n_events_mean": 18.706666666666667,
+        "n_probe_mean": 2.9,
+        "n_large_chunk_mean": 4.51,
+        "n_rollback_mean": 1.12,
+        "n_small_accept_mean": 8.983333333333333
+      },
+      "handoff_dist": {
+        "1": 140,
+        "2": 98,
+        "0": 62
+      },
+      "adaptive_stop_reasons": {
+        "adaptive_handoff_stop_empty_small_probe": 103,
+        "adaptive_handoff_stop_reached_eos": 44,
+        "adaptive_handoff_stop_recovered": 28,
+        "adaptive_handoff_stop_max_chunks": 183
+      },
+      "slowest_questions": [
+        {
+          "question_id": 255,
+          "latency_s": 24.156595706939697,
+          "handoff_count": 2,
+          "small_generated_tokens": 417,
+          "large_generated_tokens": 182,
+          "n_events": 47,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 25
+        },
+        {
+          "question_id": 154,
+          "latency_s": 23.436161994934082,
+          "handoff_count": 2,
+          "small_generated_tokens": 561,
+          "large_generated_tokens": 78,
+          "n_events": 48,
+          "n_probe": 5,
+          "n_large_chunk": 7,
+          "n_rollback": 2,
+          "n_small_accept": 32
+        },
+        {
+          "question_id": 22,
+          "latency_s": 21.272279024124146,
+          "handoff_count": 2,
+          "small_generated_tokens": 325,
+          "large_generated_tokens": 137,
+          "n_events": 41,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 19
+        },
+        {
+          "question_id": 190,
+          "latency_s": 19.719759941101074,
+          "handoff_count": 2,
+          "small_generated_tokens": 299,
+          "large_generated_tokens": 168,
+          "n_events": 36,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 14
+        },
+        {
+          "question_id": 216,
+          "latency_s": 19.424911975860596,
+          "handoff_count": 2,
+          "small_generated_tokens": 258,
+          "large_generated_tokens": 154,
+          "n_events": 35,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 13
+        },
+        {
+          "question_id": 289,
+          "latency_s": 18.944912910461426,
+          "handoff_count": 2,
+          "small_generated_tokens": 293,
+          "large_generated_tokens": 120,
+          "n_events": 31,
+          "n_probe": 5,
+          "n_large_chunk": 8,
+          "n_rollback": 2,
+          "n_small_accept": 14
+        },
+        {
+          "question_id": 235,
+          "latency_s": 18.939045429229736,
+          "handoff_count": 2,
+          "small_generated_tokens": 275,
+          "large_generated_tokens": 155,
+          "n_events": 38,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 15
+        },
+        {
+          "question_id": 138,
+          "latency_s": 18.11981439590454,
+          "handoff_count": 2,
+          "small_generated_tokens": 198,
+          "large_generated_tokens": 179,
+          "n_events": 32,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        },
+        {
+          "question_id": 15,
+          "latency_s": 16.916632175445557,
+          "handoff_count": 2,
+          "small_generated_tokens": 237,
+          "large_generated_tokens": 161,
+          "n_events": 33,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 11
+        },
+        {
+          "question_id": 195,
+          "latency_s": 16.86950373649597,
+          "handoff_count": 2,
+          "small_generated_tokens": 192,
+          "large_generated_tokens": 159,
+          "n_events": 31,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 9
+        },
+        {
+          "question_id": 221,
+          "latency_s": 16.675880193710327,
+          "handoff_count": 2,
+          "small_generated_tokens": 277,
+          "large_generated_tokens": 117,
+          "n_events": 35,
+          "n_probe": 6,
+          "n_large_chunk": 8,
+          "n_rollback": 2,
+          "n_small_accept": 17
+        },
+        {
+          "question_id": 61,
+          "latency_s": 16.551880598068237,
+          "handoff_count": 2,
+          "small_generated_tokens": 222,
+          "large_generated_tokens": 152,
+          "n_events": 29,
+          "n_probe": 7,
+          "n_large_chunk": 9,
+          "n_rollback": 2,
+          "n_small_accept": 9
+        }
+      ]
+    },
+    {
+      "threshold": 0.4,
+      "questions_total": 300,
+      "scheduled_accuracy": 0.8533333333333334,
+      "trigger_rate": 0.7033333333333334,
+      "avg_handoff_count": 1.3364928909952607,
+      "avg_param_weighted_token_cost": 550.4133333333333,
+      "latency_mean_s": 7.112010757923127,
+      "latency_median_s": 6.210085511207581,
+      "latency_p90_s": 12.664190936088564,
+      "per_row_means": {
+        "n_events_mean": 17.776666666666667,
+        "n_probe_mean": 2.3933333333333335,
+        "n_large_chunk_mean": 3.77,
+        "n_rollback_mean": 0.94,
+        "n_small_accept_mean": 9.66
+      },
+      "handoff_dist": {
+        "0": 89,
+        "1": 140,
+        "2": 71
+      },
+      "adaptive_stop_reasons": {
+        "adaptive_handoff_stop_reached_eos": 42,
+        "adaptive_handoff_stop_empty_small_probe": 89,
+        "adaptive_handoff_stop_max_chunks": 154,
+        "adaptive_handoff_stop_recovered": 19
+      },
+      "slowest_questions": [
+        {
+          "question_id": 151,
+          "latency_s": 30.509127378463745,
+          "handoff_count": 2,
+          "small_generated_tokens": 733,
+          "large_generated_tokens": 95,
+          "n_events": 95,
+          "n_probe": 6,
+          "n_large_chunk": 8,
+          "n_rollback": 2,
+          "n_small_accept": 77
+        },
+        {
+          "question_id": 154,
+          "latency_s": 22.762946128845215,
+          "handoff_count": 2,
+          "small_generated_tokens": 561,
+          "large_generated_tokens": 78,
+          "n_events": 48,
+          "n_probe": 5,
+          "n_large_chunk": 7,
+          "n_rollback": 2,
+          "n_small_accept": 32
+        },
+        {
+          "question_id": 22,
+          "latency_s": 20.496454000473022,
+          "handoff_count": 2,
+          "small_generated_tokens": 325,
+          "large_generated_tokens": 137,
+          "n_events": 41,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 19
+        },
+        {
+          "question_id": 217,
+          "latency_s": 19.857672452926636,
+          "handoff_count": 2,
+          "small_generated_tokens": 296,
+          "large_generated_tokens": 160,
+          "n_events": 39,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 17
+        },
+        {
+          "question_id": 216,
+          "latency_s": 19.00289821624756,
+          "handoff_count": 2,
+          "small_generated_tokens": 258,
+          "large_generated_tokens": 154,
+          "n_events": 35,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 13
+        },
+        {
+          "question_id": 255,
+          "latency_s": 18.98811936378479,
+          "handoff_count": 2,
+          "small_generated_tokens": 417,
+          "large_generated_tokens": 182,
+          "n_events": 47,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 25
+        },
+        {
+          "question_id": 6,
+          "latency_s": 18.390432834625244,
+          "handoff_count": 2,
+          "small_generated_tokens": 201,
+          "large_generated_tokens": 158,
+          "n_events": 33,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 11
+        },
+        {
+          "question_id": 138,
+          "latency_s": 17.383854389190674,
+          "handoff_count": 2,
+          "small_generated_tokens": 198,
+          "large_generated_tokens": 179,
+          "n_events": 32,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        },
+        {
+          "question_id": 204,
+          "latency_s": 16.916509866714478,
+          "handoff_count": 2,
+          "small_generated_tokens": 226,
+          "large_generated_tokens": 150,
+          "n_events": 35,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 13
+        },
+        {
+          "question_id": 61,
+          "latency_s": 16.733263731002808,
+          "handoff_count": 2,
+          "small_generated_tokens": 222,
+          "large_generated_tokens": 152,
+          "n_events": 29,
+          "n_probe": 7,
+          "n_large_chunk": 9,
+          "n_rollback": 2,
+          "n_small_accept": 9
+        },
+        {
+          "question_id": 195,
+          "latency_s": 16.498774766921997,
+          "handoff_count": 2,
+          "small_generated_tokens": 217,
+          "large_generated_tokens": 159,
+          "n_events": 32,
+          "n_probe": 7,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        },
+        {
+          "question_id": 235,
+          "latency_s": 16.23602056503296,
+          "handoff_count": 2,
+          "small_generated_tokens": 275,
+          "large_generated_tokens": 155,
+          "n_events": 38,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 15
+        }
+      ]
+    },
+    {
+      "threshold": 0.45,
+      "questions_total": 300,
+      "scheduled_accuracy": 0.8466666666666667,
+      "trigger_rate": 0.5133333333333333,
+      "avg_handoff_count": 1.3311688311688312,
+      "avg_param_weighted_token_cost": 491.165,
+      "latency_mean_s": 5.20459485689799,
+      "latency_median_s": 4.31311559677124,
+      "latency_p90_s": 9.632062005996707,
+      "per_row_means": {
+        "n_events_mean": 16.383333333333333,
+        "n_probe_mean": 2.0033333333333334,
+        "n_large_chunk_mean": 2.96,
+        "n_rollback_mean": 0.6833333333333333,
+        "n_small_accept_mean": 9.99
+      },
+      "handoff_dist": {
+        "0": 146,
+        "1": 103,
+        "2": 51
+      },
+      "adaptive_stop_reasons": {
+        "adaptive_handoff_stop_empty_small_probe": 59,
+        "adaptive_handoff_stop_max_chunks": 129,
+        "adaptive_handoff_stop_recovered": 13,
+        "adaptive_handoff_stop_reached_eos": 23
+      },
+      "slowest_questions": [
+        {
+          "question_id": 151,
+          "latency_s": 24.890986919403076,
+          "handoff_count": 2,
+          "small_generated_tokens": 733,
+          "large_generated_tokens": 95,
+          "n_events": 95,
+          "n_probe": 6,
+          "n_large_chunk": 8,
+          "n_rollback": 2,
+          "n_small_accept": 77
+        },
+        {
+          "question_id": 154,
+          "latency_s": 16.16928505897522,
+          "handoff_count": 2,
+          "small_generated_tokens": 314,
+          "large_generated_tokens": 168,
+          "n_events": 41,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 19
+        },
+        {
+          "question_id": 216,
+          "latency_s": 15.031790494918823,
+          "handoff_count": 2,
+          "small_generated_tokens": 275,
+          "large_generated_tokens": 141,
+          "n_events": 36,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 14
+        },
+        {
+          "question_id": 22,
+          "latency_s": 15.027784585952759,
+          "handoff_count": 2,
+          "small_generated_tokens": 325,
+          "large_generated_tokens": 137,
+          "n_events": 41,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 19
+        },
+        {
+          "question_id": 6,
+          "latency_s": 14.546730756759644,
+          "handoff_count": 2,
+          "small_generated_tokens": 201,
+          "large_generated_tokens": 158,
+          "n_events": 33,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 11
+        },
+        {
+          "question_id": 235,
+          "latency_s": 14.483817100524902,
+          "handoff_count": 2,
+          "small_generated_tokens": 275,
+          "large_generated_tokens": 155,
+          "n_events": 38,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 15
+        },
+        {
+          "question_id": 255,
+          "latency_s": 13.70905613899231,
+          "handoff_count": 2,
+          "small_generated_tokens": 313,
+          "large_generated_tokens": 131,
+          "n_events": 38,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 16
+        },
+        {
+          "question_id": 138,
+          "latency_s": 13.243378162384033,
+          "handoff_count": 2,
+          "small_generated_tokens": 198,
+          "large_generated_tokens": 179,
+          "n_events": 32,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        },
+        {
+          "question_id": 204,
+          "latency_s": 13.034359455108643,
+          "handoff_count": 2,
+          "small_generated_tokens": 226,
+          "large_generated_tokens": 150,
+          "n_events": 35,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 13
+        },
+        {
+          "question_id": 130,
+          "latency_s": 13.032924890518188,
+          "handoff_count": 2,
+          "small_generated_tokens": 320,
+          "large_generated_tokens": 110,
+          "n_events": 37,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 15
+        },
+        {
+          "question_id": 179,
+          "latency_s": 12.607332229614258,
+          "handoff_count": 2,
+          "small_generated_tokens": 149,
+          "large_generated_tokens": 182,
+          "n_events": 30,
+          "n_probe": 7,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 8
+        },
+        {
+          "question_id": 195,
+          "latency_s": 12.534516334533691,
+          "handoff_count": 2,
+          "small_generated_tokens": 217,
+          "large_generated_tokens": 159,
+          "n_events": 32,
+          "n_probe": 7,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        }
+      ]
+    },
+    {
+      "threshold": 0.5,
+      "questions_total": 300,
+      "scheduled_accuracy": 0.84,
+      "trigger_rate": 0.35333333333333333,
+      "avg_handoff_count": 1.3018867924528301,
+      "avg_param_weighted_token_cost": 436.5783333333333,
+      "latency_mean_s": 4.654294491608938,
+      "latency_median_s": 3.646448493003845,
+      "latency_p90_s": 8.325422620773317,
+      "per_row_means": {
+        "n_events_mean": 15.096666666666666,
+        "n_probe_mean": 1.54,
+        "n_large_chunk_mean": 2.1433333333333335,
+        "n_rollback_mean": 0.46,
+        "n_small_accept_mean": 10.45
+      },
+      "handoff_dist": {
+        "0": 194,
+        "1": 74,
+        "2": 32
+      },
+      "adaptive_stop_reasons": {
+        "adaptive_handoff_stop_empty_small_probe": 31,
+        "adaptive_handoff_stop_max_chunks": 104,
+        "adaptive_handoff_stop_reached_eos": 12,
+        "adaptive_handoff_stop_recovered": 4
+      },
+      "slowest_questions": [
+        {
+          "question_id": 255,
+          "latency_s": 22.60989809036255,
+          "handoff_count": 2,
+          "small_generated_tokens": 682,
+          "large_generated_tokens": 125,
+          "n_events": 62,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 40
+        },
+        {
+          "question_id": 22,
+          "latency_s": 15.015666246414185,
+          "handoff_count": 2,
+          "small_generated_tokens": 325,
+          "large_generated_tokens": 137,
+          "n_events": 41,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 19
+        },
+        {
+          "question_id": 6,
+          "latency_s": 14.740065336227417,
+          "handoff_count": 2,
+          "small_generated_tokens": 214,
+          "large_generated_tokens": 174,
+          "n_events": 34,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 12
+        },
+        {
+          "question_id": 154,
+          "latency_s": 14.639551877975464,
+          "handoff_count": 2,
+          "small_generated_tokens": 314,
+          "large_generated_tokens": 168,
+          "n_events": 41,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 19
+        },
+        {
+          "question_id": 216,
+          "latency_s": 13.278915643692017,
+          "handoff_count": 2,
+          "small_generated_tokens": 275,
+          "large_generated_tokens": 141,
+          "n_events": 36,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 14
+        },
+        {
+          "question_id": 278,
+          "latency_s": 12.632603645324707,
+          "handoff_count": 2,
+          "small_generated_tokens": 226,
+          "large_generated_tokens": 146,
+          "n_events": 33,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 11
+        },
+        {
+          "question_id": 108,
+          "latency_s": 12.545000791549683,
+          "handoff_count": 2,
+          "small_generated_tokens": 169,
+          "large_generated_tokens": 153,
+          "n_events": 31,
+          "n_probe": 7,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 9
+        },
+        {
+          "question_id": 204,
+          "latency_s": 12.361873626708984,
+          "handoff_count": 2,
+          "small_generated_tokens": 202,
+          "large_generated_tokens": 146,
+          "n_events": 35,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 13
+        },
+        {
+          "question_id": 138,
+          "latency_s": 12.29840087890625,
+          "handoff_count": 2,
+          "small_generated_tokens": 221,
+          "large_generated_tokens": 142,
+          "n_events": 32,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        },
+        {
+          "question_id": 219,
+          "latency_s": 12.25485873222351,
+          "handoff_count": 2,
+          "small_generated_tokens": 217,
+          "large_generated_tokens": 133,
+          "n_events": 37,
+          "n_probe": 8,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 15
+        },
+        {
+          "question_id": 179,
+          "latency_s": 12.177588701248169,
+          "handoff_count": 2,
+          "small_generated_tokens": 149,
+          "large_generated_tokens": 182,
+          "n_events": 30,
+          "n_probe": 7,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 8
+        },
+        {
+          "question_id": 257,
+          "latency_s": 12.166929960250854,
+          "handoff_count": 2,
+          "small_generated_tokens": 207,
+          "large_generated_tokens": 133,
+          "n_events": 31,
+          "n_probe": 7,
+          "n_large_chunk": 10,
+          "n_rollback": 2,
+          "n_small_accept": 10
+        }
+      ]
+    }
+  ],
+  "stop_reason_union": {
+    "adaptive_handoff_stop_max_chunks": 782,
+    "adaptive_handoff_stop_empty_small_probe": 406,
+    "adaptive_handoff_stop_recovered": 103,
+    "adaptive_handoff_stop_reached_eos": 171
+  }
+}
