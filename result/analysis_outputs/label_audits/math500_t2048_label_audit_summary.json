@@ -1,0 +1,36 @@
+{
+  "label_path": "dataset/math500_labeled_data_strict_hf_t2048.pt",
+  "label_key": "label",
+  "rows_total": 18299,
+  "rows_used": 18299,
+  "rows_skipped": 0,
+  "questions": 500,
+  "label_counts": {
+    "1": 14741,
+    "0": 3558
+  },
+  "error_chunk_prevalence": 0.19443685447292203,
+  "final_wrong_questions": 154,
+  "final_correct_questions": 346,
+  "final_wrong_but_no_error_chunk": 15,
+  "final_correct_but_has_error_chunk": 214,
+  "zero_to_one_label_flip_questions": 322,
+  "low_judge_confidence_questions": 270,
+  "cut_reasons": {
+    "punctuation": 15590,
+    "max_tokens": 2458,
+    "tail": 251
+  },
+  "judge_error_types": {
+    "none": 14741,
+    "unknown": 2208,
+    "logic": 1038,
+    "arithmetic": 248,
+    "format": 8,
+    "hallucination": 56
+  },
+  "judge_parse_statuses": {
+    "json": 16092,
+    "fallback": 2207
+  }
+}
