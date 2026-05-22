@@ -1,529 +1,236 @@
 # LEAP
 
+LEAP is an observe-and-rollback scheduler for efficient mathematical reasoning.
+The current mainline uses a small model to generate chunk-level reasoning, probes
+each chunk for risk, temporarily hands off risky regions to a larger model, and
+then returns control to the small model when the trajectory looks stable again.
+
+This README tracks the experimental mainline. Older notes may lag behind the
+latest JSON traces; when in doubt, treat `result/**/*.json` as the source of
+truth.
+
 ## Current Mainline Snapshot
 
-As of 2026-04-28, the repository mainline has been aligned to the clean observe-and-rollback baseline that reproduced the best recent MATH500 result.
+As of 2026-05-22, the paper-facing mainline is:
 
-- Mainline probe feature spec: `boundary+mean`
-- Mainline scheduler trigger rule: `require-consecutive-risk`
-- Mainline adaptive handoff: enabled
-- Mainline adaptive settings:
-  - `min-large-handoff-chunks=1`
-  - `max-adaptive-large-handoff-chunks=4`
-  - `handoff-recovery-threshold=0.55`
-  - `cooldown-chunks=2`
-- Removed from the mainline scheduler:
-  - sparse-risk trigger
-  - multi-stable re-entry recovery
-  - setup-suppression heuristics
+- Task family: math reasoning scheduling
+- Small model: `Qwen2.5-1.5B`
+- Large model for GSM8K/SVAMP: `Qwen2.5-7B`
+- Large model for current MATH500 pilot: `Qwen2.5-32B`
+- Answer format: boxed final answer protocols where available
+- Probe feature spec: `boundary+mean`
+- Scheduler: adaptive observe-and-rollback
+- Default handoff budget: `max_handoffs=2`
+- Main comparison axes: final-answer accuracy, raw parameter-weighted token cost, and wall-clock latency
 
-### Current Best Clean MATH500 Setting
+The strongest current result is the GSM8K boxed 1.5B-to-7B adaptive scheduler:
 
-- Trace file: `result/traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json`
-- Threshold: `0.55`
-- Small-only accuracy: `0.7200`
-- Scheduled accuracy: `0.7800`
-- Gain over small: `+0.0600`
-- Trigger rate: `0.7000`
+- Trace: `result/traces/observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json`
+- Threshold: `0.25`
+- Questions: `300`
+- Small-only accuracy in scheduler split: `0.7467`
+- Scheduled accuracy: `0.8867`
+- Gain over small: `+0.1400`
+- Trigger rate: `1.0000`
+- Avg handoffs/question: `1.950`
+- Avg parameter-weighted token cost: `1090.61`
+- Mean latency: `10.85s/question`
 
-This is the current recommended clean baseline for MATH500 replication and follow-up ablations.
+This is the mainline setting to extend unless an experiment explicitly says it
+is an ablation.
 
-Exact reproduction command:
+## Best Current Results
 
-```bash
-python -m core_package.schedulers.simulate_observe_rollback_scheduler \
-  --label-path dataset/math500_labeled_data_strict_hf_t2048.pt \
-  --eval-data-path dataset/math500_test_15b_hidden_states_hf_t2048.pt \
-  --probe-artifact-path result/artifacts/probe_artifact_math500_hf_t2048_hidden_only.pt \
-  --small-baseline-path result/analysis_outputs/qwen25_math_15b_only_math500_hf_t2048.json \
-  --small-model-path models/Qwen2.5-Math-1.5B-Instruct \
-  --large-model-path models/Qwen2.5-32B \
-  --large-backend vllm \
-  --vllm-base-url http://127.0.0.1:8000 \
-  --vllm-api-key EMPTY \
-  --vllm-model-name Qwen2.5-32B \
-  --thresholds 0.55 \
-  --max-new-tokens 2048 \
-  --max-handoffs 2 \
-  --large-handoff-chunks 2 \
-  --adaptive-large-handoff \
-  --min-large-handoff-chunks 1 \
-  --max-adaptive-large-handoff-chunks 4 \
-  --handoff-recovery-threshold 0.55 \
-  --cooldown-chunks 2 \
-  --require-consecutive-risk \
-  --answer-type math500_qwen_boxed \
-  --trace-export-path result/traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json
-```
+### LEAP Scheduler
 
-This repository currently supports one main experimental workflow:
+| Dataset | Setting | Trace | Threshold | N | Small Acc | LEAP Acc | Gain | Trigger Rate | Handoffs / Question | Avg Raw Cost | Mean Latency |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| GSM8K | 1.5B -> 7B, boxed adaptive | `result/traces/observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json` | 0.25 | 300 | 0.7467 | 0.8867 | +0.1400 | 1.0000 | 1.950 | 1090.61 | 10.85s |
+| SVAMP | 1.5B -> 7B, boxed adaptive SVAMP thresholds | `result/traces/observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json` | 0.30 | 300 | 0.8100 | 0.8600 | +0.0500 | 0.8933 | 1.323 | 651.63 | 7.77s |
+| MATH500 | 1.5B -> 32B, clean adaptive pilot | `result/traces/observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json` | 0.55 | 100 | 0.7200 | 0.7800 | +0.0600 | 0.7000 | 1.180 | n/a | n/a |
 
-- a small model generates chunk-level reasoning trajectories
-- a 32B judge produces strict chunk-level correctness labels
-- a probe learns routing signals from those chunk features
-- an observe-and-rollback scheduler decides when to hand off to the large model
+### Best Scheduling Configs
 
-The same workflow can be reused across `GSM8K`, `SVAMP`, and `MATH500` with minimal changes.
+| Dataset | Primary Trace | Best Threshold | Small Model | Large Model | Backend | Answer Type | Scheduler Config | Selection Criterion |
+|---|---|---:|---|---|---|---|---|---|
+| GSM8K | `result/traces/observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json` | 0.25 | `Qwen2.5-1.5B` | `Qwen2.5-7B` | HF | `gsm8k_boxed_numeric` | adaptive observe-and-rollback, `max_handoffs=2`, `large_handoff_chunks=2`, `boundary+mean` probe | Best scheduled accuracy in current GSM8K sweep |
+| SVAMP | `result/traces/observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json` | 0.30 | `Qwen2.5-1.5B` | `Qwen2.5-7B` | HF | `svamp_boxed_numeric` | adaptive observe-and-rollback, `max_handoffs=2`, `large_handoff_chunks=2`, `boundary+mean` probe | Best scheduled accuracy in current SVAMP sweep |
+
+### Threshold Sweeps
+
+GSM8K primary adaptive sweep:
+
+| Trace | Threshold | N | Small Acc | Scheduled Acc | Gain | Trigger Rate | Handoffs / Question | Avg Raw Cost | Mean Latency |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json` | 0.15 | 300 | 0.7467 | 0.8600 | +0.1133 | 1.0000 | 1.983 | 1084.82 | 10.20s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json` | 0.20 | 300 | 0.7467 | 0.8700 | +0.1233 | 1.0000 | 1.980 | 1091.82 | 9.83s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json` | 0.25 | 300 | 0.7467 | 0.8867 | +0.1400 | 1.0000 | 1.950 | 1090.61 | 10.85s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json` | 0.30 | 300 | 0.7467 | 0.8800 | +0.1333 | 1.0000 | 1.920 | 1084.07 | 11.29s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json` | 0.35 | 300 | 0.7467 | 0.8633 | +0.1167 | 1.0000 | 1.877 | 1064.32 | 11.14s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_highthr.json` | 0.40 | 300 | 0.7467 | 0.8367 | +0.0900 | 1.0000 | 1.803 | 1025.99 | 13.60s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_highthr.json` | 0.50 | 300 | 0.7467 | 0.8267 | +0.0800 | 0.9833 | 1.490 | 855.40 | 10.24s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_highthr.json` | 0.60 | 300 | 0.7467 | 0.7900 | +0.0433 | 0.6400 | 0.843 | 601.57 | 6.93s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_highthr.json` | 0.70 | 300 | 0.7467 | 0.7433 | -0.0033 | 0.0867 | 0.107 | 430.23 | 4.46s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_highthr.json` | 0.80 | 300 | 0.7467 | 0.7467 | +0.0000 | 0.0167 | 0.017 | 402.34 | 4.27s |
+
+GSM8K consecutive-risk ablation:
+
+| Trace | Threshold | N | Small Acc | Scheduled Acc | Gain | Trigger Rate | Handoffs / Question | Avg Raw Cost | Mean Latency |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_consecutive.json` | 0.15 | 300 | 0.7467 | 0.8667 | +0.1200 | 1.0000 | 1.967 | 1099.83 | 11.35s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_consecutive.json` | 0.20 | 300 | 0.7467 | 0.8567 | +0.1100 | 1.0000 | 1.893 | 1055.90 | 11.00s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_consecutive.json` | 0.25 | 300 | 0.7467 | 0.8367 | +0.0900 | 1.0000 | 1.813 | 1000.49 | 10.29s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_consecutive.json` | 0.30 | 300 | 0.7467 | 0.8433 | +0.0967 | 1.0000 | 1.743 | 959.12 | 11.00s |
+| `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_consecutive.json` | 0.35 | 300 | 0.7467 | 0.8233 | +0.0767 | 0.9900 | 1.593 | 894.98 | 12.06s |
+
+SVAMP adaptive sweep:
+
+| Trace | Threshold | N | Small Acc | Scheduled Acc | Gain | Trigger Rate | Handoffs / Question | Avg Raw Cost | Mean Latency |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json` | 0.30 | 300 | 0.8100 | 0.8600 | +0.0500 | 0.8933 | 1.323 | 651.63 | 7.77s |
+| `observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json` | 0.35 | 300 | 0.8100 | 0.8533 | +0.0433 | 0.7933 | 1.120 | 599.56 | 8.09s |
+| `observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json` | 0.40 | 300 | 0.8100 | 0.8533 | +0.0433 | 0.7033 | 0.940 | 550.41 | 7.11s |
+| `observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json` | 0.45 | 300 | 0.8100 | 0.8467 | +0.0367 | 0.5133 | 0.683 | 491.17 | 5.20s |
+| `observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json` | 0.50 | 300 | 0.8100 | 0.8400 | +0.0300 | 0.3533 | 0.460 | 436.58 | 4.65s |
+
+### Useful Cost/Latency Variants
+
+| Dataset | Setting | Trace | Threshold | N | LEAP Acc | Gain | Trigger Rate | Avg Raw Cost | Mean Latency | Note |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| GSM8K | monotonic wide | `result/traces/observe_rollback_traces_gsm8k_15b_to_7b_boxed_monotonic_wide.json` | 0.40 | 300 | 0.8133 | +0.0667 | 0.9967 | 760.00 | 5.76s | Faster/lower-cost ablation, lower accuracy |
+| GSM8K | high-threshold adaptive | `result/traces/observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive_highthr.json` | 0.50 | 300 | 0.8267 | +0.0800 | 0.9833 | 855.40 | 10.24s | Accuracy/cost tradeoff |
+| SVAMP | all-HF sweep | `result/traces/observe_rollback_traces_svamp_15b_to_7b_boxed_allhf_sweep5.json` | 0.70 | 300 | 0.8467 | +0.0367 | 0.6767 | 415.63 | 2.59s | Best cost-efficient SVAMP point |
+| SVAMP | math500-style rule | `result/traces/observe_rollback_traces_svamp_15b_to_7b_boxed_allhf_math500_rule.json` | 0.55 | 300 | 0.8400 | +0.0300 | 0.4433 | 415.00 | 2.80s | Lower trigger rate, same cost band |
+
+### Model-Only References
+
+| Dataset | Model | File | N | Accuracy | Avg Raw Cost | Mean Latency |
+|---|---|---|---:|---:|---:|---:|
+| GSM8K | Qwen2.5-1.5B | `result/analysis_outputs/qwen25_15b_only_gsm8k_test_boxed.json` | 300 | 0.7067 | 466.78 | 6.05s |
+| GSM8K | Qwen2.5-7B | `result/analysis_outputs/qwen25_7b_only_gsm8k_test_boxed.json` | 300 | 0.9400 | 2098.86 | 7.02s |
+| SVAMP | Qwen2.5-1.5B | `result/analysis_outputs/qwen25_15b_only_svamp_test_boxed_hf_rerun.json` | 300 | 0.8100 | 314.54 | 2.04s |
+| SVAMP | Qwen2.5-7B | `result/analysis_outputs/qwen25_7b_only_svamp_test_boxed_hf.json` | 300 | 0.9267 | 1455.23 | 4.51s |
+| MATH500 | Qwen2.5-32B | `result/analysis_outputs/qwen25_32b_only_math500_test100_vllm_clean055.json` | 100 | 0.8000 | n/a | n/a |
+| MATH500 | Qwen2.5-Math-7B-Instruct | `result/analysis_outputs/qwen25_math_7b_only_math500_test100_hf_clean055.json` | 100 | 0.8400 | n/a | n/a |
+
+### External Baselines
+
+| Dataset | Baseline | File | N | Accuracy | Avg Raw Cost | Mean Latency |
+|---|---|---|---:|---:|---:|---:|
+| GSM8K | GlimpRouter, 1.5B/7B all-HF boxed | `result/baselines/glimprouter_gsm8k_qwen15b_qwen7b_allhf_boxed_20260521_210321/glimprouter_benchmark_summary.json` | 300 | 0.6367 | 958.16 | 6.82s |
+| SVAMP | GlimpRouter, 1.5B/7B all-HF boxed | `result/baselines/glimprouter_svamp_qwen15b_qwen7b_allhf_20260520_140542/glimprouter_benchmark_summary.json` | 300 | 0.8467 | 825.71 | 3.28s |
+| SVAMP | GlimpRouter, 1.5B/7B all-vLLM boxed | `result/baselines/glimprouter_svamp_qwen15b_qwen7b_all_vllm_20260520_121547/glimprouter_benchmark_summary.json` | 300 | 0.8567 | 2135.60 | 8.13s |
+| MATH500 | GlimpRouter, 1.5B/32B | `result/baselines/glimprouter_math500_qwen15b_qwen32b_20260519_142014/glimprouter_benchmark_summary.json` | 500 | 0.2820 | 2446.03 | 5.71s |
+
+## Interpretation
+
+The current AAAI-facing story is:
+
+- GSM8K: LEAP substantially improves over the 1.5B model and strongly beats the current GlimpRouter run, while using about half of the 7B-only parameter-weighted token cost.
+- SVAMP: LEAP reaches the best observed 1.5B-to-7B GlimpRouter accuracy band, with a stronger cost profile in the cost-efficient settings.
+- MATH500: the current result is a 100-question pilot. It is useful as a hard-dataset signal, but should be expanded before becoming the primary paper result.
+
+## Experimental Workflow
+
+The main experiment pipeline is:
+
+1. Build chunk-level trajectories with the small model.
+2. Label chunks with a strict large-model judge.
+3. Train a probe on chunk features.
+4. Run model-only baselines.
+5. Run the observe-and-rollback scheduler.
+6. Export trace JSON and summarize accuracy, cost, latency, trigger rate, and handoff behavior.
+
+Core entrypoints:
+
+- `core_package/pipelines/build_dataset.py`
+- `core_package/pipelines/referee_32b_labeling_strict.py`
+- `core_package/probes/train_probe_artifact_torch.py`
+- `core_package/schedulers/simulate_observe_rollback_scheduler.py`
+- `evaluation/evaluate_model_only_accuracy.py`
+- `evaluation/benchmark_latency_compare.py`
+
+Baseline adapters:
+
+- `experimental/baselines/GlimpRouter/src/run_leap_benchmarks.py`
+- `experimental/baselines/RSD/run_leap_benchmarks.py`
 
 ## Repository Structure
 
-- `core_package/`
-  main pipeline and scheduler code
-- `dataset/`
-  raw data, chunk trajectories, and strict labels
-- `evaluation/`
-  model-only evaluation, FLOPs analysis, latency benchmarking, failure analysis, and visualization
-- `result/`
-  probe artifacts, traces, JSON outputs, and figures
-- `unsorted/`
-  historical material and non-mainline code
+- `core_package/`: main pipeline, probe, scheduler, answer extraction, and shared config
+- `dataset/`: raw datasets, local JSONL splits, audits, and large local trajectory/label artifacts when present
+- `evaluation/`: accuracy evaluation, cost/latency analysis, plotting, and failure analysis
+- `result/`: scheduler traces, model-only JSON outputs, figures, and baseline summaries
+- `experimental/baselines/`: external baseline integrations, including GlimpRouter, R2R, and the in-progress RSD reproduction
+- `unsorted/`: legacy code and older experiment notes
 
-## Configuration
+## Evaluation Metrics
 
-Shared defaults live in:
+LEAP reports three complementary metrics. Accuracy is the primary quality metric;
+compute cost and latency describe two different notions of efficiency.
 
-- `core_package/config.py`
+### 1. Final-Answer Accuracy
 
-This file centralizes:
+Accuracy is question-level final-answer correctness:
 
-- default model paths
-- system prompts
-- dataset build defaults
-- strict labeling defaults
-- probe training defaults
-- scheduler defaults
-- evaluation defaults
+- `small-only`: whether the small model's final answer is correct.
+- `large-only`: whether the large model's final answer is correct.
+- `scheduled`: whether the final answer after LEAP routing is correct.
+- `gain over small = scheduled accuracy - small-only accuracy`.
 
-Recommended practice:
+This is the main task metric used in result tables.
 
-- change `core_package/config.py` when you want to update global defaults
-- override arguments on the command line for one-off experiments
+### 2. Raw Compute Cost
 
-## Accuracy, Cost, and Latency
+The result tables above report `avg_param_weighted_token_cost` when available.
+This is a raw, unnormalized proxy for inference compute:
 
-The repository currently uses three distinct reporting axes:
-
-- **Accuracy**
-  question-level final answer correctness
-- **Compute cost**
-  normalized total inference FLOPs relative to the `LLM-only` baseline
-- **Latency**
-  end-to-end per-question wall-clock runtime under a fixed environment
-
-Detailed definitions and the current benchmarking workflow are documented in:
-
-- [`evaluation/LATENCY_AND_COST.md`](evaluation/LATENCY_AND_COST.md)
-
-The reusable latency benchmarking entrypoints are:
-
-- [`evaluation/benchmark_latency_compare.py`](evaluation/benchmark_latency_compare.py)
-- [`evaluation/latency_benchmark.example.json`](evaluation/latency_benchmark.example.json)
-
-## Before Running
-
-All commands below assume you are in the repository root:
-
-```powershell
-cd <repo-root>
+```text
+raw parameter-weighted token cost ~= generated tokens * model parameter count
 ```
 
-On the Linux server this is typically:
+Lower is better. These values have not been divided by the large-only cost. For
+example, a LEAP raw cost of `1090.61` should be compared directly with the
+corresponding large-only raw cost, or converted into a ratio manually.
 
-```bash
-cd ~/care_experiment
+For paper-facing compute plots, also report the normalized FLOPs ratio defined in
+`evaluation/LATENCY_AND_COST.md`:
+
+```text
+normalized FLOPs ratio = scheduled total inference FLOPs / large-only total inference FLOPs
 ```
 
-Make sure these directories exist:
+The normalized FLOPs estimate should include small-model decoding, rollback
+waste, large-model prefix rebuild/prefill, and large-model decoding. This is the
+recommended compute metric for paper figures and tables.
 
-```bash
-mkdir -p dataset result/artifacts result/analysis_outputs result/traces
-```
+### 3. Wall-Clock Latency
 
-## Mainline Defaults
+Latency is end-to-end seconds per question under a fixed backend and hardware
+stack:
 
-The current mainline defaults are:
+- `latency_mean_s`
+- `latency_median_s`
+- `latency_p90_s`
+- `sec_per_question_mean`
 
-- probe features:
-  `boundary+mean`
-- probe training:
-  `hidden_layers=128,32`
-  `dropout=0.1`
-  `epochs=60`
-  `batch_size=256`
-  `learning_rate=5e-4`
-  `weight_decay=1e-3`
-- low-entropy error weighting:
-  `final_entropy <= 1.0`
-  `final_top1_prob >= 0.9`
-  `weight = 4.0`
-- scheduler:
-  `max_handoffs=2`
-  `large_handoff_chunks=2`
-  `cooldown_chunks=2`
-  `tail_bonus_weight=0.0`
+Latency is not interchangeable with FLOPs. Two methods can have similar FLOPs
+but different latency because routing can introduce repeated handoffs, repeated
+prefill, controller overhead, and backend request overhead.
 
-If you want to reproduce the mainline, keep these unchanged unless you are intentionally running an ablation.
+The 2026-05-22 GSM8K and SVAMP runs are intended to be compared within the same
+HF, same-hardware, batch-size-1 setting. MATH500 pilot numbers use a different
+serving setup in places, so avoid mixing its latency with the GSM8K/SVAMP latency
+claims unless the run is repeated under the same backend and hardware.
 
-## End-to-End Workflow
+## Mainline Policy
 
-Across datasets, the mainline generally follows these five steps:
+Unless an experiment is explicitly marked as an ablation, new work should build
+from the 2026-05-22 adaptive observe-and-rollback mainline:
 
-1. build 1.5B chunk hidden-state trajectories
-2. label chunks with a 32B strict judge
-3. train the probe
-4. run model-only baselines
-5. run the scheduler
+- GSM8K primary setting: `observe_rollback_traces_gsm8k_15b_to_7b_boxed_adaptive.json`, threshold `0.25`
+- SVAMP primary setting: `observe_rollback_traces_svamp_15b_to_7b_boxed_adaptive_svamp_thresholds.json`, threshold `0.30`
+- MATH500 pilot setting: `observe_rollback_traces_math500_vllm_hidden_only_t2048_adaptive_clean055.json`, threshold `0.55`
 
-Dataset-specific commands are listed below.
-
----
-
-## GSM8K
-
-### 1. 构建 chunk 轨迹
-
-```bash
-python -m core_package.pipelines.build_dataset \
-  --dataset-name gsm8k \
-  --dataset-split "train[:500]" \
-  --model-path models/Qwen2.5-1.5B \
-  --save-path dataset/gsm8k_15b_hidden_states.pt \
-  --max-new-tokens  512
-```
-
-### 2. strict 标注
-
-```bash
-python -m core_package.pipelines.referee_32b_labeling_strict \
-  --input-path dataset/gsm8k_15b_hidden_states.pt \
-  --output-path dataset/gsm8k_labeled_training_data_strict.pt \
-  --model-path models/Qwen2.5-32B \
-  --num-samples 500 \
-  --save-every 10 \
-  --include-reference-answer
-```
-
-支持断点续跑。第一次跑完一部分后，如果中断了，继续执行时加上：
-
-```bash
-python -m core_package.pipelines.referee_32b_labeling_strict \
-  --input-path dataset/gsm8k_15b_hidden_states.pt \
-  --output-path dataset/gsm8k_labeled_training_data_strict.pt \
-  --model-path models/Qwen2.5-32B \
-  --num-samples 500 \
-  --save-every 10 \
-  --include-reference-answer \
-  --resume
-```
-
-说明：
-
-- `--resume` 会读取已有的 `output-path`
-- 已经处理过的 `question_id` 会自动跳过
-- `--save-every` 控制每处理多少个新问题就落盘一次
-
-如果你担心夜里中断，建议把 `--save-every` 调小到 `5`。
-
-### 3. 训练 probe
-
-```bash
-python -m core_package.probes.train_probe_artifact_torch \
-  --label-path dataset/gsm8k_labeled_training_data_strict.pt \
-  --output-path result/artifacts/probe_artifact_torch.pt \
-  --feature-key "boundary+mean" \
-  --hidden-layers 128,32 \
-  --dropout 0.1 \
-  --epochs 60 \
-  --batch-size 256 \
-  --learning-rate 5e-4 \
-  --weight-decay 1e-3 \
-  --low-entropy-error-final-entropy-max 1.0 \
-  --low-entropy-error-final-top1-min 0.9 \
-  --low-entropy-error-weight 4.0
-```
-
-### 4. 跑 1.5B / 32B baseline
-
-1.5B:
-
-```bash
-python -m evaluation.evaluate_model_only_accuracy \
-  --label-path dataset/gsm8k_labeled_training_data_strict.pt \
-  --artifact-path result/artifacts/probe_artifact_torch.pt \
-  --trace-path does_not_exist.json \
-  --model-path models/Qwen2.5-1.5B \
-  --max-new-tokens 768 \
-  --output-path result/analysis_outputs/qwen25_15b_only_heldout.json
-```
-
-32B:
-
-```bash
-python -m evaluation.evaluate_model_only_accuracy \
-  --label-path dataset/gsm8k_labeled_training_data_strict.pt \
-  --artifact-path result/artifacts/probe_artifact_torch.pt \
-  --trace-path does_not_exist.json \
-  --model-path models/Qwen2.5-32B \
-  --max-new-tokens 768 \
-  --output-path result/analysis_outputs/qwen25_32b_only_heldout.json
-```
-
-### 5. 跑 scheduler
-
-```bash
-python -m core_package.schedulers.simulate_observe_rollback_scheduler \
-  --label-path dataset/gsm8k_labeled_training_data_strict.pt \
-  --probe-artifact-path result/artifacts/probe_artifact_torch.pt \
-  --small-baseline-path result/analysis_outputs/qwen25_15b_only_heldout.json \
-  --thresholds 0.25,0.40,0.50 \
-  --tail-bonus-weight 0.0 \
-  --max-new-tokens 768 \
-  --max-handoffs 2 \
-  --large-handoff-chunks 2 \
-  --cooldown-chunks 2 \
-  --trace-export-path result/traces/observe_rollback_traces_mainline.json
-```
-
----
-
-## SVAMP
-
-你现在已经下好了：
-
-- `dataset/svamp/train.jsonl`
-- `dataset/svamp/test.jsonl`
-
-推荐优先跑规范版：
-
-- `train=700` 用来构建轨迹、strict 标注、训练 probe
-- `test=300` 用来做最终单模型和 scheduler 评测
-
-### 1. 构建 chunk 轨迹
-
-train:
-
-```bash
-python -m core_package.pipelines.build_dataset \
-  --dataset-name svamp \
-  --input-path dataset/svamp/train.jsonl \
-  --num-samples 700 \
-  --model-path models/Qwen2.5-1.5B \
-  --save-path dataset/svamp_15b_hidden_states.pt \
-  --max-new-tokens 512
-```
-
-test:
-
-```bash
-python -m core_package.pipelines.build_dataset \
-  --dataset-name svamp \
-  --input-path dataset/svamp/test.jsonl \
-  --num-samples 300 \
-  --model-path models/Qwen2.5-1.5B \
-  --save-path dataset/svamp_test_15b_hidden_states.pt \
-  --max-new-tokens 512
-```
-
-### 2. strict 标注
-
-```bash
-python -m core_package.pipelines.referee_32b_labeling_strict \
-  --input-path dataset/svamp_15b_hidden_states.pt \
-  --output-path dataset/svamp_labeled_training_data_strict.pt \
-  --model-path models/Qwen2.5-32B \
-  --num-samples 700 \
-  --save-every 10 \
-  --include-reference-answer
-```
-
-同样支持断点续跑：
-
-```bash
-python -m core_package.pipelines.referee_32b_labeling_strict \
-  --input-path dataset/svamp_15b_hidden_states.pt \
-  --output-path dataset/svamp_labeled_training_data_strict.pt \
-  --model-path models/Qwen2.5-32B \
-  --num-samples 700 \
-  --save-every 10 \
-  --include-reference-answer \
-  --resume
-```
-
-### 3. 训练 probe
-
-```bash
-python -m core_package.probes.train_probe_artifact_torch \
-  --label-path dataset/svamp_labeled_training_data_strict.pt \
-  --output-path result/artifacts/probe_artifact_svamp_torch.pt \
-  --feature-key "boundary+mean" \
-  --hidden-layers 128,32 \
-  --dropout 0.1 \
-  --epochs 60 \
-  --batch-size 256 \
-  --learning-rate 5e-4 \
-  --weight-decay 1e-3 \
-  --low-entropy-error-final-entropy-max 1.0 \
-  --low-entropy-error-final-top1-min 0.9 \
-  --low-entropy-error-weight 4.0
-```
-
-### 4. 跑 1.5B / 32B baseline
-
-这里改成在 `test=300` 上评测。
-
-1.5B:
-
-```bash
-python -m evaluation.evaluate_model_only_accuracy \
-  --label-path dataset/svamp_test_15b_hidden_states.pt \
-  --artifact-path does_not_exist.pt \
-  --trace-path does_not_exist.json \
-  --model-path models/Qwen2.5-1.5B \
-  --max-new-tokens 768 \
-  --output-path result/analysis_outputs/qwen25_15b_only_svamp_test.json
-```
-
-32B:
-
-```bash
-python -m evaluation.evaluate_model_only_accuracy \
-  --label-path dataset/svamp_test_15b_hidden_states.pt \
-  --artifact-path does_not_exist.pt \
-  --trace-path does_not_exist.json \
-  --model-path models/Qwen2.5-32B \
-  --max-new-tokens 768 \
-  --output-path result/analysis_outputs/qwen25_32b_only_svamp_test.json
-```
-
-### 5. 跑 scheduler
-
-```bash
-python -m core_package.schedulers.simulate_observe_rollback_scheduler \
-  --label-path dataset/svamp_labeled_training_data_strict.pt \
-  --eval-data-path dataset/svamp_test_15b_hidden_states.pt \
-  --probe-artifact-path result/artifacts/probe_artifact_svamp_torch.pt \
-  --small-baseline-path result/analysis_outputs/qwen25_15b_only_svamp_test.json \
-  --thresholds 0.25,0.40,0.50 \
-  --tail-bonus-weight 0.0 \
-  --max-new-tokens 768 \
-  --max-handoffs 2 \
-  --large-handoff-chunks 2 \
-  --cooldown-chunks 2 \
-  --trace-export-path result/traces/observe_rollback_traces_svamp_test_mainline.json
-```
-
----
-
-## 新数据集怎么接
-
-以后新增一个数学数据集，优先按这个思路接：
-
-### 情况 1：和 SVAMP 类似，已经是本地 `jsonl`
-
-直接用：
-
-```bash
-python -m core_package.pipelines.build_dataset \
-  --dataset-name jsonl \
-  --input-path path/to/your_dataset.jsonl \
-  --question-field your_question_field \
-  --answer-field your_answer_field \
-  --save-path dataset/your_dataset_15b_hidden_states.pt
-```
-
-如果你已经有单独的 official `train/test`，推荐像上面的 `SVAMP` 一样：
-
-- train 上做 strict 标注和 probe 训练
-- test 上只构建轨迹
-- 用 scheduler 的 `--eval-data-path` 在 test 上做最终评测
-
-后面步骤不变，只要把：
-
-- `label-path`
-- `output-path`
-- `trace-export-path`
-
-换成新数据集自己的文件名即可。
-
-### 情况 2：题目类型比 GSM8K 更复杂
-
-例如 `MATH500`，主线框架仍然能复用，但你要额外确认：
-
-- `answer_extraction.py` 能不能正确抽取答案
-- 是否需要等价判定而不是字符串完全相等
-- 是否需要调整 `max_new_tokens`
-
-也就是说：
-
-- build / strict label / probe / scheduler 这条框架可以复用
-- answer extraction / correctness judge 可能要单独适配
-
-## 结果文件通常放哪里
-
-建议保持下面这个习惯，不同数据集不要混名：
-
-- chunk 轨迹：
-  `dataset/<name>_15b_hidden_states.pt`
-- strict 标注：
-  `dataset/<name>_labeled_training_data_strict.pt`
-- probe artifact：
-  `result/artifacts/probe_artifact_<name>_torch.pt`
-- 单模型输出：
-  `result/analysis_outputs/qwen25_<model>_only_<name>_test.json`
-- scheduler trace：
-  `result/traces/observe_rollback_traces_<name>_test_mainline.json`
-
-## 常见注意事项
-
-### 1. 一定从仓库根目录运行
-
-否则相对路径容易乱。
-
-### 2. 不同数据集尽量用不同输出文件名
-
-避免覆盖：
-
-- probe artifact
-- 单模型 json
-- trace json
-
-### 3. 默认参数统一在 `core_package/config.py`
-
-如果你发现多个脚本的默认值不一致，优先检查这里。
-
-### 4. scheduler 复现优先依赖 artifact 和 baseline json
-
-这样 held-out question ids 更稳定。
-
-### 5. MATH500 不建议直接照抄 GSM8K 判对逻辑
-
-先做 extraction 和 equivalence 检查，再上主线。
-
-### 6. strict 标注建议默认按“可恢复任务”来跑
-
-推荐习惯：
-
-- 始终显式传 `--output-path`
-- 长任务时加 `--resume`
-- `--save-every` 不要设太大，推荐 `5` 或 `10`
-
-这样即使中断，也只会损失最近一小段进度。
-
-## 你以后最常用的两个模式
-
-### 模式 A：完全复现主线
-
-- 不改 `config.py`
-- 命令行只换数据路径和输出文件名
-
-### 模式 B：新数据集实验
-
-- 保持 probe / scheduler 主线参数不变
-- 只改：
-  - `--input-path`
-  - `--save-path`
-  - `--label-path`
-  - `--output-path`
-  - `--trace-export-path`
-
-这是目前最稳的做法。
+When adding a new result, update this README and keep the trace JSON in
+`result/traces/` with a descriptive filename.
