@@ -41,6 +41,12 @@ def parse_args():
     parser.add_argument("--draft-model-path", default=MODELS.small_model_path, help="Tokenizer/model path for the draft model.")
     parser.add_argument("--target-model-path", default=MODELS.large_model_path, help="Tokenizer/model path for the target model.")
     parser.add_argument("--prm-model-path", default=DEFAULT_PRM_MODEL, help="Tokenizer/model path for the PRM.")
+    parser.add_argument(
+        "--backend",
+        choices=["vllm", "hf"],
+        default="vllm",
+        help="RSD execution backend. vllm uses OpenAI-compatible servers; hf loads all models locally.",
+    )
     parser.add_argument("--draft-served-model-name", default=None, help="OpenAI/vLLM served model name for draft. Defaults to basename of path.")
     parser.add_argument("--target-served-model-name", default=None, help="OpenAI/vLLM served model name for target. Defaults to basename of path.")
     parser.add_argument("--prm-served-model-name", default=None, help="OpenAI/vLLM served model name for PRM. Defaults to basename of path.")
@@ -193,6 +199,197 @@ def build_rsd_args(args):
     )
 
 
+class _HFChoice:
+    def __init__(self, index, text, stop_reason):
+        self.index = index
+        self.text = text
+        self.stop_reason = stop_reason
+
+
+class _StopOnTokenSequence:
+    def __init__(self, stop_ids):
+        self.stop_ids = list(stop_ids)
+
+    def __call__(self, input_ids, scores, **kwargs):
+        if not self.stop_ids:
+            return False
+        if input_ids.shape[-1] < len(self.stop_ids):
+            return False
+        tail = input_ids[0, -len(self.stop_ids) :].tolist()
+        return tail == self.stop_ids
+
+
+def _first_device(model):
+    try:
+        return next(model.parameters()).device
+    except StopIteration:
+        return getattr(model, "device", "cpu")
+
+
+def _generate_step_hf(model, tokenizer, prompt, args):
+    import torch
+    from transformers import StoppingCriteriaList
+
+    device = _first_device(model)
+    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = {key: value.to(device) for key, value in inputs.items()}
+    stop_ids = tokenizer.encode(args.step_word, add_special_tokens=False)
+    stopping_criteria = StoppingCriteriaList([_StopOnTokenSequence(stop_ids)]) if stop_ids else None
+    do_sample = args.temperature > 0
+    generate_kwargs = {
+        "max_new_tokens": args.max_tokens_per_call,
+        "do_sample": do_sample,
+        "top_p": args.top_p,
+        "pad_token_id": tokenizer.eos_token_id,
+    }
+    if do_sample:
+        generate_kwargs["temperature"] = args.temperature
+    with torch.inference_mode():
+        output_ids = model.generate(
+            **inputs,
+            stopping_criteria=stopping_criteria,
+            **generate_kwargs,
+        )
+    new_ids = output_ids[0, inputs["input_ids"].shape[-1] :]
+    text = tokenizer.decode(new_ids, skip_special_tokens=True)
+    stop_reason = None
+    if args.step_word in text:
+        text = text.split(args.step_word, 1)[0]
+        stop_reason = "stop"
+    elif tokenizer.eos_token and tokenizer.eos_token in text:
+        text = text.split(tokenizer.eos_token, 1)[0]
+        stop_reason = "stop"
+    return text, stop_reason
+
+
+def _score_steps_hf(prm_model, prm_tokenizer, problems, full_responses, args):
+    import torch
+    from external.skywork_o1_prm_inference.model_utils.io_utils import (  # noqa: E402
+        derive_step_rewards,
+        prepare_batch_input_for_model,
+        prepare_input,
+    )
+
+    processed = [
+        prepare_input(problem, full_response, tokenizer=prm_tokenizer, step_token=args.step_word)
+        for problem, full_response in zip(problems, full_responses)
+    ]
+    input_ids, _, reward_flags = zip(*processed)
+    pad_token_id = prm_tokenizer.pad_token_id
+    if pad_token_id is None:
+        pad_token_id = prm_tokenizer.eos_token_id if prm_tokenizer.eos_token_id is not None else 0
+    input_ids_tensor, attention_mask, reward_flags_tensor = prepare_batch_input_for_model(
+        input_ids,
+        reward_flags,
+        pad_token_id,
+    )
+    device = _first_device(prm_model)
+    input_ids_tensor = input_ids_tensor.to(device)
+    attention_mask = attention_mask.to(device)
+    reward_flags_tensor = reward_flags_tensor.to(device)
+    with torch.inference_mode():
+        _, _, rewards = prm_model(input_ids=input_ids_tensor, attention_mask=attention_mask, return_probs=True)
+    return derive_step_rewards(rewards, reward_flags_tensor)
+
+
+def get_responses_hf(args, draft_model, target_model, prm_model, draft_tokenizer, target_tokenizer, prm_tokenizer, prompts, problems):
+    outputs = [None] * len(prompts)
+    token_counts = [(0, 0, 0) for _ in prompts]
+    step_info = [[] for _ in prompts]
+    current_prompts = [(i, p, []) for i, p in enumerate(prompts)]
+    all_rewards = [[] for _ in prompts]
+    current_problems = problems
+    num_step = 0
+    pre_num_finished = 0
+    num_unchanged = 0
+
+    while current_prompts:
+        batch_prompts = [p + "".join(r[0] for r in responses) for _, p, responses in current_prompts]
+        draft_responses = [
+            _HFChoice(idx, *_generate_step_hf(draft_model, draft_tokenizer, prompt, args))
+            for idx, prompt in enumerate(batch_prompts)
+        ]
+
+        full_responses = [
+            "".join(r[0] for r in prev_resp) + new_resp.text
+            for (_, _, prev_resp), new_resp in zip(current_prompts, draft_responses)
+        ]
+        step_rewards = _score_steps_hf(prm_model, prm_tokenizer, current_problems, full_responses, args)
+
+        good_prompts = []
+        bad_prompts = []
+        for (orig_idx, prompt, prev_responses), draft_response, step_reward in zip(current_prompts, draft_responses, step_rewards):
+            latest_reward = step_reward[-1] if step_reward else 0.0
+            all_rewards[orig_idx].append(round(float(latest_reward), 6))
+            if latest_reward >= args.prm_threshold:
+                good_prompts.append((orig_idx, prompt, prev_responses, draft_response, True))
+            else:
+                draft_response_text = draft_response.text + args.step_word
+                token_counts[orig_idx] = (
+                    token_counts[orig_idx][0],
+                    token_counts[orig_idx][1],
+                    token_counts[orig_idx][2] + len(draft_tokenizer.encode(draft_response_text)),
+                )
+                bad_prompts.append((orig_idx, prompt, prev_responses))
+
+        for target_idx, (orig_idx, prompt, prev_responses) in enumerate(bad_prompts):
+            target_prompt = prompt + "".join(r[0] for r in prev_responses)
+            text, stop_reason = _generate_step_hf(target_model, target_tokenizer, target_prompt, args)
+            good_prompts.append((orig_idx, prompt, prev_responses, _HFChoice(target_idx, text, stop_reason), False))
+
+        next_prompts = []
+        next_problems = []
+        for orig_idx, prompt, prev_responses, response, used_draft in sorted(good_prompts, key=lambda x: x[0]):
+            response_text = response.text + args.step_word
+            client_id = 1 if used_draft else 2
+            tokenizer = draft_tokenizer if client_id == 1 else target_tokenizer
+            num_tokens = len(tokenizer.encode(response_text))
+            if client_id == 1:
+                token_counts[orig_idx] = (
+                    token_counts[orig_idx][0] + num_tokens,
+                    token_counts[orig_idx][1],
+                    token_counts[orig_idx][2],
+                )
+            else:
+                token_counts[orig_idx] = (
+                    token_counts[orig_idx][0],
+                    token_counts[orig_idx][1] + num_tokens,
+                    token_counts[orig_idx][2],
+                )
+            step_info[orig_idx].append((num_step, client_id))
+
+            full_responses = prev_responses + [(response_text, client_id)]
+            full_responses_text = "".join(r[0] for r in full_responses)
+            prompt_full = prompt + full_responses_text
+            reached_context_limit = (
+                len(draft_tokenizer.encode(prompt_full)) >= args.max_tokens_per_call
+                or len(target_tokenizer.encode(prompt_full)) >= args.max_tokens_per_call
+            )
+            if (
+                response.stop_reason is None
+                or reached_context_limit
+                or num_step >= args.max_steps - 1
+                or num_unchanged >= args.patience - 1
+            ):
+                outputs[orig_idx] = full_responses_text[: -len(args.step_word)]
+            else:
+                next_prompts.append((orig_idx, prompt, full_responses))
+                next_problems.append(problems[orig_idx])
+
+        current_prompts = next_prompts
+        current_problems = next_problems
+        if len(outputs) - len(current_prompts) > pre_num_finished:
+            num_unchanged = 0
+            pre_num_finished = len(outputs) - len(current_prompts)
+        else:
+            num_unchanged += 1
+
+        print(f"#### Step {num_step}: Completed {pre_num_finished} / {len(outputs)}, #unchanged {num_unchanged} / {args.patience}")
+        num_step += 1
+
+    return outputs, token_counts, step_info, all_rewards
+
+
 def run_dataset(dataset_name, clients, tokenizers, args):
     if GET_RESPONSES is None:
         raise RuntimeError("RSD get_responses is not loaded. This should be initialized in main().")
@@ -202,7 +399,7 @@ def run_dataset(dataset_name, clients, tokenizers, args):
     answer_type = args.answer_type or resolve_answer_type(dataset_name)
     extractor = get_answer_extractor(answer_type)
     output_dir = Path(args.output_root) / (
-        f"{dataset_name}_draft{served_name(args.draft_model_path, args.draft_served_model_name)}"
+        f"{dataset_name}_{args.backend}_draft{served_name(args.draft_model_path, args.draft_served_model_name)}"
         f"_target{served_name(args.target_model_path, args.target_served_model_name)}"
         f"_prmthr{str(args.prm_threshold).replace('.', 'p')}_{answer_type}"
     )
@@ -265,6 +462,7 @@ def run_dataset(dataset_name, clients, tokenizers, args):
         "correct": correct,
         "accuracy": correct / total if total else 0.0,
         "method": "rsd",
+        "backend": args.backend,
         "answer_type": answer_type,
         "draft_model_path": args.draft_model_path,
         "target_model_path": args.target_model_path,
@@ -319,6 +517,7 @@ def write_overall_summary(output_root, summaries):
         "questions_total",
         "correct",
         "accuracy",
+        "backend",
         "answer_type",
         "draft_served_model_name",
         "target_served_model_name",
@@ -350,21 +549,57 @@ def write_overall_summary(output_root, summaries):
 def main():
     global GET_RESPONSES
     args = parse_args()
-    from openai import OpenAI
     from transformers import AutoTokenizer
-    from main_online import get_responses
 
-    GET_RESPONSES = get_responses
-    clients = (
-        OpenAI(api_key=args.api_key, base_url=args.draft_base_url),
-        OpenAI(api_key=args.api_key, base_url=args.target_base_url),
-        OpenAI(api_key=args.api_key, base_url=args.prm_base_url),
-    )
-    tokenizers = (
-        AutoTokenizer.from_pretrained(args.draft_model_path, trust_remote_code=True),
-        AutoTokenizer.from_pretrained(args.target_model_path, trust_remote_code=True),
-        AutoTokenizer.from_pretrained(args.prm_model_path, trust_remote_code=True),
-    )
+    if args.backend == "vllm":
+        from openai import OpenAI
+        from main_online import get_responses
+
+        GET_RESPONSES = get_responses
+        clients = (
+            OpenAI(api_key=args.api_key, base_url=args.draft_base_url),
+            OpenAI(api_key=args.api_key, base_url=args.target_base_url),
+            OpenAI(api_key=args.api_key, base_url=args.prm_base_url),
+        )
+        tokenizers = (
+            AutoTokenizer.from_pretrained(args.draft_model_path, trust_remote_code=True),
+            AutoTokenizer.from_pretrained(args.target_model_path, trust_remote_code=True),
+            AutoTokenizer.from_pretrained(args.prm_model_path, trust_remote_code=True),
+        )
+    else:
+        import torch
+        from external.skywork_o1_prm_inference.model_utils.prm_model import PRM_MODEL
+        from transformers import AutoModelForCausalLM
+
+        GET_RESPONSES = get_responses_hf
+        dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+        tokenizers = (
+            AutoTokenizer.from_pretrained(args.draft_model_path, trust_remote_code=True),
+            AutoTokenizer.from_pretrained(args.target_model_path, trust_remote_code=True),
+            AutoTokenizer.from_pretrained(args.prm_model_path, trust_remote_code=True),
+        )
+        for tokenizer in tokenizers:
+            if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
+                tokenizer.pad_token = tokenizer.eos_token
+        clients = (
+            AutoModelForCausalLM.from_pretrained(
+                args.draft_model_path,
+                trust_remote_code=True,
+                torch_dtype=dtype,
+                device_map="auto",
+            ).eval(),
+            AutoModelForCausalLM.from_pretrained(
+                args.target_model_path,
+                trust_remote_code=True,
+                torch_dtype=dtype,
+                device_map="auto",
+            ).eval(),
+            PRM_MODEL.from_pretrained(
+                args.prm_model_path,
+                torch_dtype=dtype,
+                device_map="auto",
+            ).eval(),
+        )
     datasets = [item.strip() for item in args.datasets.split(",") if item.strip()]
     summaries = [run_dataset(dataset_name, clients, tokenizers, args) for dataset_name in datasets]
     write_overall_summary(args.output_root, summaries)

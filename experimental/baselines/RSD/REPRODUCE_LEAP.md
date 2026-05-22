@@ -20,7 +20,15 @@ The upstream bundled evaluation datasets under
 For LEAP-comparable experiments, use the repository-level `dataset/` files
 through `run_leap_benchmarks.py`.
 
-## Required Services
+## Backends
+
+The adapter supports two backends:
+
+- `--backend vllm`: use three OpenAI-compatible vLLM services.
+- `--backend hf`: load draft, target, and PRM locally with HuggingFace. This avoids
+  serving the Skywork PRM through vLLM.
+
+## Required Services For vLLM
 
 RSD online mode expects three OpenAI-compatible vLLM services:
 
@@ -50,6 +58,7 @@ From the repository root:
 
 ```bash
 python experimental/baselines/RSD/run_leap_benchmarks.py \
+  --backend vllm \
   --datasets gsm8k,svamp \
   --max-questions 5 \
   --draft-model-path models/Qwen2.5-1.5B \
@@ -67,14 +76,29 @@ If the vLLM served model names differ from the tokenizer/model paths, pass:
 --prm-served-model-name <served-prm-name>
 ```
 
+HF smoke test, no vLLM services required:
+
+```bash
+python experimental/baselines/RSD/run_leap_benchmarks.py \
+  --backend hf \
+  --datasets gsm8k \
+  --max-questions 5 \
+  --draft-model-path /root/autodl-tmp/models/Qwen2.5-1.5B \
+  --target-model-path /root/autodl-tmp/models/Qwen2.5-7B \
+  --prm-model-path /root/autodl-tmp/models/Skywork-o1-Open-PRM-Qwen-2.5-1.5B \
+  --prm-threshold 0.7 \
+  --max-tokens-per-call 2048
+```
+
 ## Full LEAP-Comparable Run
 
 ```bash
 python experimental/baselines/RSD/run_leap_benchmarks.py \
+  --backend hf \
   --datasets gsm8k,svamp \
-  --draft-model-path models/Qwen2.5-1.5B \
-  --target-model-path models/Qwen2.5-7B \
-  --prm-model-path Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B \
+  --draft-model-path /root/autodl-tmp/models/Qwen2.5-1.5B \
+  --target-model-path /root/autodl-tmp/models/Qwen2.5-7B \
+  --prm-model-path /root/autodl-tmp/models/Skywork-o1-Open-PRM-Qwen-2.5-1.5B \
   --prm-threshold 0.7 \
   --max-tokens-per-call 2048 \
   --output-root result/baselines/rsd_gsm8k_svamp_qwen15b_qwen7b_prm07
