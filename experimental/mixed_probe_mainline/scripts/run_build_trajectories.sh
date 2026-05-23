@@ -51,6 +51,7 @@ run_build() {
   echo "[log]   ${log_path}"
 
   python -m core_package.pipelines.build_dataset \
+    --dataset-name jsonl \
     --dataset-name "${dataset_name}" \
     --input-path "${input_path}" \
     --answer-type "${answer_type}" \
