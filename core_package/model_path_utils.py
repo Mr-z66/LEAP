@@ -15,20 +15,30 @@ def resolve_local_hf_model_path(path):
     if not path or not os.path.isdir(path) or is_hf_model_dir(path):
         return path
 
+    search_roots = [path]
+    parent = os.path.dirname(path.rstrip("/\\"))
+    if parent and os.path.isdir(parent):
+        search_roots.append(parent)
+
+    target_name = os.path.basename(path.rstrip("/\\")).lower()
     candidates = []
-    for root, dirnames, _ in os.walk(path):
-        dirnames[:] = [name for name in dirnames if not name.startswith(".") and "temp" not in name.lower()]
-        if is_hf_model_dir(root):
-            rel = os.path.relpath(root, path)
+    for search_root in search_roots:
+        for root, dirnames, _ in os.walk(search_root):
+            dirnames[:] = [name for name in dirnames if not name.startswith(".") and "temp" not in name.lower()]
+            if not is_hf_model_dir(root):
+                continue
+
+            rel = os.path.relpath(root, search_root)
             depth = 0 if rel == "." else rel.count(os.sep) + 1
-            candidates.append((depth, root))
+            name = os.path.basename(root).lower()
+            name_penalty = 0 if name == target_name else 1
+            candidates.append((name_penalty, depth, root))
 
     if not candidates:
         return path
 
-    candidates.sort(key=lambda item: (item[0], item[1]))
-    return candidates[0][1]
-
+    candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+    return candidates[0][2]
 
 def log_resolved_hf_model_path(label, path):
     resolved_path = resolve_local_hf_model_path(path)
