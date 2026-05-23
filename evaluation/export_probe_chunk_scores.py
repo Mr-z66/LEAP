@@ -42,6 +42,16 @@ def parse_args():
     parser.add_argument("--probe-artifact-path", required=True, help="Path to trained probe artifact (.pt).")
     parser.add_argument("--output-path", required=True, help="CSV output path.")
     parser.add_argument("--feature-set-name", required=True, help="Short name written into the CSV, e.g. hidden_only.")
+    parser.add_argument(
+        "--all-questions",
+        action="store_true",
+        help="Score every question in --label-path instead of only artifact test_question_ids. Use this for cross-dataset probes.",
+    )
+    parser.add_argument(
+        "--allow-missing-labels",
+        action="store_true",
+        help="Allow raw trajectory datasets without chunk labels; exported label values are -1.",
+    )
     return parser.parse_args()
 
 
@@ -146,7 +156,7 @@ def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
     return np.concatenate(values, axis=0)
 
 
-def build_question_records(dataset, feature_spec, label_key):
+def build_question_records(dataset, feature_spec, label_key, allow_missing_labels=False):
     required_tokens = parse_feature_spec(feature_spec)
     question_records = {}
 
@@ -156,9 +166,12 @@ def build_question_records(dataset, feature_spec, label_key):
             chunks = []
             has_all_components = True
             for chunk in item.get("chunks", []):
-                if label_key not in chunk:
+                if label_key not in chunk and not allow_missing_labels:
                     has_all_components = False
                     break
+                chunk = dict(chunk)
+                if label_key not in chunk:
+                    chunk[label_key] = -1
                 for token in required_tokens:
                     if token in {"delta_prev", "abs_delta_prev"} or token in DERIVED_SCALAR_FEATURES:
                         continue
@@ -174,8 +187,11 @@ def build_question_records(dataset, feature_spec, label_key):
         return question_records
 
     for item in dataset:
-        if label_key not in item:
+        if label_key not in item and not allow_missing_labels:
             continue
+        item = dict(item)
+        if label_key not in item:
+            item[label_key] = -1
         has_all_components = True
         for token in required_tokens:
             if token in {"delta_prev", "abs_delta_prev"} or token in DERIVED_SCALAR_FEATURES:
@@ -241,10 +257,16 @@ def main():
     test_question_ids = {int(qid) for qid in artifact["test_question_ids"]}
 
     dataset = torch.load(args.label_path, weights_only=False)
-    question_records = build_question_records(dataset, feature_spec, label_key)
+    question_records = build_question_records(
+        dataset,
+        feature_spec,
+        label_key,
+        allow_missing_labels=args.allow_missing_labels,
+    )
 
     rows = []
-    for question_id in sorted(test_question_ids):
+    question_ids = sorted(question_records) if args.all_questions else sorted(test_question_ids)
+    for question_id in question_ids:
         record = question_records.get(question_id)
         if record is None:
             continue

@@ -57,6 +57,11 @@ def parse_args():
     parser.add_argument("--data-path", default=DEFAULT_DATA_PATH, help="Path to the strict labeled chunk dataset.")
     parser.add_argument("--artifact-path", default=DEFAULT_ARTIFACT_PATH, help="Path to the saved PyTorch probe artifact.")
     parser.add_argument("--threshold-grid", default=DEFAULT_THRESHOLD_GRID, help="Comma-separated thresholds for scanning error-score decision points.")
+    parser.add_argument(
+        "--all-questions",
+        action="store_true",
+        help="Evaluate all labeled questions in --data-path instead of artifact test_question_ids. Use this for cross-dataset probes.",
+    )
     return parser.parse_args()
 
 
@@ -206,7 +211,10 @@ def main():
     probe.eval()
 
     rows = []
-    for question_id in sorted(test_question_ids):
+    eval_question_ids = sorted(question_records) if args.all_questions else sorted(test_question_ids)
+    for question_id in eval_question_ids:
+        if question_id not in question_records:
+            continue
         record = question_records[question_id]
         chunks = record["chunks"]
         total_chunks = len(chunks)
@@ -238,10 +246,11 @@ def main():
         zero_division=0,
     )
 
-    print("\nHeld-out strict evaluation (PyTorch probe)")
+    split_name = "all labeled questions" if args.all_questions else "held-out strict split"
+    print(f"\nEvaluation on {split_name} (PyTorch probe)")
     print("=" * 50)
     print(f"Feature: {feature_key}")
-    print(f"Chunks: {len(rows)} | Questions: {len(test_question_ids)}")
+    print(f"Chunks: {len(rows)} | Questions: {len(set(row['question_id'] for row in rows))}")
     print(f"Prefix-correct AUROC: {prefix_correct_auroc:.4f}")
     print(f"Prefix-correct AUPRC: {prefix_correct_auprc:.4f}")
     print(f"Error-class AUPRC: {error_auprc:.4f}")
@@ -252,7 +261,7 @@ def main():
     print(f"Confusion matrix [true 0/1 x pred 0/1]: {confusion_matrix(y_test, predicted_labels, labels=[0, 1]).tolist()}")
     print(classification_report(y_test, predicted_labels, digits=4, zero_division=0))
 
-    print("\nThreshold scan on held-out split")
+    print(f"\nThreshold scan on {split_name}")
     print("-" * 50)
     best_threshold = None
     best_result = None
