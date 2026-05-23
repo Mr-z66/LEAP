@@ -46,7 +46,11 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
     parser.add_argument("--min-tokens", type=int, default=DEFAULT_MIN_TOKENS)
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
-    parser.add_argument("--chunking-method", choices=["heuristic", "rsd_step", "rsd_step_fallback"], default="heuristic")
+    parser.add_argument(
+        "--chunking-method",
+        choices=["heuristic", "rsd_step", "rsd_step_fallback", "math_rsd_fallback", "code_rsd_fallback"],
+        default="heuristic",
+    )
     parser.add_argument("--step-word", default="\n\n", help="RSD-style step delimiter for --chunking-method rsd_step.")
     parser.add_argument("--min-step-tokens", type=int, default=12)
     parser.add_argument("--target-step-tokens", type=int, default=64)
@@ -185,7 +189,66 @@ def text_is_ambiguous(text: str):
     return False, ""
 
 
-def is_safe_boundary(tokenizer, token_ids):
+def has_open_code_fence(text: str) -> bool:
+    return text.count("```") % 2 == 1
+
+
+def last_nonempty_line(text: str) -> str:
+    for line in reversed(text.splitlines()):
+        if line.strip():
+            return line.rstrip()
+    return ""
+
+
+def is_code_safe_boundary(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped:
+        return False
+    if stripped.endswith("```"):
+        return True
+    if not text.endswith(("\n", "\r")):
+        return False
+
+    line = last_nonempty_line(text)
+    if not line:
+        return True
+    line_stripped = line.strip()
+    if line_stripped.startswith("#"):
+        return True
+    if re.search(r"[:\\,+\-*/%=([{]\s*$", line_stripped):
+        return False
+    if line_stripped.endswith(("and", "or", "not", "is", "in")):
+        return False
+    if stripped.count("(") > stripped.count(")") or stripped.count("[") > stripped.count("]"):
+        return False
+
+    if not has_open_code_fence(text):
+        return bool(SAFE_END_RE.search(stripped))
+    if re.match(r"^(import|from)\s+", line_stripped):
+        return True
+    if re.match(r"^(return|print|raise|break|continue|pass)\b", line_stripped):
+        return True
+    if line.startswith((" ", "\t")) and text.endswith("\n\n"):
+        return True
+    if not line.startswith((" ", "\t")) and not line_stripped.endswith(":"):
+        return True
+    return False
+
+
+def is_math_safe_boundary(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped:
+        return False
+    if "\\boxed{" in stripped[-120:] and stripped.count("{") == stripped.count("}"):
+        return True
+    if re.search(r"(?:^|\n)\s*(?:therefore|thus|hence|so|then|answer)\b.*$", stripped, flags=re.IGNORECASE):
+        return bool(SAFE_END_RE.search(stripped) or re.search(r"(?:\\boxed\{.*\}|####\s*\S+)\s*$", stripped))
+    if re.search(r"(?:^|\n)\s*[-+*/\\\w\s{}^().,]+\s*=\s*-?[\d.]+(?:\s*)$", stripped):
+        return True
+    return bool(SAFE_END_RE.search(stripped))
+
+
+def is_safe_boundary(tokenizer, token_ids, boundary_mode="math"):
     text = decode_tokens(tokenizer, token_ids)
     stripped = text.strip()
     if not stripped:
@@ -193,9 +256,11 @@ def is_safe_boundary(tokenizer, token_ids):
     ambiguous, _ = text_is_ambiguous(stripped)
     if ambiguous:
         return False
+    if boundary_mode == "code":
+        return is_code_safe_boundary(text)
     if "\n\n" in text[-6:]:
         return True
-    return bool(SAFE_END_RE.search(stripped))
+    return is_math_safe_boundary(text)
 
 
 def last_non_delimiter_hidden_state(tokenizer, token_ids, hidden_states):
@@ -214,6 +279,10 @@ def make_chunk(tokenizer, token_ids, hidden_states, token_confidences, start_idx
     if not ambiguous_reason:
         ambiguous, reason = text_is_ambiguous(chunk_text)
         ambiguous_reason = reason if ambiguous else ""
+    entropy_values = [float(item.get("entropy", 0.0)) for item in chunk_confidences]
+    top1_values = [float(item.get("top1_prob", 1.0)) for item in chunk_confidences]
+    max_entropy_idx = int(np.argmax(entropy_values)) if entropy_values else len(chunk_hidden_states) - 1
+    min_top1_idx = int(np.argmin(top1_values)) if top1_values else len(chunk_hidden_states) - 1
     return {
         "chunk_id": None,
         "start_token_idx": int(start_idx),
@@ -224,6 +293,8 @@ def make_chunk(tokenizer, token_ids, hidden_states, token_confidences, start_idx
         "boundary_hidden_state": chunk_hidden_states[-1].clone(),
         "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
         "last_non_delimiter_hidden_state": last_non_delimiter_hidden_state(tokenizer, chunk_token_ids, chunk_hidden_states),
+        "max_entropy_hidden_state": chunk_hidden_states[max_entropy_idx].clone(),
+        "min_top1_hidden_state": chunk_hidden_states[min_top1_idx].clone(),
         "cut_reason": cut_reason,
         "ambiguous_chunk": bool(ambiguous_reason),
         "ambiguous_reason": ambiguous_reason,
@@ -418,6 +489,12 @@ def build_rsd_step_chunks(tokenizer, token_ids, hidden_states, token_confidences
     return chunks
 
 
+def fallback_boundary_mode(args):
+    if args.chunking_method == "code_rsd_fallback":
+        return "code"
+    return "math"
+
+
 def split_span_with_semantic_fallback(tokenizer, token_ids, hidden_states, token_confidences, start, end, args, tail_reason):
     chunks = []
     span_len = end - start
@@ -434,12 +511,13 @@ def split_span_with_semantic_fallback(tokenizer, token_ids, hidden_states, token
         cut_reason = ""
         ambiguous_reason = ""
 
-        if current_len >= args.target_step_tokens and is_safe_boundary(tokenizer, candidate_ids):
+        boundary_mode = fallback_boundary_mode(args)
+        if current_len >= args.target_step_tokens and is_safe_boundary(tokenizer, candidate_ids, boundary_mode=boundary_mode):
             should_cut = True
-            cut_reason = "target_semantic_fallback_boundary"
-        elif current_len >= args.min_step_tokens and is_safe_boundary(tokenizer, candidate_ids):
+            cut_reason = f"target_{boundary_mode}_fallback_boundary"
+        elif current_len >= args.min_step_tokens and is_safe_boundary(tokenizer, candidate_ids, boundary_mode=boundary_mode):
             should_cut = True
-            cut_reason = "semantic_fallback_boundary"
+            cut_reason = f"{boundary_mode}_fallback_boundary"
         elif current_len >= args.force_step_tokens:
             should_cut = True
             cut_reason = "max_tokens_fallback"
@@ -477,6 +555,21 @@ def split_span_with_semantic_fallback(tokenizer, token_ids, hidden_states, token
 
 
 def build_rsd_step_fallback_chunks(tokenizer, token_ids, hidden_states, token_confidences, args):
+    if fallback_boundary_mode(args) == "code":
+        chunks = split_span_with_semantic_fallback(
+            tokenizer,
+            token_ids,
+            hidden_states,
+            token_confidences,
+            0,
+            len(token_ids),
+            args,
+            "code_tail",
+        )
+        for chunk_id, chunk in enumerate(chunks):
+            chunk["chunk_id"] = int(chunk_id)
+        return chunks
+
     chunks = []
     step_ids = tokenizer.encode(args.step_word, add_special_tokens=False)
     start = 0
@@ -688,7 +781,7 @@ def main():
                 "step_word": args.step_word,
                 "max_new_tokens": args.max_new_tokens,
             }
-        elif args.chunking_method == "rsd_step_fallback":
+        elif args.chunking_method in {"rsd_step_fallback", "math_rsd_fallback", "code_rsd_fallback"}:
             chunks = build_rsd_step_fallback_chunks(
                 tokenizer=tokenizer,
                 token_ids=generated_token_ids,

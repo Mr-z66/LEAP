@@ -41,6 +41,10 @@ run_build() {
   local answer_type="$4"
   local num_samples="$5"
   local max_new_tokens="$6"
+  local chunking_method="$7"
+  local target_step_tokens="$8"
+  local max_step_tokens="$9"
+  local force_step_tokens="${10}"
   local save_path="${OUTPUT_DIR}/${dataset_name}_${split_name}_${num_samples}_15b.pt"
   local log_path="result/logs/mixed_probe_mainline/build_${dataset_name}_${split_name}_${num_samples}_${MODE}.log"
 
@@ -49,6 +53,7 @@ run_build() {
   echo "[input] ${input_path}"
   echo "[save]  ${save_path}"
   echo "[log]   ${log_path}"
+  echo "[chunk] ${chunking_method} target=${target_step_tokens} max=${max_step_tokens} force=${force_step_tokens}"
 
   python -m core_package.pipelines.build_dataset \
     --dataset-name jsonl \
@@ -58,31 +63,31 @@ run_build() {
     --num-samples "${num_samples}" \
     --model-path "${SMALL_MODEL_PATH}" \
     --save-path "${save_path}" \
-    --chunking-method rsd_step_fallback \
+    --chunking-method "${chunking_method}" \
     --step-word $'\n\n' \
     --min-step-tokens 12 \
-    --target-step-tokens 64 \
-    --max-step-tokens 120 \
-    --force-step-tokens 180 \
+    --target-step-tokens "${target_step_tokens}" \
+    --max-step-tokens "${max_step_tokens}" \
+    --force-step-tokens "${force_step_tokens}" \
     --max-new-tokens "${max_new_tokens}" \
     2>&1 | tee "${log_path}"
 }
 
-run_build gsm8k calib dataset/mixed_probe_splits/gsm8k_calib.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768
-run_build gsm8k test dataset/mixed_probe_splits/gsm8k_test.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768
+run_build gsm8k calib dataset/mixed_probe_splits/gsm8k_calib.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 48 80 128
+run_build gsm8k test dataset/mixed_probe_splits/gsm8k_test.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 48 80 128
 
-run_build svamp calib dataset/mixed_probe_splits/svamp_calib.jsonl svamp_boxed_numeric "${SVAMP_N}" 512
-run_build svamp test dataset/mixed_probe_splits/svamp_test.jsonl svamp_boxed_numeric "${SVAMP_N}" 512
+run_build svamp calib dataset/mixed_probe_splits/svamp_calib.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 48 80 128
+run_build svamp test dataset/mixed_probe_splits/svamp_test.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 48 80 128
 
-run_build math500 calib dataset/mixed_probe_splits/math500_calib.jsonl math500_qwen_boxed "${MATH500_N}" 1024
-run_build math500 test dataset/mixed_probe_splits/math500_test.jsonl math500_qwen_boxed "${MATH500_N}" 1024
+run_build math500 calib dataset/mixed_probe_splits/math500_calib.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 64 96 160
+run_build math500 test dataset/mixed_probe_splits/math500_test.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 64 96 160
 
-run_build livecodebench_v5 calib dataset/mixed_probe_splits/livecodebench_v5_calib.jsonl livecodebench_codegen "${LCB_N}" 1536
+run_build livecodebench_v5 calib dataset/mixed_probe_splits/livecodebench_v5_calib.jsonl livecodebench_codegen "${LCB_N}" 1536 code_rsd_fallback 96 160 256
 
 if [[ "${MODE}" == "full" ]]; then
-  run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_TEST_N:-67}" 1536
+  run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_TEST_N:-67}" 1536 code_rsd_fallback 96 160 256
 else
-  run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_N}" 1536
+  run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_N}" 1536 code_rsd_fallback 96 160 256
 fi
 
 echo
