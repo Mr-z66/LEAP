@@ -646,7 +646,7 @@ def judge_prefix(prompt, tokenizer, model, args):
 
 
 def label_from_judge_result(judge_result, chunk, args):
-    if chunk["ambiguous_chunk"]:
+    if chunk.get("ambiguous_chunk", False):
         return -1, "chunk_marked_ambiguous"
     if judge_result["parse_status"] != "json":
         return -1, "parse_failed"

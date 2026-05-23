@@ -1,7 +1,12 @@
 import os
+import re
 
 
 TOKENIZER_MARKERS = ("tokenizer.json", "tokenizer_config.json", "vocab.json", "tokenizer.model")
+
+
+def normalize_model_name(name):
+    return re.sub(r"[^a-z0-9]+", "", name.lower())
 
 
 def is_hf_model_dir(path):
@@ -20,7 +25,8 @@ def resolve_local_hf_model_path(path):
     if parent and os.path.isdir(parent):
         search_roots.append(parent)
 
-    target_name = os.path.basename(path.rstrip("/\\")).lower()
+    target_name = os.path.basename(path.rstrip("/\\"))
+    normalized_target_name = normalize_model_name(target_name)
     candidates = []
     for search_root in search_roots:
         for root, dirnames, _ in os.walk(search_root):
@@ -30,8 +36,14 @@ def resolve_local_hf_model_path(path):
 
             rel = os.path.relpath(root, search_root)
             depth = 0 if rel == "." else rel.count(os.sep) + 1
-            name = os.path.basename(root).lower()
-            name_penalty = 0 if name == target_name else 1
+            name = os.path.basename(root)
+            normalized_name = normalize_model_name(name)
+            if normalized_name == normalized_target_name:
+                name_penalty = 0
+            elif normalized_target_name and normalized_target_name in normalize_model_name(root):
+                name_penalty = 1
+            else:
+                name_penalty = 2
             candidates.append((name_penalty, depth, root))
 
     if not candidates:
