@@ -73,14 +73,14 @@ run_build() {
     2>&1 | tee "${log_path}"
 }
 
-run_build gsm8k calib dataset/mixed_probe_splits/gsm8k_calib.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 48 80 128
-run_build gsm8k test dataset/mixed_probe_splits/gsm8k_test.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 48 80 128
+run_build gsm8k calib dataset/mixed_probe_splits/gsm8k_calib.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 64 96 160
+run_build gsm8k test dataset/mixed_probe_splits/gsm8k_test.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 64 96 160
 
-run_build svamp calib dataset/mixed_probe_splits/svamp_calib.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 48 80 128
-run_build svamp test dataset/mixed_probe_splits/svamp_test.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 48 80 128
+run_build svamp calib dataset/mixed_probe_splits/svamp_calib.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 64 96 160
+run_build svamp test dataset/mixed_probe_splits/svamp_test.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 64 96 160
 
-run_build math500 calib dataset/mixed_probe_splits/math500_calib.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 64 96 160
-run_build math500 test dataset/mixed_probe_splits/math500_test.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 64 96 160
+run_build math500 calib dataset/mixed_probe_splits/math500_calib.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 96 128 192
+run_build math500 test dataset/mixed_probe_splits/math500_test.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 96 128 192
 
 run_build livecodebench_v5 calib dataset/mixed_probe_splits/livecodebench_v5_calib.jsonl livecodebench_codegen "${LCB_N}" 1536 code_rsd_fallback 96 160 256
 
