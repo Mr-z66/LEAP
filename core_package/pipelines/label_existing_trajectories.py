@@ -6,6 +6,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.config import MODELS
+from core_package.model_path_utils import log_resolved_hf_model_path
 from core_package.pipelines.build_clean_step_labeled_dataset import (
     build_clean_judge_prompt,
     judge_prefix,
@@ -77,10 +78,11 @@ def main():
     judge_tokenizer = None
     judge_model = None
     if args.judge_backend == "hf":
-        print(f"Loading judge model: {args.judge_model_path}")
-        judge_tokenizer = AutoTokenizer.from_pretrained(args.judge_model_path, local_files_only=True)
+        judge_model_path = log_resolved_hf_model_path("judge", args.judge_model_path)
+        print(f"Loading judge model: {judge_model_path}")
+        judge_tokenizer = AutoTokenizer.from_pretrained(judge_model_path, local_files_only=True)
         judge_model = AutoModelForCausalLM.from_pretrained(
-            args.judge_model_path,
+            judge_model_path,
             torch_dtype=torch.bfloat16,
             device_map="auto",
             local_files_only=True,

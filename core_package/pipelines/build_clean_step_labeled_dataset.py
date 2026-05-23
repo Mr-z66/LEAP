@@ -11,6 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor, resolve_answer_type
 from core_package.config import MODELS
+from core_package.model_path_utils import log_resolved_hf_model_path
 from core_package.pipelines.build_dataset import (
     decode_tokens,
     format_generation_question,
@@ -676,10 +677,11 @@ def main():
     args.system_prompt = resolve_system_prompt(answer_type, args.system_prompt)
     answer_extractor = get_answer_extractor(answer_type)
 
-    print(f"Loading small model: {args.small_model_path}")
-    small_tokenizer = AutoTokenizer.from_pretrained(args.small_model_path, local_files_only=True)
+    small_model_path = log_resolved_hf_model_path("small", args.small_model_path)
+    print(f"Loading small model: {small_model_path}")
+    small_tokenizer = AutoTokenizer.from_pretrained(small_model_path, local_files_only=True)
     small_model = AutoModelForCausalLM.from_pretrained(
-        args.small_model_path,
+        small_model_path,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         local_files_only=True,
@@ -689,10 +691,11 @@ def main():
     judge_tokenizer = None
     judge_model = None
     if args.judge_backend == "hf":
-        print(f"Loading judge model: {args.judge_model_path}")
-        judge_tokenizer = AutoTokenizer.from_pretrained(args.judge_model_path, local_files_only=True)
+        judge_model_path = log_resolved_hf_model_path("judge", args.judge_model_path)
+        print(f"Loading judge model: {judge_model_path}")
+        judge_tokenizer = AutoTokenizer.from_pretrained(judge_model_path, local_files_only=True)
         judge_model = AutoModelForCausalLM.from_pretrained(
-            args.judge_model_path,
+            judge_model_path,
             torch_dtype=torch.bfloat16,
             device_map="auto",
             local_files_only=True,

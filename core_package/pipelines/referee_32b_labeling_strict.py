@@ -7,6 +7,7 @@ import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.config import MODELS, STRICT_LABEL
+from core_package.model_path_utils import log_resolved_hf_model_path
 from core_package.vllm_utils import build_openai_messages, infer_served_model_name, request_vllm_chat_completion
 
 # ================= Default Configuration =================
@@ -149,11 +150,12 @@ if args.num_samples is not None:
     dataset = dataset[: args.num_samples]
     print(f"Using first {len(dataset)} questions for this run.")
 
-print(f"Loading judge model from: {args.model_path}")
-tokenizer = AutoTokenizer.from_pretrained(args.model_path, local_files_only=True)
+model_path = log_resolved_hf_model_path("judge", args.model_path)
+print(f"Loading judge model from: {model_path}")
+tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
 if args.backend == "hf":
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_path,
+        model_path,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         local_files_only=True,
@@ -161,7 +163,7 @@ if args.backend == "hf":
     model.eval()
 else:
     model = None
-    served_name = infer_served_model_name(args.model_path, args.vllm_model_name)
+    served_name = infer_served_model_name(model_path, args.vllm_model_name)
     print(f"Using vLLM judge backend: {args.vllm_base_url} | served_model={served_name}")
 
 labeled_dataset = load_existing_labels(args.output_path, args.resume)

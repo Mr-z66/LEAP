@@ -9,6 +9,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core_package.config import MODELS
+from core_package.model_path_utils import log_resolved_hf_model_path
 from core_package.vllm_utils import build_openai_messages, infer_served_model_name, request_vllm_chat_completion
 
 
@@ -256,10 +257,11 @@ def load_hf_judge(args):
             f"{args.vllm_base_url} | model={infer_served_model_name(args.judge_model_path, args.vllm_model_name)}"
         )
         return None, None
-    print(f"Loading judge model: {args.judge_model_path}")
-    tokenizer = AutoTokenizer.from_pretrained(args.judge_model_path, local_files_only=True)
+    judge_model_path = log_resolved_hf_model_path("judge", args.judge_model_path)
+    print(f"Loading judge model: {judge_model_path}")
+    tokenizer = AutoTokenizer.from_pretrained(judge_model_path, local_files_only=True)
     model = AutoModelForCausalLM.from_pretrained(
-        args.judge_model_path,
+        judge_model_path,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         local_files_only=True,
