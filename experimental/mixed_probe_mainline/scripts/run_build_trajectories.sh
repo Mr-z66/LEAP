@@ -87,7 +87,6 @@ run_build livecodebench_v5 calib dataset/mixed_probe_splits/livecodebench_v5_cal
 if [[ "${MODE}" == "full" ]]; then
   run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_TEST_N:-67}" 1536 code_rsd_fallback 96 160 256
 else
-  run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_N}" 1536 code_rsd_fallback 96 160 256
 fi
 
 echo
