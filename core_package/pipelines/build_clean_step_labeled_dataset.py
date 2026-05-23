@@ -60,7 +60,7 @@ def parse_args():
     parser.add_argument("--min-step-tokens", type=int, default=12)
     parser.add_argument("--target-step-tokens", type=int, default=64)
     parser.add_argument("--max-step-tokens", type=int, default=120)
-    parser.add_argument("--chunking-method", choices=["semantic_step_v2", "rsd_step"], default="semantic_step_v2")
+    parser.add_argument("--chunking-method", choices=["semantic_step_v2", "rsd_step", "rsd_step_fallback"], default="semantic_step_v2")
     parser.add_argument("--step-word", default="\n\n", help="RSD-style step delimiter for --chunking-method rsd_step.")
     parser.add_argument(
         "--force-step-tokens",
@@ -257,6 +257,122 @@ def build_rsd_step_chunks(tokenizer, token_ids, hidden_states, token_confidences
                 token_confidences,
                 start,
                 len(token_ids),
+                "tail",
+            )
+        )
+
+    prefix_token_ids = []
+    for chunk_id, chunk in enumerate(chunks):
+        chunk["chunk_id"] = int(chunk_id)
+        prefix_token_ids.extend(chunk["token_ids"])
+        chunk["prefix_text"] = decode_tokens(tokenizer, prefix_token_ids).strip()
+    return chunks
+
+
+def split_span_with_semantic_fallback(tokenizer, token_ids, hidden_states, token_confidences, start, end, args, tail_reason):
+    chunks = []
+    if end - start <= args.max_step_tokens:
+        chunks.append(
+            make_chunk(
+                tokenizer,
+                token_ids,
+                hidden_states,
+                token_confidences,
+                start,
+                end,
+                tail_reason,
+            )
+        )
+        return chunks
+
+    chunk_start = start
+    idx = start
+    while idx < end:
+        current_len = idx + 1 - chunk_start
+        candidate_ids = token_ids[chunk_start:idx + 1]
+        should_cut = False
+        cut_reason = ""
+        ambiguous_reason = ""
+
+        if current_len >= args.target_step_tokens and is_safe_boundary(tokenizer, candidate_ids):
+            should_cut = True
+            cut_reason = "target_semantic_fallback_boundary"
+        elif current_len >= args.min_step_tokens and is_safe_boundary(tokenizer, candidate_ids):
+            should_cut = True
+            cut_reason = "semantic_fallback_boundary"
+        elif current_len >= args.force_step_tokens:
+            should_cut = True
+            cut_reason = "max_tokens_fallback"
+            ambiguous_reason = "forced_without_safe_boundary"
+
+        if should_cut:
+            chunks.append(
+                make_chunk(
+                    tokenizer,
+                    token_ids,
+                    hidden_states,
+                    token_confidences,
+                    chunk_start,
+                    idx + 1,
+                    cut_reason,
+                    ambiguous_reason=ambiguous_reason,
+                )
+            )
+            chunk_start = idx + 1
+        idx += 1
+
+    if chunk_start < end:
+        chunks.append(
+            make_chunk(
+                tokenizer,
+                token_ids,
+                hidden_states,
+                token_confidences,
+                chunk_start,
+                end,
+                f"{tail_reason}_fallback_tail",
+            )
+        )
+    return chunks
+
+
+def build_rsd_step_fallback_chunks(tokenizer, token_ids, hidden_states, token_confidences, args):
+    chunks = []
+    step_ids = tokenizer.encode(args.step_word, add_special_tokens=False)
+    start = 0
+    idx = 0
+    while idx < len(token_ids):
+        should_cut = False
+        if step_ids and idx + 1 - len(step_ids) >= start:
+            tail = token_ids[idx + 1 - len(step_ids): idx + 1]
+            should_cut = tail == step_ids
+
+        if should_cut:
+            chunks.extend(
+                split_span_with_semantic_fallback(
+                    tokenizer,
+                    token_ids,
+                    hidden_states,
+                    token_confidences,
+                    start,
+                    idx + 1,
+                    args,
+                    "rsd_step_word",
+                )
+            )
+            start = idx + 1
+        idx += 1
+
+    if start < len(token_ids):
+        chunks.extend(
+            split_span_with_semantic_fallback(
+                tokenizer,
+                token_ids,
+                hidden_states,
+                token_confidences,
+                start,
+                len(token_ids),
+                args,
                 "tail",
             )
         )
@@ -523,6 +639,8 @@ def main():
 
         if args.chunking_method == "rsd_step":
             chunks = build_rsd_step_chunks(small_tokenizer, token_ids, hidden_states, token_confidences, args)
+        elif args.chunking_method == "rsd_step_fallback":
+            chunks = build_rsd_step_fallback_chunks(small_tokenizer, token_ids, hidden_states, token_confidences, args)
         else:
             chunks = build_semantic_step_chunks(small_tokenizer, token_ids, hidden_states, token_confidences, args)
         for idx, chunk in enumerate(chunks):

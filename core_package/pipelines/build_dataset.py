@@ -18,6 +18,12 @@ from core_package.math500_protocol import append_math500_instruction
 from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 
+SAFE_END_RE = re.compile(r"(?<!\d)[.!?](?:\s*)$|[。！？](?:\s*)$|\\\](?:\s*)$|\n\s*$")
+AMBIGUOUS_TAIL_RE = re.compile(
+    r"(\b\d+\.$|[=+\-*/,(]$|\\frac\{?$|\\sqrt\{?$|\\boxed\{?$|\\text\{?$|\\\[$|\\\($|"
+    r"(?:step|calculate|determine|find|total|amount|number of)\s*:?\s*$)",
+    flags=re.IGNORECASE,
+)
 DEFAULT_MODEL_PATH = MODELS.small_model_path
 DEFAULT_SAVE_PATH = DATASET_BUILD.save_path
 DEFAULT_MAX_NEW_TOKENS = DATASET_BUILD.max_new_tokens
@@ -40,8 +46,17 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
     parser.add_argument("--min-tokens", type=int, default=DEFAULT_MIN_TOKENS)
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
-    parser.add_argument("--chunking-method", choices=["heuristic", "rsd_step"], default="heuristic")
+    parser.add_argument("--chunking-method", choices=["heuristic", "rsd_step", "rsd_step_fallback"], default="heuristic")
     parser.add_argument("--step-word", default="\n\n", help="RSD-style step delimiter for --chunking-method rsd_step.")
+    parser.add_argument("--min-step-tokens", type=int, default=12)
+    parser.add_argument("--target-step-tokens", type=int, default=64)
+    parser.add_argument("--max-step-tokens", type=int, default=120)
+    parser.add_argument(
+        "--force-step-tokens",
+        type=int,
+        default=180,
+        help="Hard fallback cut length for rsd_step_fallback when no safe boundary appears.",
+    )
     parser.add_argument("--input-path", default=None, help="Local json/jsonl path for svamp/jsonl modes.")
     parser.add_argument("--question-field", default="question", help="Question field for jsonl mode.")
     parser.add_argument("--answer-field", default="answer", help="Answer field for jsonl mode.")
@@ -152,6 +167,67 @@ def summarize_confidence(token_confidences):
         "mean_margin": scalar_tensor(np.mean(margin_values)),
         "min_margin": scalar_tensor(np.min(margin_values)),
         "final_margin": scalar_tensor(margin_values[-1]),
+    }
+
+
+def text_is_ambiguous(text: str):
+    stripped = (text or "").strip()
+    if not stripped:
+        return True, "empty"
+    if len(stripped.split()) <= 2 and not re.search(r"\d+\s*[=+\-*/]\s*\d+", stripped):
+        return True, "too_short"
+    if AMBIGUOUS_TAIL_RE.search(stripped):
+        return True, "ambiguous_tail"
+    if stripped.count("\\[") > stripped.count("\\]"):
+        return True, "open_latex_block"
+    if stripped.count("{") > stripped.count("}"):
+        return True, "open_brace"
+    return False, ""
+
+
+def is_safe_boundary(tokenizer, token_ids):
+    text = decode_tokens(tokenizer, token_ids)
+    stripped = text.strip()
+    if not stripped:
+        return False
+    ambiguous, _ = text_is_ambiguous(stripped)
+    if ambiguous:
+        return False
+    if "\n\n" in text[-6:]:
+        return True
+    return bool(SAFE_END_RE.search(stripped))
+
+
+def last_non_delimiter_hidden_state(tokenizer, token_ids, hidden_states):
+    for token_id, hidden_state in reversed(list(zip(token_ids, hidden_states))):
+        token_text = tokenizer.decode([token_id], skip_special_tokens=False)
+        if re.search(r"[A-Za-z0-9]", token_text):
+            return hidden_state.clone()
+    return hidden_states[-1].clone()
+
+
+def make_chunk(tokenizer, token_ids, hidden_states, token_confidences, start_idx, end_idx, cut_reason, ambiguous_reason=""):
+    chunk_token_ids = list(token_ids[start_idx:end_idx])
+    chunk_hidden_states = list(hidden_states[start_idx:end_idx])
+    chunk_confidences = list(token_confidences[start_idx:end_idx])
+    chunk_text = decode_tokens(tokenizer, chunk_token_ids).strip()
+    if not ambiguous_reason:
+        ambiguous, reason = text_is_ambiguous(chunk_text)
+        ambiguous_reason = reason if ambiguous else ""
+    return {
+        "chunk_id": None,
+        "start_token_idx": int(start_idx),
+        "end_token_idx": int(end_idx - 1),
+        "token_ids": chunk_token_ids,
+        "token_count": int(len(chunk_token_ids)),
+        "chunk_text": chunk_text,
+        "boundary_hidden_state": chunk_hidden_states[-1].clone(),
+        "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
+        "last_non_delimiter_hidden_state": last_non_delimiter_hidden_state(tokenizer, chunk_token_ids, chunk_hidden_states),
+        "cut_reason": cut_reason,
+        "ambiguous_chunk": bool(ambiguous_reason),
+        "ambiguous_reason": ambiguous_reason,
+        **summarize_confidence(chunk_confidences),
     }
 
 
@@ -342,6 +418,110 @@ def build_rsd_step_chunks(tokenizer, token_ids, hidden_states, token_confidences
     return chunks
 
 
+def split_span_with_semantic_fallback(tokenizer, token_ids, hidden_states, token_confidences, start, end, args, tail_reason):
+    chunks = []
+    span_len = end - start
+    if span_len <= args.max_step_tokens:
+        chunks.append(make_chunk(tokenizer, token_ids, hidden_states, token_confidences, start, end, tail_reason))
+        return chunks
+
+    idx = start
+    chunk_start = start
+    while idx < end:
+        current_len = idx + 1 - chunk_start
+        candidate_ids = token_ids[chunk_start:idx + 1]
+        should_cut = False
+        cut_reason = ""
+        ambiguous_reason = ""
+
+        if current_len >= args.target_step_tokens and is_safe_boundary(tokenizer, candidate_ids):
+            should_cut = True
+            cut_reason = "target_semantic_fallback_boundary"
+        elif current_len >= args.min_step_tokens and is_safe_boundary(tokenizer, candidate_ids):
+            should_cut = True
+            cut_reason = "semantic_fallback_boundary"
+        elif current_len >= args.force_step_tokens:
+            should_cut = True
+            cut_reason = "max_tokens_fallback"
+            ambiguous_reason = "forced_without_safe_boundary"
+
+        if should_cut:
+            chunks.append(
+                make_chunk(
+                    tokenizer,
+                    token_ids,
+                    hidden_states,
+                    token_confidences,
+                    chunk_start,
+                    idx + 1,
+                    cut_reason,
+                    ambiguous_reason=ambiguous_reason,
+                )
+            )
+            chunk_start = idx + 1
+        idx += 1
+
+    if chunk_start < end:
+        chunks.append(
+            make_chunk(
+                tokenizer,
+                token_ids,
+                hidden_states,
+                token_confidences,
+                chunk_start,
+                end,
+                f"{tail_reason}_fallback_tail",
+            )
+        )
+    return chunks
+
+
+def build_rsd_step_fallback_chunks(tokenizer, token_ids, hidden_states, token_confidences, args):
+    chunks = []
+    step_ids = tokenizer.encode(args.step_word, add_special_tokens=False)
+    start = 0
+    idx = 0
+    while idx < len(token_ids):
+        should_cut = False
+        if step_ids and idx + 1 - len(step_ids) >= start:
+            tail = token_ids[idx + 1 - len(step_ids): idx + 1]
+            should_cut = tail == step_ids
+
+        if should_cut:
+            chunks.extend(
+                split_span_with_semantic_fallback(
+                    tokenizer,
+                    token_ids,
+                    hidden_states,
+                    token_confidences,
+                    start,
+                    idx + 1,
+                    args,
+                    "rsd_step_word",
+                )
+            )
+            start = idx + 1
+        idx += 1
+
+    if start < len(token_ids):
+        chunks.extend(
+            split_span_with_semantic_fallback(
+                tokenizer,
+                token_ids,
+                hidden_states,
+                token_confidences,
+                start,
+                len(token_ids),
+                args,
+                "tail",
+            )
+        )
+
+    for chunk_id, chunk in enumerate(chunks):
+        chunk["chunk_id"] = int(chunk_id)
+    return chunks
+
+
 def load_jsonl_rows(path: str) -> List[Dict]:
     rows = []
     with open(path, "r", encoding="utf-8") as f:
@@ -506,6 +686,22 @@ def main():
             )
             chunking_config = {
                 "step_word": args.step_word,
+                "max_new_tokens": args.max_new_tokens,
+            }
+        elif args.chunking_method == "rsd_step_fallback":
+            chunks = build_rsd_step_fallback_chunks(
+                tokenizer=tokenizer,
+                token_ids=generated_token_ids,
+                hidden_states=generated_hidden_states,
+                token_confidences=generated_token_confidences,
+                args=args,
+            )
+            chunking_config = {
+                "step_word": args.step_word,
+                "min_step_tokens": args.min_step_tokens,
+                "target_step_tokens": args.target_step_tokens,
+                "max_step_tokens": args.max_step_tokens,
+                "force_step_tokens": args.force_step_tokens,
                 "max_new_tokens": args.max_new_tokens,
             }
         else:
