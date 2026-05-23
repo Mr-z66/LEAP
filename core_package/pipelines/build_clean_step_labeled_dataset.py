@@ -60,6 +60,8 @@ def parse_args():
     parser.add_argument("--min-step-tokens", type=int, default=12)
     parser.add_argument("--target-step-tokens", type=int, default=64)
     parser.add_argument("--max-step-tokens", type=int, default=120)
+    parser.add_argument("--chunking-method", choices=["semantic_step_v2", "rsd_step"], default="semantic_step_v2")
+    parser.add_argument("--step-word", default="\n\n", help="RSD-style step delimiter for --chunking-method rsd_step.")
     parser.add_argument(
         "--force-step-tokens",
         type=int,
@@ -194,6 +196,53 @@ def build_semantic_step_chunks(tokenizer, token_ids, hidden_states, token_confid
                     idx + 1,
                     cut_reason,
                     ambiguous_reason=ambiguous_reason,
+                )
+            )
+            start = idx + 1
+        idx += 1
+
+    if start < len(token_ids):
+        chunks.append(
+            make_chunk(
+                tokenizer,
+                token_ids,
+                hidden_states,
+                token_confidences,
+                start,
+                len(token_ids),
+                "tail",
+            )
+        )
+
+    prefix_token_ids = []
+    for chunk_id, chunk in enumerate(chunks):
+        chunk["chunk_id"] = int(chunk_id)
+        prefix_token_ids.extend(chunk["token_ids"])
+        chunk["prefix_text"] = decode_tokens(tokenizer, prefix_token_ids).strip()
+    return chunks
+
+
+def build_rsd_step_chunks(tokenizer, token_ids, hidden_states, token_confidences, args):
+    chunks = []
+    step_ids = tokenizer.encode(args.step_word, add_special_tokens=False)
+    start = 0
+    idx = 0
+    while idx < len(token_ids):
+        should_cut = False
+        if step_ids and idx + 1 - len(step_ids) >= start:
+            tail = token_ids[idx + 1 - len(step_ids): idx + 1]
+            should_cut = tail == step_ids
+
+        if should_cut:
+            chunks.append(
+                make_chunk(
+                    tokenizer,
+                    token_ids,
+                    hidden_states,
+                    token_confidences,
+                    start,
+                    idx + 1,
+                    "rsd_step_word",
                 )
             )
             start = idx + 1
@@ -472,7 +521,10 @@ def main():
             model_final_answer = ""
         is_final_correct = check_answer_correctness(model_final_answer, row["ground_truth_final_answer"], answer_type)
 
-        chunks = build_semantic_step_chunks(small_tokenizer, token_ids, hidden_states, token_confidences, args)
+        if args.chunking_method == "rsd_step":
+            chunks = build_rsd_step_chunks(small_tokenizer, token_ids, hidden_states, token_confidences, args)
+        else:
+            chunks = build_semantic_step_chunks(small_tokenizer, token_ids, hidden_states, token_confidences, args)
         for idx, chunk in enumerate(chunks):
             continuation = "\n".join(
                 next_chunk["chunk_text"] for next_chunk in chunks[idx + 1: idx + 1 + args.lookahead_steps]
@@ -524,8 +576,9 @@ def main():
                     "is_final_correct": bool(is_final_correct),
                     "answer_type": answer_type,
                     "source_meta": row.get("source_meta", {}),
-                    "chunking_method": "semantic_step_v2",
+                    "chunking_method": args.chunking_method,
                     "chunking_config": {
+                        "step_word": args.step_word if args.chunking_method == "rsd_step" else None,
                         "min_step_tokens": args.min_step_tokens,
                         "target_step_tokens": args.target_step_tokens,
                         "max_step_tokens": args.max_step_tokens,

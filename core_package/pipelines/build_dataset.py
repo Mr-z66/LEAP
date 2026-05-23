@@ -40,6 +40,8 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
     parser.add_argument("--min-tokens", type=int, default=DEFAULT_MIN_TOKENS)
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
+    parser.add_argument("--chunking-method", choices=["heuristic", "rsd_step"], default="heuristic")
+    parser.add_argument("--step-word", default="\n\n", help="RSD-style step delimiter for --chunking-method rsd_step.")
     parser.add_argument("--input-path", default=None, help="Local json/jsonl path for svamp/jsonl modes.")
     parser.add_argument("--question-field", default="question", help="Question field for jsonl mode.")
     parser.add_argument("--answer-field", default="answer", help="Answer field for jsonl mode.")
@@ -280,6 +282,66 @@ def build_chunks(tokenizer, token_ids, hidden_states, token_confidences, min_tok
     return chunks
 
 
+def build_rsd_step_chunks(tokenizer, token_ids, hidden_states, token_confidences, step_word="\n\n"):
+    chunks = []
+    step_ids = tokenizer.encode(step_word, add_special_tokens=False)
+    if not step_ids:
+        step_ids = []
+
+    start = 0
+    idx = 0
+    while idx < len(token_ids):
+        should_cut = False
+        cut_reason = ""
+        if step_ids and idx + 1 - len(step_ids) >= start:
+            tail = token_ids[idx + 1 - len(step_ids): idx + 1]
+            if tail == step_ids:
+                should_cut = True
+                cut_reason = "rsd_step_word"
+
+        if should_cut:
+            chunk_token_ids = list(token_ids[start:idx + 1])
+            chunk_hidden_states = list(hidden_states[start:idx + 1])
+            chunk_confidences = list(token_confidences[start:idx + 1])
+            chunks.append(
+                {
+                    "chunk_id": len(chunks),
+                    "start_token_idx": start,
+                    "end_token_idx": idx,
+                    "token_ids": chunk_token_ids,
+                    "token_count": len(chunk_token_ids),
+                    "chunk_text": decode_tokens(tokenizer, chunk_token_ids).strip(),
+                    "boundary_hidden_state": chunk_hidden_states[-1].clone(),
+                    "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
+                    "cut_reason": cut_reason,
+                    **summarize_confidence(chunk_confidences),
+                }
+            )
+            start = idx + 1
+        idx += 1
+
+    if start < len(token_ids):
+        chunk_token_ids = list(token_ids[start:])
+        chunk_hidden_states = list(hidden_states[start:])
+        chunk_confidences = list(token_confidences[start:])
+        chunks.append(
+            {
+                "chunk_id": len(chunks),
+                "start_token_idx": start,
+                "end_token_idx": len(token_ids) - 1,
+                "token_ids": chunk_token_ids,
+                "token_count": len(chunk_token_ids),
+                "chunk_text": decode_tokens(tokenizer, chunk_token_ids).strip(),
+                "boundary_hidden_state": chunk_hidden_states[-1].clone(),
+                "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0),
+                "cut_reason": "tail",
+                **summarize_confidence(chunk_confidences),
+            }
+        )
+
+    return chunks
+
+
 def load_jsonl_rows(path: str) -> List[Dict]:
     rows = []
     with open(path, "r", encoding="utf-8") as f:
@@ -434,15 +496,34 @@ def main():
             answer_type,
         )
 
-        chunks = build_chunks(
-            tokenizer=tokenizer,
-            token_ids=generated_token_ids,
-            hidden_states=generated_hidden_states,
-            token_confidences=generated_token_confidences,
-            min_tokens=args.min_tokens,
-            max_tokens=args.max_tokens,
-            punctuations=punctuations,
-        )
+        if args.chunking_method == "rsd_step":
+            chunks = build_rsd_step_chunks(
+                tokenizer=tokenizer,
+                token_ids=generated_token_ids,
+                hidden_states=generated_hidden_states,
+                token_confidences=generated_token_confidences,
+                step_word=args.step_word,
+            )
+            chunking_config = {
+                "step_word": args.step_word,
+                "max_new_tokens": args.max_new_tokens,
+            }
+        else:
+            chunks = build_chunks(
+                tokenizer=tokenizer,
+                token_ids=generated_token_ids,
+                hidden_states=generated_hidden_states,
+                token_confidences=generated_token_confidences,
+                min_tokens=args.min_tokens,
+                max_tokens=args.max_tokens,
+                punctuations=punctuations,
+            )
+            chunking_config = {
+                "min_tokens": args.min_tokens,
+                "max_tokens": args.max_tokens,
+                "punctuations": punctuations,
+                "max_new_tokens": args.max_new_tokens,
+            }
 
         prefix_token_ids = []
         for chunk in chunks:
@@ -461,13 +542,8 @@ def main():
                 "model_final_answer": model_final_answer,
                 "is_final_correct": is_final_correct,
                 "answer_type": answer_type,
-                "chunking_method": "heuristic_punctuation_minmax",
-                "chunking_config": {
-                    "min_tokens": args.min_tokens,
-                    "max_tokens": args.max_tokens,
-                    "punctuations": punctuations,
-                    "max_new_tokens": args.max_new_tokens,
-                },
+                "chunking_method": args.chunking_method,
+                "chunking_config": chunking_config,
                 "source_meta": row.get("source_meta", {}),
                 "chunks": chunks,
             }

@@ -57,6 +57,8 @@ run_build() {
     --num-samples "${num_samples}" \
     --model-path "${SMALL_MODEL_PATH}" \
     --save-path "${save_path}" \
+    --chunking-method rsd_step \
+    --step-word $'\n\n' \
     --max-new-tokens "${max_new_tokens}" \
     2>&1 | tee "${log_path}"
 }
