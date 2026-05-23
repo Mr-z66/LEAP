@@ -1,0 +1,27 @@
+{
+  "seed": 20260523,
+  "output_dir": "dataset/mixed_probe_splits",
+  "datasets": {
+    "gsm8k": {
+      "source": "dataset/gsm8k/test.jsonl",
+      "calib_size": 300,
+      "test_size": 300
+    },
+    "svamp": {
+      "calib_source": "dataset/svamp/train.jsonl",
+      "test_source": "dataset/svamp/test.jsonl",
+      "calib_size": 300,
+      "test_size": 300
+    },
+    "math500": {
+      "source": "dataset/math500/test.jsonl",
+      "calib_size": 200,
+      "test_size": 300
+    },
+    "livecodebench_v5": {
+      "source": "dataset/livecodebench/v5/test5.jsonl",
+      "calib_size": 100,
+      "test_size": null
+    }
+  }
+}

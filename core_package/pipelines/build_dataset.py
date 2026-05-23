@@ -13,6 +13,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor, resolve_answer_type
 from core_package.config import DATASET_BUILD, MODELS
 from core_package.gsm8k_protocol import append_gsm8k_boxed_instruction
+from core_package.livecodebench_protocol import build_livecodebench_answer_payload, build_livecodebench_prompt
 from core_package.math500_protocol import append_math500_instruction
 from core_package.svamp_protocol import append_svamp_boxed_instruction
 
@@ -33,7 +34,7 @@ def parse_args():
     )
     parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH, help="Local model path.")
     parser.add_argument("--save-path", default=DEFAULT_SAVE_PATH, help="Output .pt file path.")
-    parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "math500", "jsonl"], default="gsm8k")
+    parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "math500", "livecodebench_v5", "jsonl"], default="gsm8k")
     parser.add_argument("--dataset-split", default=None, help="Dataset split to use.")
     parser.add_argument("--num-samples", type=int, default=1000, help="Maximum number of samples to process.")
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
@@ -58,6 +59,8 @@ def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
 
 
 def format_generation_question(question: str, answer_type: str) -> str:
+    if answer_type == "livecodebench_codegen":
+        return question
     if answer_type == "math500_qwen_boxed":
         return append_math500_instruction(question)
     if answer_type == "gsm8k_boxed_numeric":
@@ -86,7 +89,7 @@ def normalize_answer_text(value, answer_type: str) -> Optional[str]:
     if not text:
         return None
 
-    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric"}:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric", "livecodebench_codegen"}:
         return text
 
     numeric = extract_last_number(text)
@@ -350,6 +353,23 @@ def format_sample(row: Dict, idx: int, args, answer_type: str) -> Dict:
                 "subject": row.get("subject"),
                 "level": row.get("level"),
                 "unique_id": row.get("unique_id"),
+            },
+        }
+
+    if args.dataset_name == "livecodebench_v5":
+        question = build_livecodebench_prompt(row)
+        answer_text = build_livecodebench_answer_payload(row)
+        return {
+            "question_id": row.get("question_id", idx),
+            "question": question,
+            "ground_truth_answer_text": answer_text,
+            "ground_truth_final_answer": normalize_answer_text(answer_text, answer_type),
+            "source_meta": {
+                "dataset_name": "livecodebench_v5",
+                "question_title": row.get("question_title"),
+                "platform": row.get("platform"),
+                "contest_id": row.get("contest_id"),
+                "difficulty": row.get("difficulty"),
             },
         }
 

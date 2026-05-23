@@ -5,3 +5,6 @@ __pycache__/
 gsm8k_cache/
 models
 *.pt
+dataset/livecodebench/v5/test5.jsonl
+dataset/mixed_probe_splits/livecodebench_v5_calib.jsonl
+dataset/mixed_probe_splits/livecodebench_v5_test.jsonl

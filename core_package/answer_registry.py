@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Callable, List, Optional, Tuple
 
 from core_package.answer_extraction import extract_final_answer
+from core_package.livecodebench_protocol import check_livecodebench_correctness, extract_livecodebench_code_answer
 from core_package.math500_protocol import extract_math500_answer, math500_answers_equal
 
 
@@ -395,6 +396,9 @@ def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> b
     if answer_type in {"legacy_math", "svamp_numeric"}:
         return predicted_text == actual_text
 
+    if answer_type == "livecodebench_codegen":
+        return check_livecodebench_correctness(predicted_text, actual_text)
+
     raise ValueError(f"Unsupported answer type for correctness check: {answer_type}")
 
 
@@ -406,6 +410,7 @@ def get_answer_extractor(answer_type: str) -> AnswerExtractor:
         "gsm8k_boxed_numeric": extract_gsm8k_boxed_numeric_answer,
         "svamp_numeric": extract_svamp_numeric_answer,
         "svamp_boxed_numeric": extract_svamp_boxed_numeric_answer,
+        "livecodebench_codegen": extract_livecodebench_code_answer,
     }
     if answer_type not in extractors:
         raise ValueError(f"Unsupported answer type: {answer_type}")
@@ -422,5 +427,7 @@ def resolve_answer_type(dataset_name: str, override: Optional[str] = None) -> st
         return "svamp_numeric"
     if dataset_name == "math500":
         return "math500_qwen_boxed"
+    if dataset_name == "livecodebench_v5":
+        return "livecodebench_codegen"
 
     return "legacy_math"

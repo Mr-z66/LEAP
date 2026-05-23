@@ -1,0 +1,105 @@
+{
+  "seed": 20260523,
+  "output_dir": "dataset\\mixed_probe_splits",
+  "datasets": {
+    "gsm8k": {
+      "sources": {
+        "source": {
+          "path": "dataset\\gsm8k\\test.jsonl",
+          "rows": 1319,
+          "warning": null
+        }
+      },
+      "outputs": {
+        "calib": {
+          "path": "dataset\\mixed_probe_splits\\gsm8k_calib.jsonl",
+          "rows": 300
+        },
+        "test": {
+          "path": "dataset\\mixed_probe_splits\\gsm8k_test.jsonl",
+          "rows": 300
+        }
+      },
+      "calib_test_overlap": 0
+    },
+    "svamp": {
+      "sources": {
+        "calib_source": {
+          "path": "dataset\\svamp\\train.jsonl",
+          "rows": 700,
+          "warning": null
+        },
+        "test_source": {
+          "path": "dataset\\svamp\\test.jsonl",
+          "rows": 300,
+          "warning": null
+        }
+      },
+      "outputs": {
+        "calib": {
+          "path": "dataset\\mixed_probe_splits\\svamp_calib.jsonl",
+          "rows": 300
+        },
+        "test": {
+          "path": "dataset\\mixed_probe_splits\\svamp_test.jsonl",
+          "rows": 300
+        }
+      },
+      "calib_test_overlap": 0
+    },
+    "math500": {
+      "sources": {
+        "source": {
+          "path": "dataset\\math500\\test.jsonl",
+          "rows": 500,
+          "warning": null
+        }
+      },
+      "outputs": {
+        "calib": {
+          "path": "dataset\\mixed_probe_splits\\math500_calib.jsonl",
+          "rows": 200
+        },
+        "test": {
+          "path": "dataset\\mixed_probe_splits\\math500_test.jsonl",
+          "rows": 300
+        }
+      },
+      "calib_test_overlap": 0
+    },
+    "livecodebench_v5": {
+      "sources": {
+        "source": {
+          "path": "dataset\\livecodebench\\v5\\test5.jsonl",
+          "rows": 167,
+          "warning": null
+        }
+      },
+      "outputs": {
+        "calib": {
+          "path": "dataset\\mixed_probe_splits\\livecodebench_v5_calib.jsonl",
+          "rows": 100
+        },
+        "test": {
+          "path": "dataset\\mixed_probe_splits\\livecodebench_v5_test.jsonl",
+          "rows": 67
+        }
+      },
+      "calib_test_overlap": 0
+    }
+  },
+  "overlaps": {
+    "gsm8k.calib__livecodebench_v5.calib": 0,
+    "gsm8k.test__livecodebench_v5.test": 0,
+    "gsm8k.calib__math500.calib": 0,
+    "gsm8k.test__math500.test": 0,
+    "gsm8k.calib__svamp.calib": 0,
+    "gsm8k.test__svamp.test": 0,
+    "livecodebench_v5.calib__math500.calib": 0,
+    "livecodebench_v5.test__math500.test": 0,
+    "livecodebench_v5.calib__svamp.calib": 0,
+    "livecodebench_v5.test__svamp.test": 0,
+    "math500.calib__svamp.calib": 0,
+    "math500.test__svamp.test": 0
+  }
+}

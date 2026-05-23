@@ -41,7 +41,7 @@ def parse_args():
             "construct semantic chunks, extract final-layer hidden states, and judge explicit prefix errors."
         )
     )
-    parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "math500", "jsonl"], default="gsm8k")
+    parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "math500", "livecodebench_v5", "jsonl"], default="gsm8k")
     parser.add_argument("--dataset-split", default=None, help="HF dataset split for gsm8k.")
     parser.add_argument("--input-path", default=None, help="Local json/jsonl path for svamp/math500/jsonl.")
     parser.add_argument("--question-field", default="question", help="Question field for jsonl mode.")
@@ -288,10 +288,18 @@ def parse_judge_response(raw_text):
     }
 
 
-def build_clean_judge_prompt(question, prefix_text, current_chunk_text, continuation_text, reference_answer, include_reference_answer):
+def build_clean_judge_prompt(
+    question,
+    prefix_text,
+    current_chunk_text,
+    continuation_text,
+    reference_answer,
+    include_reference_answer,
+    answer_type="",
+):
     reference_section = ""
     if include_reference_answer:
-        reference_section = f"\nReference final answer (for checking math only, not for demanding completeness):\n{reference_answer}\n"
+        reference_section = f"\nReference answer/checking payload (for checking only, not for demanding completeness):\n{reference_answer}\n"
     continuation_section = ""
     if continuation_text:
         continuation_section = (
@@ -299,6 +307,31 @@ def build_clean_judge_prompt(question, prefix_text, current_chunk_text, continua
             "truncated or ambiguous; do not judge the continuation itself:\n"
             f"{continuation_text}\n"
         )
+
+    if answer_type == "livecodebench_codegen":
+        label_definition = """Label definition:
+- label = 1 if everything explicitly written so far is still valid for solving the programming problem, even if the code/reasoning is incomplete, redundant, verbose, or has not reached a final program yet.
+- label = 0 only if the prefix already contains an explicit harmful error: misunderstanding the specification, choosing a wrong algorithm, contradicting constraints, introducing invalid code structure, using wrong input/output behavior, or making an assertion that would make the final program fail.
+- label = -1 if the current chunk is truncated/ambiguous, ends mid-token/mid-code-block/mid-statement, the evidence is insufficient, or you are unsure.
+
+Important rules:
+1. Do not mark a prefix wrong merely because it has not yet written all code.
+2. Do not mark a prefix wrong merely because a step is redundant or explanatory.
+3. Do not require the final program to be complete at this prefix.
+4. If a code statement/string/markdown fence appears cut off, return label = -1 rather than guessing.
+5. Return JSON only."""
+    else:
+        label_definition = """Label definition:
+- label = 1 if everything explicitly written so far is still mathematically/logically valid, even if the reasoning is incomplete, redundant, verbose, or has not reached the target yet.
+- label = 0 only if the prefix already contains an explicit error: a wrong arithmetic result, wrong equation, wrong variable relation, wrong interpretation of the question, or using an irrelevant quantity as the target.
+- label = -1 if the current chunk is truncated/ambiguous, ends mid-number/mid-formula/mid-LaTeX, the evidence is insufficient, or you are unsure.
+
+Important rules:
+1. Do not mark a prefix wrong merely because it has not yet used all given information.
+2. Do not mark a prefix wrong merely because a step is redundant or unnecessary.
+3. Do not mark a prefix wrong merely because it has not yet computed the final answer.
+4. If a number/formula appears cut off, return label = -1 rather than guessing.
+5. Return JSON only."""
 
     return f"""You are labeling reasoning prefixes for a process-routing dataset.
 Your task is prefix-local explicit-error detection.
@@ -312,17 +345,7 @@ Reasoning prefix up to and including the current chunk:
 Current chunk:
 {current_chunk_text}
 {continuation_section}
-Label definition:
-- label = 1 if everything explicitly written so far is still mathematically/logically valid, even if the reasoning is incomplete, redundant, verbose, or has not reached the target yet.
-- label = 0 only if the prefix already contains an explicit error: a wrong arithmetic result, wrong equation, wrong variable relation, wrong interpretation of the question, or using an irrelevant quantity as the target.
-- label = -1 if the current chunk is truncated/ambiguous, ends mid-number/mid-formula/mid-LaTeX, the evidence is insufficient, or you are unsure.
-
-Important rules:
-1. Do not mark a prefix wrong merely because it has not yet used all given information.
-2. Do not mark a prefix wrong merely because a step is redundant or unnecessary.
-3. Do not mark a prefix wrong merely because it has not yet computed the final answer.
-4. If a number/formula appears cut off, return label = -1 rather than guessing.
-5. Return JSON only.
+{label_definition}
 
 JSON schema:
 {{
@@ -461,6 +484,7 @@ def main():
                 continuation_text=continuation,
                 reference_answer=row["ground_truth_answer_text"],
                 include_reference_answer=args.include_reference_answer,
+                answer_type=answer_type,
             )
             raw_response = judge_prefix(prompt, judge_tokenizer, judge_model, args)
             judge_result = parse_judge_response(raw_response)
