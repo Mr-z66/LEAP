@@ -354,20 +354,20 @@ def load_jsonl_rows(path: str) -> List[Dict]:
 
 
 def load_source_rows(args) -> Iterable[Dict]:
+    if args.input_path is not None:
+        rows = load_jsonl_rows(args.input_path)
+        if args.num_samples is not None:
+            rows = rows[: args.num_samples]
+
+        print(f"Loading local dataset from: {args.input_path} | rows={len(rows)}")
+        return rows
+
     if args.dataset_name == "gsm8k":
         split = args.dataset_split or f"train[:{args.num_samples}]"
         print(f"Loading GSM8K split: {split}")
         return list(load_dataset("gsm8k", "main", split=split))
 
-    if args.input_path is None:
-        raise ValueError("--input-path is required for svamp/jsonl modes.")
-
-    rows = load_jsonl_rows(args.input_path)
-    if args.num_samples is not None:
-        rows = rows[: args.num_samples]
-
-    print(f"Loading local dataset from: {args.input_path} | rows={len(rows)}")
-    return rows
+    raise ValueError("--input-path is required for non-GSM8K local dataset modes.")
 
 
 def format_sample(row: Dict, idx: int, args, answer_type: str) -> Dict:
