@@ -42,6 +42,7 @@ def parse_args():
     parser.add_argument("--save-path", default=DEFAULT_SAVE_PATH, help="Output .pt file path.")
     parser.add_argument("--dataset-name", choices=["gsm8k", "svamp", "math500", "livecodebench_v5", "jsonl"], default="gsm8k")
     parser.add_argument("--dataset-split", default=None, help="Dataset split to use.")
+    parser.add_argument("--start-question", type=int, default=0, help="Start index for local/jsonl slicing.")
     parser.add_argument("--num-samples", type=int, default=1000, help="Maximum number of samples to process.")
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS)
     parser.add_argument("--min-tokens", type=int, default=DEFAULT_MIN_TOKENS)
@@ -629,14 +630,19 @@ def load_jsonl_rows(path: str) -> List[Dict]:
 def load_source_rows(args) -> Iterable[Dict]:
     if args.input_path is not None:
         rows = load_jsonl_rows(args.input_path)
+        start = max(int(args.start_question), 0)
+        end = None if args.num_samples is None else start + int(args.num_samples)
+        rows = rows[start:end]
         if args.num_samples is not None:
-            rows = rows[: args.num_samples]
+            rows = rows[: int(args.num_samples)]
 
-        print(f"Loading local dataset from: {args.input_path} | rows={len(rows)}")
+        print(f"Loading local dataset from: {args.input_path} | start={start} rows={len(rows)}")
         return rows
 
     if args.dataset_name == "gsm8k":
-        split = args.dataset_split or f"train[:{args.num_samples}]"
+        start = max(int(args.start_question), 0)
+        end = start + int(args.num_samples)
+        split = args.dataset_split or f"train[{start}:{end}]"
         print(f"Loading GSM8K split: {split}")
         return list(load_dataset("gsm8k", "main", split=split))
 
@@ -738,7 +744,10 @@ def main():
     model.eval()
 
     dataset_rows = load_source_rows(args)
-    formatted_rows = [format_sample(row, idx, args, answer_type) for idx, row in enumerate(dataset_rows)]
+    formatted_rows = [
+        format_sample(row, idx, args, answer_type)
+        for idx, row in enumerate(dataset_rows, start=max(int(args.start_question), 0))
+    ]
 
     all_extracted_data = []
     for row in tqdm(formatted_rows, desc="Building heuristic chunks"):
