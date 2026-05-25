@@ -8,6 +8,7 @@ Planned scripts:
 - `audit_splits.py`
 - `run_build_trajectories.sh`
 - `run_two_stage_labeling.sh`
+- `run_label_quality_audit.sh`
 - `merge_labeled_datasets.py`
 - `run_train_mixed_probe.sh`
 - `run_probe_eval.sh`

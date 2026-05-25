@@ -27,6 +27,9 @@ Then evaluate the same scheduler policy on held-out splits from all datasets.
 4. Build step chunks using an RSD-style step boundary.
 5. Label chunks with the existing two-stage judge flow, optionally enriched by
    R2R-style continuation divergence.
+   Recommended check: run a label-consistency audit on each labeled split before
+   merging, and inspect suspicious buckets such as final-wrong/no-error,
+   final-correct/has-error, and zero-to-one flips.
 6. Merge labeled calibration datasets.
 7. Train one mixed-domain probe.
 8. Evaluate probe F1/recall on held-out data.
