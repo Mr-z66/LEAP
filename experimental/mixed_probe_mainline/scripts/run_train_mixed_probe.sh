@@ -17,6 +17,7 @@ if [[ -f /root/miniconda3/etc/profile.d/conda.sh ]]; then
 fi
 
 export PYTHONPATH="${ROOT_DIR}:${PYTHONPATH:-}"
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 
 mkdir -p result/artifacts result/logs/mixed_probe_mainline
 LOG_PATH="result/logs/mixed_probe_mainline/train_mixed_probe_$(date +%Y%m%d_%H%M%S).log"
@@ -25,6 +26,13 @@ echo "[train] labels=${MERGED_LABEL_PATH}"
 echo "[train] output=${OUTPUT_PATH}"
 echo "[train] feature=${FEATURE_KEY}"
 echo "[log]   ${LOG_PATH}"
+
+if [[ ! -f "${MERGED_LABEL_PATH}" ]]; then
+  echo "[error] missing merged labels: ${MERGED_LABEL_PATH}" >&2
+  echo "[hint] run first:" >&2
+  echo "  python experimental/mixed_probe_mainline/scripts/merge_labeled_datasets.py" >&2
+  exit 2
+fi
 
 python -m core_package.probes.train_probe_artifact_torch \
   --label-path "${MERGED_LABEL_PATH}" \

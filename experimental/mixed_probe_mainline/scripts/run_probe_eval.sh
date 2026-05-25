@@ -17,8 +17,16 @@ if [[ -f /root/miniconda3/etc/profile.d/conda.sh ]]; then
 fi
 
 export PYTHONPATH="${ROOT_DIR}:${PYTHONPATH:-}"
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 
 mkdir -p result/logs/mixed_probe_mainline
+
+if [[ ! -f "${ARTIFACT_PATH}" ]]; then
+  echo "[error] missing probe artifact: ${ARTIFACT_PATH}" >&2
+  echo "[hint] run first:" >&2
+  echo "  bash experimental/mixed_probe_mainline/scripts/run_train_mixed_probe.sh" >&2
+  exit 2
+fi
 
 for key in ${DATASETS}; do
   data_path="${LABEL_DIR}/${key}_labels.pt"
