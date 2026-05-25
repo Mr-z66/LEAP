@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="${ROOT_DIR:-/root/LEAP}"
 LABEL_DIR="${LABEL_DIR:-dataset/mixed_probe_labels_fallback_second_pass}"
 OUTPUT_DIR="${OUTPUT_DIR:-result/analysis_outputs/mixed_label_audits}"
-DATASETS="${DATASETS:-gsm8k_calib gsm8k_test svamp_calib svamp_test math500_calib math500_test}"
+DATASETS="${DATASETS:-gsm8k_calib svamp_calib math500_calib}"
 MAX_EXAMPLES_PER_BUCKET="${MAX_EXAMPLES_PER_BUCKET:-20}"
 
 cd "${ROOT_DIR}"

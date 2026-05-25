@@ -110,6 +110,13 @@ def confidence_stats(chunks):
     }
 
 
+def effective_field(chunk, second_pass_key, judge_key, default=""):
+    value = chunk.get(second_pass_key)
+    if value is not None and value != "":
+        return value
+    return chunk.get(judge_key, default)
+
+
 def summarize_question(question_id, chunks, label_key):
     labels = [int(chunk[label_key]) for chunk in chunks]
     final_correct = as_bool(chunks[0].get("is_final_correct", False))
@@ -162,9 +169,12 @@ def compact_example(question_id, chunks, label_key, text_tail_chars):
         "chunk_text": str(chosen.get("chunk_text", "")),
         "prefix_tail": prefix[-text_tail_chars:],
         "judge_confidence": as_float(chosen.get("judge_confidence"), default=None),
-        "judge_error_type": str(chosen.get("judge_error_type", "")),
-        "judge_reason": str(chosen.get("judge_reason", "")),
+        "judge_error_type": str(effective_field(chosen, "second_pass_error_type", "judge_error_type")),
+        "judge_reason": str(effective_field(chosen, "second_pass_reason", "judge_reason")),
         "judge_raw_response": str(chosen.get("judge_raw_response", ""))[:1200],
+        "second_pass_reviewed": bool(chosen.get("second_pass_reviewed", False)),
+        "second_pass_earliest_error_chunk_id": chosen.get("second_pass_earliest_error_chunk_id"),
+        "second_pass_raw_response": str(chosen.get("second_pass_raw_response", ""))[:1200],
     }
 
 
@@ -195,8 +205,8 @@ def main():
         for chunk in chunks:
             label_counts[int(chunk[args.label_key])] += 1
             cut_reasons[str(chunk.get("cut_reason", "unknown"))] += 1
-            error_types[str(chunk.get("judge_error_type", "unknown"))] += 1
-            parse_statuses[str(chunk.get("judge_parse_status", "unknown"))] += 1
+            error_types[str(effective_field(chunk, "second_pass_error_type", "judge_error_type", "unknown"))] += 1
+            parse_statuses[str(effective_field(chunk, "second_pass_parse_status", "judge_parse_status", "unknown"))] += 1
 
     buckets = bucket_examples(question_summaries)
     summary = {
