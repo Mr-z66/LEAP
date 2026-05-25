@@ -11,6 +11,7 @@ LARGE_MODEL_PATH_GSM8K_SVAMP="${LARGE_MODEL_PATH_GSM8K_SVAMP:-/root/autodl-tmp/m
 LARGE_MODEL_PATH_MATH500="${LARGE_MODEL_PATH_MATH500:-/root/autodl-tmp/models/Qwen2.5-32B}"
 THRESHOLDS="${THRESHOLDS:-0.15,0.20,0.25,0.30,0.35,0.40,0.45}"
 DATASETS="${DATASETS:-gsm8k_test svamp_test}"
+HANDOFF_MODE="${HANDOFF_MODE:-takeover}"
 
 cd "${ROOT_DIR}"
 
@@ -55,6 +56,7 @@ run_gsm8k() {
     --num-test-questions 300 \
     --max-new-tokens 768 \
     --max-handoffs 2 \
+    --handoff-mode "${HANDOFF_MODE}" \
     --large-handoff-chunks 2 \
     --adaptive-large-handoff \
     --min-large-handoff-chunks 4 \
@@ -84,6 +86,7 @@ run_svamp() {
     --num-test-questions 300 \
     --max-new-tokens 512 \
     --max-handoffs 2 \
+    --handoff-mode "${HANDOFF_MODE}" \
     --large-handoff-chunks 2 \
     --adaptive-large-handoff \
     --min-large-handoff-chunks 4 \
@@ -113,6 +116,7 @@ run_math500() {
     --num-test-questions 300 \
     --max-new-tokens 1024 \
     --max-handoffs 2 \
+    --handoff-mode "${HANDOFF_MODE}" \
     --large-handoff-chunks 2 \
     --adaptive-large-handoff \
     --min-large-handoff-chunks 4 \

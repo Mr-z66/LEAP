@@ -106,6 +106,15 @@ def parse_args():
     parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
     parser.add_argument(
+        "--handoff-mode",
+        choices=["takeover", "rewrite_current_chunk"],
+        default="takeover",
+        help=(
+            "Large-model intervention mode. 'takeover' keeps the existing behavior; "
+            "'rewrite_current_chunk' rolls back the risky small chunk and lets the large model generate one replacement chunk."
+        ),
+    )
+    parser.add_argument(
         "--adaptive-large-handoff",
         action="store_true",
         help="Use adaptive large-model handoff length based on whether a small-model re-entry probe looks stable.",
@@ -1226,7 +1235,18 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             total_small_tokens -= small_chunk["generated_token_count"]
             runtime_small_chunks.pop()
 
-            if args.adaptive_large_handoff:
+            if args.handoff_mode == "rewrite_current_chunk":
+                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                large_result = run_large_handoff(
+                    model=large_model,
+                    tokenizer=large_tokenizer,
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    args=args,
+                    num_chunks=1,
+                    max_total_new_tokens=remaining_handoff_budget,
+                )
+            elif args.adaptive_large_handoff:
                 large_result = run_adaptive_large_handoff(
                     question=question,
                     assistant_prefix=safe_prefix,
@@ -1258,7 +1278,18 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             total_tokens += large_result["generated_token_count"]
             total_large_tokens += large_result["generated_token_count"]
             handoff_count += 1
-            if args.adaptive_large_handoff:
+            if args.handoff_mode == "rewrite_current_chunk":
+                route_trace.append(
+                    {
+                        "event": "large_handoff",
+                        "handoff_index": handoff_count,
+                        "mode": "rewrite_current_chunk",
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                        "chunks": large_result["chunks"],
+                    }
+                )
+            elif args.adaptive_large_handoff:
                 route_trace.append(
                     {
                         "event": "large_handoff",
