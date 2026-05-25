@@ -36,6 +36,18 @@ Then evaluate the same scheduler policy on held-out splits from all datasets.
 9. Run one fixed scheduler policy across datasets.
 10. Compare against small-only, large-only, RSD, and R2R where runnable.
 
+Current repository entrypoints for stages 6-9:
+
+- merge labels: `experimental/mixed_probe_mainline/scripts/merge_labeled_datasets.py`
+- train probe: `experimental/mixed_probe_mainline/scripts/run_train_mixed_probe.sh`
+- probe eval: `experimental/mixed_probe_mainline/scripts/run_probe_eval.sh`
+- scheduler eval: `experimental/mixed_probe_mainline/scripts/run_scheduler_eval.sh`
+
+Current default working mode:
+
+- first mixed probe = `gsm8k + svamp`
+- `math500` can be added back after label/extractor changes stabilize
+
 ## Directory Layout
 
 ```text
