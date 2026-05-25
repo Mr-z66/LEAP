@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal, InvalidOperation
 from typing import Optional, Tuple
 
 
@@ -41,8 +42,35 @@ def extract_last_boxed_content(text: str) -> Optional[str]:
 def extract_math500_answer(text: str) -> Tuple[str, bool]:
     answer = extract_last_boxed_content(text)
     if answer is None:
+        answer = extract_unboxed_math500_answer(text)
+    if answer is None:
         return "", False
     return answer.strip(), True
+
+
+def extract_unboxed_math500_answer(text: str) -> Optional[str]:
+    if not text:
+        return None
+    tail = str(text).strip()[-1200:]
+    marker_pattern = re.compile(
+        r"(?i)(?:final answer|the answer is|answer is|answer:|therefore|thus|hence)\s*(?:is\s*)?[:：]?\s*"
+    )
+    matches = list(marker_pattern.finditer(tail))
+    if matches:
+        span = tail[matches[-1].end():]
+        span = re.split(r"[\n。.!?]", span, maxsplit=1)[0].strip()
+        span = span.strip("$ ").rstrip(".。")
+        if span:
+            return span
+
+    lines = [line.strip() for line in tail.splitlines() if line.strip()]
+    for line in reversed(lines[-5:]):
+        cleaned = line.strip().strip("$").rstrip(".。")
+        if "\\frac" in cleaned or re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)", cleaned):
+            return cleaned
+        if re.fullmatch(r"[A-Za-z]\s*=\s*[^.。]+", cleaned):
+            return cleaned
+    return None
 
 
 def _strip_outer_braces(text: str) -> str:
@@ -126,9 +154,35 @@ def _normalize_math500_collection(text: str) -> str:
     return ",".join(sorted(piece for piece in pieces if piece))
 
 
+def _decimal_from_math500_text(text: str) -> Optional[Decimal]:
+    normalized = _normalize_math500_text(text)
+    frac_match = re.fullmatch(r"\\frac\{?([+-]?\d+(?:\.\d+)?)\}?\{?([+-]?\d+(?:\.\d+)?)\}?", normalized)
+    try:
+        if frac_match:
+            denominator = Decimal(frac_match.group(2))
+            if denominator == 0:
+                return None
+            return Decimal(frac_match.group(1)) / denominator
+        if re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)", normalized):
+            if normalized.startswith("."):
+                normalized = "0" + normalized
+            elif normalized.startswith("-."):
+                normalized = "-0" + normalized[1:]
+            elif normalized.startswith("+."):
+                normalized = "+0" + normalized[1:]
+            return Decimal(normalized)
+    except InvalidOperation:
+        return None
+    return None
+
+
 def math500_answers_equal(predicted: str, actual: str) -> bool:
     predicted_text = str(predicted).strip()
     actual_text = str(actual).strip()
     if not predicted_text or not actual_text:
         return False
-    return _normalize_math500_collection(predicted_text) == _normalize_math500_collection(actual_text)
+    if _normalize_math500_collection(predicted_text) == _normalize_math500_collection(actual_text):
+        return True
+    predicted_decimal = _decimal_from_math500_text(predicted_text)
+    actual_decimal = _decimal_from_math500_text(actual_text)
+    return predicted_decimal is not None and actual_decimal is not None and predicted_decimal == actual_decimal
