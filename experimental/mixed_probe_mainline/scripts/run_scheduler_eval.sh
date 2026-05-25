@@ -12,6 +12,10 @@ LARGE_MODEL_PATH_MATH500="${LARGE_MODEL_PATH_MATH500:-/root/autodl-tmp/models/Qw
 THRESHOLDS="${THRESHOLDS:-0.15,0.20,0.25,0.30,0.35,0.40,0.45}"
 DATASETS="${DATASETS:-gsm8k_test svamp_test}"
 HANDOFF_MODE="${HANDOFF_MODE:-takeover}"
+REWRITE_STEP_MIN_TOKENS="${REWRITE_STEP_MIN_TOKENS:-12}"
+REWRITE_STEP_TARGET_TOKENS="${REWRITE_STEP_TARGET_TOKENS:-64}"
+REWRITE_STEP_FORCE_TOKENS="${REWRITE_STEP_FORCE_TOKENS:-160}"
+REWRITE_STEP_BOUNDARY_MODE="${REWRITE_STEP_BOUNDARY_MODE:-auto}"
 
 cd "${ROOT_DIR}"
 
@@ -57,6 +61,10 @@ run_gsm8k() {
     --max-new-tokens 768 \
     --max-handoffs 2 \
     --handoff-mode "${HANDOFF_MODE}" \
+    --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
+    --rewrite-step-target-tokens "${REWRITE_STEP_TARGET_TOKENS}" \
+    --rewrite-step-force-tokens "${REWRITE_STEP_FORCE_TOKENS}" \
+    --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
     --large-handoff-chunks 2 \
     --adaptive-large-handoff \
     --min-large-handoff-chunks 4 \
@@ -87,6 +95,10 @@ run_svamp() {
     --max-new-tokens 512 \
     --max-handoffs 2 \
     --handoff-mode "${HANDOFF_MODE}" \
+    --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
+    --rewrite-step-target-tokens "${REWRITE_STEP_TARGET_TOKENS}" \
+    --rewrite-step-force-tokens "${REWRITE_STEP_FORCE_TOKENS}" \
+    --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
     --large-handoff-chunks 2 \
     --adaptive-large-handoff \
     --min-large-handoff-chunks 4 \
@@ -117,6 +129,10 @@ run_math500() {
     --max-new-tokens 1024 \
     --max-handoffs 2 \
     --handoff-mode "${HANDOFF_MODE}" \
+    --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
+    --rewrite-step-target-tokens "${REWRITE_STEP_TARGET_TOKENS}" \
+    --rewrite-step-force-tokens "${REWRITE_STEP_FORCE_TOKENS}" \
+    --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
     --large-handoff-chunks 2 \
     --adaptive-large-handoff \
     --min-large-handoff-chunks 4 \

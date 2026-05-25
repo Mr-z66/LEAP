@@ -16,6 +16,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from core_package.answer_registry import check_answer_correctness, get_answer_extractor
 from core_package.config import MODELS, SCHEDULER
+from core_package.pipelines.build_dataset import is_safe_boundary
 from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 # ================= Default Configuration =================
@@ -110,12 +111,22 @@ def parse_args():
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
     parser.add_argument(
         "--handoff-mode",
-        choices=["takeover", "rewrite_current_chunk"],
+        choices=["takeover", "rewrite_current_chunk", "rewrite_current_step"],
         default="takeover",
         help=(
             "Large-model intervention mode. 'takeover' keeps the existing behavior; "
-            "'rewrite_current_chunk' rolls back the risky small chunk and lets the large model generate one replacement chunk."
+            "'rewrite_current_chunk' rolls back the risky small chunk and lets the large model generate one replacement chunk; "
+            "'rewrite_current_step' lets the large model continue until a safe step boundary."
         ),
+    )
+    parser.add_argument("--rewrite-step-min-tokens", type=int, default=12, help="Minimum tokens before rewrite_current_step can stop at a safe boundary.")
+    parser.add_argument("--rewrite-step-target-tokens", type=int, default=64, help="Preferred token count before rewrite_current_step stops at a safe boundary.")
+    parser.add_argument("--rewrite-step-force-tokens", type=int, default=160, help="Hard token cap for rewrite_current_step if no safe boundary appears.")
+    parser.add_argument(
+        "--rewrite-step-boundary-mode",
+        choices=["auto", "math", "code"],
+        default="auto",
+        help="Safe-boundary mode for rewrite_current_step. Auto uses code for livecodebench_codegen and math otherwise.",
     )
     parser.add_argument(
         "--adaptive-large-handoff",
@@ -496,6 +507,43 @@ def chunk_generated_text_with_tokenizer(tokenizer, generated_text, min_chunk_tok
     return chunks
 
 
+def resolve_rewrite_step_boundary_mode(args):
+    if args.rewrite_step_boundary_mode != "auto":
+        return args.rewrite_step_boundary_mode
+    if args.answer_type == "livecodebench_codegen":
+        return "code"
+    return "math"
+
+
+def chunk_generated_step_with_tokenizer(tokenizer, generated_text, args):
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    if not token_ids:
+        return None
+
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+    selected_ids = []
+    cut_reason = "rewrite_step_tail"
+    for token_id in token_ids[: max(int(args.rewrite_step_force_tokens), 1)]:
+        selected_ids.append(token_id)
+        current_len = len(selected_ids)
+        if current_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+            cut_reason = f"target_{boundary_mode}_rewrite_step_boundary"
+            break
+        if current_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+            cut_reason = f"{boundary_mode}_rewrite_step_boundary"
+            break
+        if current_len >= args.rewrite_step_force_tokens:
+            cut_reason = "rewrite_step_force_tokens"
+            break
+
+    return {
+        "token_ids": selected_ids,
+        "chunk_text": decode_tokens(tokenizer, selected_ids).strip(),
+        "generated_token_count": len(selected_ids),
+        "cut_reason": cut_reason,
+    }
+
+
 def build_vllm_request_payload(args, prompt_text, max_new_tokens):
     model_name = args.vllm_model_name or os.path.basename(args.large_model_path.rstrip("/\\"))
     return {
@@ -778,6 +826,104 @@ def run_chunk(model, tokenizer, question, assistant_prefix, max_new_tokens, min_
     }
 
 
+def run_step_chunk(
+    model,
+    tokenizer,
+    question,
+    assistant_prefix,
+    max_new_tokens,
+    args,
+):
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+    input_ids = inputs.input_ids.to(model.device)
+    past_key_values = None
+
+    chunk_token_ids = []
+    chunk_hidden_states = []
+    chunk_confidences = []
+    reached_eos = False
+    cut_reason = None
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+    token_budget = max(1, min(int(max_new_tokens), int(args.rewrite_step_force_tokens)))
+
+    for _ in range(token_budget):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=input_ids,
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+
+        if chunk_token_ids:
+            chunk_hidden_states.append(outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+        logits = outputs.logits[0, -1, :]
+        past_key_values = outputs.past_key_values
+        chunk_confidences.append(compute_token_confidence(logits))
+        next_id = torch.argmax(logits).item()
+
+        if next_id == tokenizer.eos_token_id:
+            reached_eos = True
+            break
+
+        chunk_token_ids.append(next_id)
+        chunk_len = len(chunk_token_ids)
+
+        if chunk_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, chunk_token_ids, boundary_mode):
+            cut_reason = f"target_{boundary_mode}_rewrite_step_boundary"
+        elif chunk_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, chunk_token_ids, boundary_mode):
+            cut_reason = f"{boundary_mode}_rewrite_step_boundary"
+        elif chunk_len >= args.rewrite_step_force_tokens:
+            cut_reason = "rewrite_step_force_tokens"
+
+        if cut_reason is not None:
+            with torch.no_grad():
+                final_outputs = model(
+                    input_ids=torch.tensor([[next_id]], device=model.device),
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                    output_hidden_states=True,
+                )
+            chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+            break
+
+        input_ids = torch.tensor([[next_id]], device=model.device)
+
+    if chunk_token_ids and len(chunk_hidden_states) < len(chunk_token_ids):
+        last_token_id = chunk_token_ids[-1]
+        with torch.no_grad():
+            final_outputs = model(
+                input_ids=torch.tensor([[last_token_id]], device=model.device),
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+        chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+    chunk_text = decode_tokens(tokenizer, chunk_token_ids).strip()
+    if cut_reason is None and chunk_token_ids:
+        cut_reason = "rewrite_step_tail"
+
+    return {
+        "full_reasoning": (normalized_prefix or "") + chunk_text,
+        "chunk_text": chunk_text,
+        "token_ids": chunk_token_ids,
+        "generated_token_count": len(chunk_token_ids),
+        "boundary_hidden_state": chunk_hidden_states[-1] if chunk_hidden_states else None,
+        "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0) if chunk_hidden_states else None,
+        "cut_reason": cut_reason,
+        "reached_eos": reached_eos,
+        **summarize_confidence(chunk_confidences),
+    }
+
+
 def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args, num_chunks=None, max_total_new_tokens=None):
     prompt_text, normalized_prefix = build_generation_prompt_text(
         tokenizer,
@@ -879,6 +1025,76 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
         "generated_chunks": generated_chunks,
         "reached_eos": reached_eos,
         "chunks": chunks,
+    }
+
+
+def run_rewrite_current_step_handoff(model, tokenizer, question, assistant_prefix, args, max_total_new_tokens=None):
+    handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
+    step_token_budget = max(1, min(int(args.rewrite_step_force_tokens), handoff_token_budget))
+    if args.large_backend == "vllm":
+        return run_rewrite_current_step_handoff_vllm(
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            args=args,
+            max_total_new_tokens=step_token_budget,
+        )
+
+    chunk_result = run_step_chunk(
+        model=model,
+        tokenizer=tokenizer,
+        question=question,
+        assistant_prefix=assistant_prefix,
+        max_new_tokens=step_token_budget,
+        args=args,
+    )
+
+    return {
+        "full_reasoning": chunk_result["full_reasoning"],
+        "generated_token_count": chunk_result["generated_token_count"],
+        "generated_chunks": 1 if chunk_result["generated_token_count"] else 0,
+        "reached_eos": chunk_result["reached_eos"],
+        "chunks": [
+            {
+                "handoff_local_chunk_id": 0,
+                "chunk_text": chunk_result["chunk_text"],
+                "generated_token_count": chunk_result["generated_token_count"],
+                "cut_reason": chunk_result["cut_reason"],
+                "reached_eos": chunk_result["reached_eos"],
+            }
+        ],
+    }
+
+
+def run_rewrite_current_step_handoff_vllm(tokenizer, question, assistant_prefix, args, max_total_new_tokens=None):
+    prompt_text, normalized_prefix = build_generation_prompt_text(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+    step_token_budget = max(1, min(int(args.rewrite_step_force_tokens), int(max_total_new_tokens or args.rewrite_step_force_tokens)))
+    completion = run_vllm_completion(args, prompt_text, step_token_budget)
+    chunk = chunk_generated_step_with_tokenizer(tokenizer, completion["text"], args)
+    if chunk is None:
+        chunk = {"chunk_text": "", "generated_token_count": 0, "cut_reason": "rewrite_step_empty", "token_ids": []}
+    full_reasoning = (normalized_prefix or "") + chunk["chunk_text"]
+    reached_eos = completion["finish_reason"] == "stop" and chunk["generated_token_count"] < step_token_budget
+    return {
+        "full_reasoning": full_reasoning,
+        "generated_token_count": chunk["generated_token_count"],
+        "generated_chunks": 1 if chunk["generated_token_count"] else 0,
+        "reached_eos": reached_eos,
+        "chunks": [
+            {
+                "handoff_local_chunk_id": 0,
+                "chunk_text": chunk["chunk_text"],
+                "generated_token_count": chunk["generated_token_count"],
+                "cut_reason": chunk["cut_reason"],
+                "reached_eos": reached_eos,
+            }
+        ],
     }
 
 
@@ -1158,7 +1374,17 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             total_small_tokens -= small_chunk["generated_token_count"]
             runtime_small_chunks.pop()
 
-            if args.handoff_mode == "rewrite_current_chunk":
+            if args.handoff_mode == "rewrite_current_step":
+                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                large_result = run_rewrite_current_step_handoff(
+                    model=large_model,
+                    tokenizer=large_tokenizer,
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    args=args,
+                    max_total_new_tokens=remaining_handoff_budget,
+                )
+            elif args.handoff_mode == "rewrite_current_chunk":
                 remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
                 large_result = run_large_handoff(
                     model=large_model,
@@ -1201,12 +1427,12 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             total_tokens += large_result["generated_token_count"]
             total_large_tokens += large_result["generated_token_count"]
             handoff_count += 1
-            if args.handoff_mode == "rewrite_current_chunk":
+            if args.handoff_mode in {"rewrite_current_chunk", "rewrite_current_step"}:
                 route_trace.append(
                     {
                         "event": "large_handoff",
                         "handoff_index": handoff_count,
-                        "mode": "rewrite_current_chunk",
+                        "mode": args.handoff_mode,
                         "generated_token_count": large_result["generated_token_count"],
                         "generated_chunks": large_result["generated_chunks"],
                         "chunks": large_result["chunks"],
