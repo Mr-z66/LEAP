@@ -45,6 +45,8 @@ trajectory_path_for() {
     svamp_test) echo "${TRAJ_DIR}/svamp_test_300_15b.pt" ;;
     math500_calib) echo "${TRAJ_DIR}/math500_calib_300_15b.pt" ;;
     math500_test) echo "${TRAJ_DIR}/math500_test_300_15b.pt" ;;
+    livecodebench_v5_calib) echo "${TRAJ_DIR}/livecodebench_v5_calib_100_15b.pt" ;;
+    livecodebench_v5_test) echo "${TRAJ_DIR}/livecodebench_v5_test_67_15b.pt" ;;
     *)
       echo "Unknown dataset key: $1" >&2
       return 1
