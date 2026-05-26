@@ -103,6 +103,12 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS, help="Max total generation tokens.")
     parser.add_argument("--min-chunk-tokens", type=int, default=DEFAULT_MIN_CHUNK_TOKENS, help="Min tokens before punctuation can end a chunk.")
     parser.add_argument("--max-chunk-tokens", type=int, default=DEFAULT_MAX_CHUNK_TOKENS, help="Forced chunk cut length.")
+    parser.add_argument(
+        "--runtime-chunking",
+        choices=["punctuation", "rsdmath"],
+        default="punctuation",
+        help="Chunk boundary used during online scheduler generation. rsdmath matches math_rsd_fallback-style safe boundaries.",
+    )
     parser.add_argument("--tail-bonus-weight", type=float, default=DEFAULT_TAIL_BONUS_WEIGHT, help="Add alpha * generation_progress to risk score.")
     parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
@@ -607,6 +613,49 @@ def chunk_generated_step_with_tokenizer(tokenizer, generated_text, args):
     }
 
 
+def chunk_generated_runtime_text_with_tokenizer(tokenizer, generated_text, args, target_chunks):
+    if args.runtime_chunking != "rsdmath":
+        return chunk_generated_text_with_tokenizer(
+            tokenizer,
+            generated_text,
+            min_chunk_tokens=args.min_chunk_tokens,
+            max_chunk_tokens=args.max_chunk_tokens,
+        )[:target_chunks]
+
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    chunks = []
+    cursor = 0
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+    while cursor < len(token_ids) and len(chunks) < target_chunks:
+        selected_ids = []
+        cut_reason = "rewrite_step_tail"
+        budget = min(len(token_ids) - cursor, max(int(args.rewrite_step_force_tokens), 1))
+        for offset in range(budget):
+            selected_ids.append(token_ids[cursor + offset])
+            current_len = len(selected_ids)
+            if current_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+                cut_reason = f"target_{boundary_mode}_rewrite_step_boundary"
+                break
+            if current_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+                cut_reason = f"{boundary_mode}_rewrite_step_boundary"
+                break
+            if current_len >= args.rewrite_step_force_tokens:
+                cut_reason = "rewrite_step_force_tokens"
+                break
+        if not selected_ids:
+            break
+        chunks.append(
+            {
+                "token_ids": selected_ids,
+                "chunk_text": decode_tokens(tokenizer, selected_ids).strip(),
+                "generated_token_count": len(selected_ids),
+                "cut_reason": cut_reason,
+            }
+        )
+        cursor += len(selected_ids)
+    return chunks
+
+
 def build_vllm_request_payload(args, prompt_text, max_new_tokens):
     model_name = args.vllm_model_name or os.path.basename(args.large_model_path.rstrip("/\\"))
     return {
@@ -997,6 +1046,36 @@ def run_step_chunk(
     }
 
 
+def run_runtime_chunk(
+    model,
+    tokenizer,
+    question,
+    assistant_prefix,
+    max_new_tokens,
+    args,
+):
+    if args.runtime_chunking == "rsdmath":
+        return run_step_chunk(
+            model=model,
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            max_new_tokens=max_new_tokens,
+            args=args,
+        )
+    return run_chunk(
+        model=model,
+        tokenizer=tokenizer,
+        question=question,
+        assistant_prefix=assistant_prefix,
+        max_new_tokens=max_new_tokens,
+        min_chunk_tokens=args.min_chunk_tokens,
+        max_chunk_tokens=args.max_chunk_tokens,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+
+
 def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_chunks=None, max_total_new_tokens=None):
     target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
     handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
@@ -1018,16 +1097,13 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
 
     for handoff_chunk_idx in range(target_chunks):
         remaining_budget = max(handoff_token_budget - total_generated_tokens, 1)
-        chunk_result = run_chunk(
+        chunk_result = run_runtime_chunk(
             model=model,
             tokenizer=tokenizer,
             question=question,
             assistant_prefix=prefix,
             max_new_tokens=remaining_budget,
-            min_chunk_tokens=args.min_chunk_tokens,
-            max_chunk_tokens=args.max_chunk_tokens,
-            system_prompt=args.system_prompt,
-            answer_type=args.answer_type,
+            args=args,
         )
         prefix = chunk_result["full_reasoning"]
         total_generated_tokens += chunk_result["generated_token_count"]
@@ -1065,20 +1141,20 @@ def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args, num_chun
 
     target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
     handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
-    max_request_tokens = max(1, min(target_chunks * args.max_chunk_tokens, handoff_token_budget))
+    chunk_budget = args.rewrite_step_force_tokens if args.runtime_chunking == "rsdmath" else args.max_chunk_tokens
+    max_request_tokens = max(1, min(target_chunks * chunk_budget, handoff_token_budget))
     completion = run_vllm_completion(args, prompt_text, max_request_tokens)
     generated_text = completion["text"]
-    chunk_candidates = chunk_generated_text_with_tokenizer(
+    selected_chunks = chunk_generated_runtime_text_with_tokenizer(
         tokenizer,
         generated_text,
-        min_chunk_tokens=args.min_chunk_tokens,
-        max_chunk_tokens=args.max_chunk_tokens,
+        args,
+        target_chunks=target_chunks,
     )
-
-    selected_chunks = chunk_candidates[:target_chunks]
     continued_text = "".join(chunk["chunk_text"] for chunk in selected_chunks)
     full_reasoning = (normalized_prefix or "") + continued_text
-    reached_eos = completion["finish_reason"] == "stop" and len(selected_chunks) == len(chunk_candidates)
+    selected_token_count = sum(chunk["generated_token_count"] for chunk in selected_chunks)
+    reached_eos = completion["finish_reason"] == "stop" and selected_token_count >= len(tokenizer.encode(generated_text, add_special_tokens=False))
 
     chunks = []
     total_generated_tokens = 0
@@ -1234,16 +1310,13 @@ def run_adaptive_large_handoff(
             continue
 
         observation_remaining_budget = max(args.max_new_tokens - current_total_tokens - total_generated_tokens, 1)
-        observation_chunk = run_chunk(
+        observation_chunk = run_runtime_chunk(
             model=small_model,
             tokenizer=small_tokenizer,
             question=question,
             assistant_prefix=prefix,
             max_new_tokens=observation_remaining_budget,
-            min_chunk_tokens=args.min_chunk_tokens,
-            max_chunk_tokens=args.max_chunk_tokens,
-            system_prompt=args.system_prompt,
-            answer_type=args.answer_type,
+            args=args,
         )
         observation_chunk["chunk_id"] = next_chunk_index + generated_chunks
         if observation_chunk["generated_token_count"] == 0:
@@ -1375,16 +1448,13 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     while total_tokens < args.max_new_tokens:
         safe_prefix = prefix
         remaining_budget = max(args.max_new_tokens - total_tokens, 1)
-        small_chunk = run_chunk(
+        small_chunk = run_runtime_chunk(
             model=small_model,
             tokenizer=small_tokenizer,
             question=question,
             assistant_prefix=prefix,
             max_new_tokens=remaining_budget,
-            min_chunk_tokens=args.min_chunk_tokens,
-            max_chunk_tokens=args.max_chunk_tokens,
-            system_prompt=args.system_prompt,
-            answer_type=args.answer_type,
+            args=args,
         )
 
         if small_chunk["generated_token_count"] == 0:

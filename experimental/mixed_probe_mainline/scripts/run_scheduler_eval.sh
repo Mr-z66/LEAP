@@ -11,6 +11,7 @@ LARGE_MODEL_PATH_GSM8K_SVAMP="${LARGE_MODEL_PATH_GSM8K_SVAMP:-/root/autodl-tmp/m
 LARGE_MODEL_PATH_MATH500="${LARGE_MODEL_PATH_MATH500:-/root/autodl-tmp/models/Qwen2.5-32B}"
 THRESHOLDS="${THRESHOLDS:-0.15,0.20,0.25,0.30,0.35,0.40,0.45}"
 DATASETS="${DATASETS:-gsm8k_test svamp_test}"
+RUNTIME_CHUNKING="${RUNTIME_CHUNKING:-rsdmath}"
 HANDOFF_MODE="${HANDOFF_MODE:-takeover}"
 REWRITE_STEP_MIN_TOKENS="${REWRITE_STEP_MIN_TOKENS:-12}"
 REWRITE_STEP_TARGET_TOKENS="${REWRITE_STEP_TARGET_TOKENS:-64}"
@@ -59,6 +60,7 @@ run_gsm8k() {
     --thresholds "${THRESHOLDS}" \
     --num-test-questions 300 \
     --max-new-tokens 768 \
+    --runtime-chunking "${RUNTIME_CHUNKING}" \
     --max-handoffs 2 \
     --handoff-mode "${HANDOFF_MODE}" \
     --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
@@ -93,6 +95,7 @@ run_svamp() {
     --thresholds "${THRESHOLDS}" \
     --num-test-questions 300 \
     --max-new-tokens 512 \
+    --runtime-chunking "${RUNTIME_CHUNKING}" \
     --max-handoffs 2 \
     --handoff-mode "${HANDOFF_MODE}" \
     --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
@@ -127,6 +130,7 @@ run_math500() {
     --thresholds "${THRESHOLDS}" \
     --num-test-questions 300 \
     --max-new-tokens 1024 \
+    --runtime-chunking "${RUNTIME_CHUNKING}" \
     --max-handoffs 2 \
     --handoff-mode "${HANDOFF_MODE}" \
     --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
