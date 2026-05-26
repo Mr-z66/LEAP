@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-path", required=True, help="Merged output .pt path.")
     parser.add_argument("--summary-path", default=None, help="Optional JSON summary output path.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite output if it already exists.")
+    parser.add_argument("--allow-duplicate-question-ids", action="store_true", help="Allow duplicate question_id values.")
     return parser.parse_args()
 
 
@@ -56,6 +57,16 @@ def main() -> None:
 
     question_ids = [question_key(row.get("question_id", "-1")) for row in merged if isinstance(row, dict)]
     duplicates = len(question_ids) - len(set(question_ids))
+    if duplicates and not args.allow_duplicate_question_ids:
+        counts = {}
+        for question_id in question_ids:
+            counts[question_id] = counts.get(question_id, 0) + 1
+        examples = {key: value for key, value in list(counts.items()) if value > 1}
+        raise ValueError(
+            f"Found {duplicates} duplicate question_id entries while merging shards. "
+            f"Examples: {dict(list(examples.items())[:10])}. "
+            "Pass --allow-duplicate-question-ids only if this is intentional."
+        )
     summary.update(
         {
             "merged_rows": len(merged),
