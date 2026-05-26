@@ -28,6 +28,10 @@ def load_shard(path: Path) -> List[dict]:
     return rows
 
 
+def question_key(value) -> str:
+    return str(value if value is not None else "-1")
+
+
 def main() -> None:
     args = parse_args()
     input_dir = Path(args.input_dir)
@@ -50,7 +54,7 @@ def main() -> None:
         merged.extend(rows)
         summary["shards"].append({"path": str(shard_path), "rows": len(rows)})
 
-    question_ids = [int(row.get("question_id", -1)) for row in merged if isinstance(row, dict)]
+    question_ids = [question_key(row.get("question_id", "-1")) for row in merged if isinstance(row, dict)]
     duplicates = len(question_ids) - len(set(question_ids))
     summary.update(
         {

@@ -22,7 +22,7 @@ import json
 import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List
 
 import torch
 
@@ -42,11 +42,15 @@ def is_trajectory_rows(rows: Any) -> bool:
     return isinstance(head, dict) and "chunks" in head and isinstance(head.get("chunks"), list)
 
 
+def question_key(value: Any) -> str:
+    return str(value if value is not None else "-1")
+
+
 def iter_chunks_from_trajectories(rows: List[dict]) -> Iterable[dict]:
     for sample in rows:
         for chunk in sample.get("chunks", []) or []:
             yield {
-                "question_id": int(sample.get("question_id", -1)),
+                "question_id": question_key(sample.get("question_id", "-1")),
                 "token_count": int(chunk.get("token_count", len(chunk.get("token_ids", []) or []))),
                 "cut_reason": str(chunk.get("cut_reason", "")),
                 "ambiguous_chunk": bool(chunk.get("ambiguous_chunk", False)),
@@ -58,7 +62,7 @@ def iter_chunks_from_trajectories(rows: List[dict]) -> Iterable[dict]:
 def iter_chunks_from_labeled_rows(rows: List[dict]) -> Iterable[dict]:
     for row in rows:
         yield {
-            "question_id": int(row.get("question_id", -1)),
+            "question_id": question_key(row.get("question_id", "-1")),
             "token_count": int(row.get("token_count", 0)),
             "cut_reason": str(row.get("cut_reason", "")),
             "ambiguous_chunk": bool(row.get("ambiguous_chunk", False)),
@@ -103,13 +107,13 @@ def inspect_one(path: Path, max_questions: int | None) -> Dict[str, Any]:
     if is_trajectory_rows(rows):
         fmt = "trajectories"
         chunk_iter = list(iter_chunks_from_trajectories(rows))
-        question_ids = sorted({int(r.get("question_id", -1)) for r in rows if isinstance(r, dict)})
+        question_ids = sorted({question_key(r.get("question_id", "-1")) for r in rows if isinstance(r, dict)})
         chunking_methods = Counter(str(r.get("chunking_method", "")) for r in rows if isinstance(r, dict))
         chunking_configs = Counter(shorten_config(r.get("chunking_config")) for r in rows if isinstance(r, dict))
     else:
         fmt = "labeled_rows"
         chunk_iter = list(iter_chunks_from_labeled_rows(rows))
-        question_ids = sorted({int(r.get("question_id", -1)) for r in rows if isinstance(r, dict)})
+        question_ids = sorted({question_key(r.get("question_id", "-1")) for r in rows if isinstance(r, dict)})
         chunking_methods = Counter(str(r.get("chunking_method", "")) for r in rows if isinstance(r, dict))
         chunking_configs = Counter(shorten_config(r.get("chunking_config")) for r in rows if isinstance(r, dict))
 
@@ -169,4 +173,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
