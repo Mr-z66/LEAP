@@ -172,6 +172,8 @@ def is_math_safe_boundary(text):
     stripped = text.strip()
     if not stripped:
         return False
+    if has_unclosed_math_delimiter(stripped):
+        return False
     if "\\boxed{" in stripped[-120:] and stripped.count("{") == stripped.count("}"):
         return True
     if re.search(r"(?:^|\n)\s*(?:therefore|thus|hence|so|then|answer)\b.*$", stripped, flags=re.IGNORECASE):
@@ -179,6 +181,14 @@ def is_math_safe_boundary(text):
     if re.search(r"(?:^|\n)\s*[-+*/\\\w\s{}^().,]+\s*=\s*-?[\d.]+(?:\s*)$", stripped):
         return True
     return bool(SAFE_END_RE.search(stripped))
+
+
+def has_unclosed_math_delimiter(text):
+    inline_open = text.count("\\(")
+    inline_close = text.count("\\)")
+    display_open = text.count("\\[")
+    display_close = text.count("\\]")
+    return inline_open > inline_close or display_open > display_close
 
 
 def is_safe_boundary(tokenizer, token_ids, boundary_mode="math"):

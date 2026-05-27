@@ -14,6 +14,15 @@ THRESHOLDS="${THRESHOLDS:-0.15,0.20,0.25,0.30,0.35,0.40,0.45}"
 DATASETS="${DATASETS:-gsm8k_test svamp_test}"
 RUNTIME_CHUNKING="${RUNTIME_CHUNKING:-rsdmath}"
 HANDOFF_MODE="${HANDOFF_MODE:-takeover}"
+ADAPTIVE_LARGE_HANDOFF="${ADAPTIVE_LARGE_HANDOFF:-1}"
+MAX_HANDOFFS="${MAX_HANDOFFS:-2}"
+LARGE_HANDOFF_CHUNKS="${LARGE_HANDOFF_CHUNKS:-2}"
+MIN_LARGE_HANDOFF_CHUNKS="${MIN_LARGE_HANDOFF_CHUNKS:-4}"
+MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS="${MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS:-4}"
+HANDOFF_RECOVERY_THRESHOLD="${HANDOFF_RECOVERY_THRESHOLD:-0.25}"
+COOLDOWN_CHUNKS="${COOLDOWN_CHUNKS:-2}"
+TRACE_TAG="${TRACE_TAG:-mixed_probe}"
+EXTRA_SCHEDULER_ARGS="${EXTRA_SCHEDULER_ARGS:-}"
 REWRITE_STEP_MIN_TOKENS="${REWRITE_STEP_MIN_TOKENS:-12}"
 REWRITE_STEP_TARGET_TOKENS="${REWRITE_STEP_TARGET_TOKENS:-64}"
 REWRITE_STEP_FORCE_TOKENS="${REWRITE_STEP_FORCE_TOKENS:-160}"
@@ -32,6 +41,11 @@ export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 
 mkdir -p result/traces result/logs/mixed_probe_mainline
 
+ADAPTIVE_LARGE_HANDOFF_ARGS=""
+if [[ "${ADAPTIVE_LARGE_HANDOFF}" == "1" ]]; then
+  ADAPTIVE_LARGE_HANDOFF_ARGS="--adaptive-large-handoff"
+fi
+
 if [[ ! -f "${TRAIN_LABEL_PATH}" ]]; then
   echo "[error] missing merged training labels: ${TRAIN_LABEL_PATH}" >&2
   echo "[hint] run first:" >&2
@@ -48,7 +62,7 @@ fi
 
 run_gsm8k() {
   local eval_path="${TRAJ_DIR}/gsm8k_test_300_15b.pt"
-  local trace_path="result/traces/observe_rollback_traces_mixed_probe_gsm8k_test.json"
+  local trace_path="result/traces/observe_rollback_traces_${TRACE_TAG}_gsm8k_test.json"
   local log_path="result/logs/mixed_probe_mainline/scheduler_gsm8k_test_$(date +%Y%m%d_%H%M%S).log"
   [[ -f "${eval_path}" ]] || { echo "[skip] missing trajectory: ${eval_path}"; return 0; }
   python -m core_package.schedulers.simulate_observe_rollback_scheduler \
@@ -62,28 +76,29 @@ run_gsm8k() {
     --num-test-questions 300 \
     --max-new-tokens 768 \
     --runtime-chunking "${RUNTIME_CHUNKING}" \
-    --max-handoffs 2 \
+    --max-handoffs "${MAX_HANDOFFS}" \
     --handoff-mode "${HANDOFF_MODE}" \
     --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
     --rewrite-step-target-tokens "${REWRITE_STEP_TARGET_TOKENS}" \
     --rewrite-step-force-tokens "${REWRITE_STEP_FORCE_TOKENS}" \
     --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
-    --large-handoff-chunks 2 \
-    --adaptive-large-handoff \
-    --min-large-handoff-chunks 4 \
-    --max-adaptive-large-handoff-chunks 4 \
-    --handoff-recovery-threshold 0.25 \
-    --cooldown-chunks 2 \
+    --large-handoff-chunks "${LARGE_HANDOFF_CHUNKS}" \
+    ${ADAPTIVE_LARGE_HANDOFF_ARGS} \
+    --min-large-handoff-chunks "${MIN_LARGE_HANDOFF_CHUNKS}" \
+    --max-adaptive-large-handoff-chunks "${MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS}" \
+    --handoff-recovery-threshold "${HANDOFF_RECOVERY_THRESHOLD}" \
+    --cooldown-chunks "${COOLDOWN_CHUNKS}" \
     --answer-type gsm8k_boxed_numeric \
     --small-model-params-b 1.5 \
     --large-model-params-b 7.0 \
     --trace-export-path "${trace_path}" \
+    ${EXTRA_SCHEDULER_ARGS} \
     2>&1 | tee "${log_path}"
 }
 
 run_svamp() {
   local eval_path="${TRAJ_DIR}/svamp_test_300_15b.pt"
-  local trace_path="result/traces/observe_rollback_traces_mixed_probe_svamp_test.json"
+  local trace_path="result/traces/observe_rollback_traces_${TRACE_TAG}_svamp_test.json"
   local log_path="result/logs/mixed_probe_mainline/scheduler_svamp_test_$(date +%Y%m%d_%H%M%S).log"
   [[ -f "${eval_path}" ]] || { echo "[skip] missing trajectory: ${eval_path}"; return 0; }
   python -m core_package.schedulers.simulate_observe_rollback_scheduler_svamp \
@@ -97,28 +112,29 @@ run_svamp() {
     --num-test-questions 300 \
     --max-new-tokens 512 \
     --runtime-chunking "${RUNTIME_CHUNKING}" \
-    --max-handoffs 2 \
+    --max-handoffs "${MAX_HANDOFFS}" \
     --handoff-mode "${HANDOFF_MODE}" \
     --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
     --rewrite-step-target-tokens "${REWRITE_STEP_TARGET_TOKENS}" \
     --rewrite-step-force-tokens "${REWRITE_STEP_FORCE_TOKENS}" \
     --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
-    --large-handoff-chunks 2 \
-    --adaptive-large-handoff \
-    --min-large-handoff-chunks 4 \
-    --max-adaptive-large-handoff-chunks 4 \
-    --handoff-recovery-threshold 0.25 \
-    --cooldown-chunks 2 \
+    --large-handoff-chunks "${LARGE_HANDOFF_CHUNKS}" \
+    ${ADAPTIVE_LARGE_HANDOFF_ARGS} \
+    --min-large-handoff-chunks "${MIN_LARGE_HANDOFF_CHUNKS}" \
+    --max-adaptive-large-handoff-chunks "${MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS}" \
+    --handoff-recovery-threshold "${HANDOFF_RECOVERY_THRESHOLD}" \
+    --cooldown-chunks "${COOLDOWN_CHUNKS}" \
     --answer-type svamp_boxed_numeric \
     --small-model-params-b 1.5 \
     --large-model-params-b 7.0 \
     --trace-export-path "${trace_path}" \
+    ${EXTRA_SCHEDULER_ARGS} \
     2>&1 | tee "${log_path}"
 }
 
 run_math500() {
   local eval_path="${TRAJ_DIR}/math500_test_300_15b.pt"
-  local trace_path="result/traces/observe_rollback_traces_mixed_probe_math500_test.json"
+  local trace_path="result/traces/observe_rollback_traces_${TRACE_TAG}_math500_test.json"
   local log_path="result/logs/mixed_probe_mainline/scheduler_math500_test_$(date +%Y%m%d_%H%M%S).log"
   [[ -f "${eval_path}" ]] || { echo "[skip] missing trajectory: ${eval_path}"; return 0; }
   python -m core_package.schedulers.simulate_observe_rollback_scheduler \
@@ -132,22 +148,23 @@ run_math500() {
     --num-test-questions 300 \
     --max-new-tokens 1024 \
     --runtime-chunking "${RUNTIME_CHUNKING}" \
-    --max-handoffs 2 \
+    --max-handoffs "${MAX_HANDOFFS}" \
     --handoff-mode "${HANDOFF_MODE}" \
     --rewrite-step-min-tokens "${REWRITE_STEP_MIN_TOKENS}" \
     --rewrite-step-target-tokens "${REWRITE_STEP_TARGET_TOKENS}" \
     --rewrite-step-force-tokens "${REWRITE_STEP_FORCE_TOKENS}" \
     --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
-    --large-handoff-chunks 2 \
-    --adaptive-large-handoff \
-    --min-large-handoff-chunks 4 \
-    --max-adaptive-large-handoff-chunks 4 \
-    --handoff-recovery-threshold 0.25 \
-    --cooldown-chunks 2 \
+    --large-handoff-chunks "${LARGE_HANDOFF_CHUNKS}" \
+    ${ADAPTIVE_LARGE_HANDOFF_ARGS} \
+    --min-large-handoff-chunks "${MIN_LARGE_HANDOFF_CHUNKS}" \
+    --max-adaptive-large-handoff-chunks "${MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS}" \
+    --handoff-recovery-threshold "${HANDOFF_RECOVERY_THRESHOLD}" \
+    --cooldown-chunks "${COOLDOWN_CHUNKS}" \
     --answer-type math500_qwen_boxed \
     --small-model-params-b 1.5 \
     --large-model-params-b "${LARGE_MODEL_PARAMS_B_MATH500}" \
     --trace-export-path "${trace_path}" \
+    ${EXTRA_SCHEDULER_ARGS} \
     2>&1 | tee "${log_path}"
 }
 

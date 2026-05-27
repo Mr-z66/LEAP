@@ -52,6 +52,17 @@ def first_trigger_event(question_row: Dict[str, Any]) -> Optional[Dict[str, Any]
     return None
 
 
+def discarded_small_tokens(question_row: Dict[str, Any]) -> int:
+    stored = question_row.get("small_discarded_tokens")
+    if stored is not None:
+        return int(stored)
+    total = 0
+    for event in question_row.get("route_trace", []) or []:
+        if event.get("event") == "small_observe_rollback":
+            total += int(event.get("generated_token_count", 0))
+    return total
+
+
 def summarize_threshold(trace_name: str, row: Dict[str, Any]) -> Dict[str, Any]:
     questions = row.get("per_question_rows", []) or []
     triggered = [q for q in questions if q.get("triggered")]
@@ -66,6 +77,27 @@ def summarize_threshold(trace_name: str, row: Dict[str, Any]) -> Dict[str, Any]:
     first_events = [(q, ev) for q, ev in first_events if ev is not None]
     first_reasons = Counter(str(ev.get("cut_reason", "")) for _, ev in first_events)
     handoff_counts = Counter(int(q.get("handoff_count", 0)) for q in questions)
+    small_accepted_values = [q.get("small_generated_tokens") for q in questions]
+    small_discarded_values = [discarded_small_tokens(q) for q in questions]
+    small_actual_values = [
+        q.get("small_actual_generated_tokens", int(q.get("small_generated_tokens", 0)) + discarded_small_tokens(q))
+        for q in questions
+    ]
+    large_values = [q.get("large_generated_tokens") for q in questions]
+    avg_small_accepted = avg(small_accepted_values)
+    avg_small_actual = avg(small_actual_values)
+    avg_small_discarded = avg(small_discarded_values)
+    avg_large = avg(large_values)
+    small_params = safe_float(row.get("small_model_params_b"))
+    large_params = safe_float(row.get("large_model_params_b"))
+    recomputed_cost = None
+    if small_params is not None and large_params is not None and avg_small_actual is not None and avg_large is not None:
+        recomputed_cost = small_params * avg_small_actual + large_params * avg_large
+    gain = safe_float(row.get("scheduled_gain_over_small"))
+    cost = recomputed_cost if recomputed_cost is not None else safe_float(row.get("avg_param_weighted_token_cost"))
+    cost_per_gain_point = None
+    if gain is not None and gain > 0 and cost is not None:
+        cost_per_gain_point = cost / (gain * 100.0)
 
     return {
         "trace": trace_name,
@@ -88,10 +120,13 @@ def summarize_threshold(trace_name: str, row: Dict[str, Any]) -> Dict[str, Any]:
         "first_trigger_progress_median": med(ev.get("progress_ratio") for _, ev in first_events),
         "first_trigger_score_median": med(ev.get("combined_score") for _, ev in first_events),
         "first_trigger_cut_reasons": dict(first_reasons.most_common(8)),
-        "avg_small_generated_tokens": row.get("avg_small_generated_tokens"),
-        "avg_large_generated_tokens": row.get("avg_large_generated_tokens"),
+        "avg_small_generated_tokens": avg_small_accepted,
+        "avg_small_actual_generated_tokens": avg_small_actual,
+        "avg_small_discarded_tokens": avg_small_discarded,
+        "avg_large_generated_tokens": avg_large,
         "avg_large_takeover_tokens": row.get("avg_large_takeover_tokens"),
-        "avg_param_weighted_token_cost": row.get("avg_param_weighted_token_cost"),
+        "avg_param_weighted_token_cost": cost,
+        "cost_per_gain_point": cost_per_gain_point,
         "latency_mean_s": row.get("latency_mean_s"),
         "latency_median_s": row.get("latency_median_s"),
         "latency_p90_s": row.get("latency_p90_s"),
@@ -150,8 +185,12 @@ def write_csv(path: Path, summaries: List[Dict[str, Any]]) -> None:
         "avg_handoff_count",
         "first_trigger_progress_median",
         "first_trigger_score_median",
+        "avg_small_generated_tokens",
+        "avg_small_actual_generated_tokens",
+        "avg_small_discarded_tokens",
         "avg_large_generated_tokens",
         "avg_param_weighted_token_cost",
+        "cost_per_gain_point",
         "latency_mean_s",
         "latency_p90_s",
     ]
@@ -160,6 +199,13 @@ def write_csv(path: Path, summaries: List[Dict[str, Any]]) -> None:
         writer.writeheader()
         for summary in summaries:
             writer.writerow({field: summary.get(field) for field in fields})
+
+
+def fmt_float(value: Any, digits: int = 4, default: str = "nan") -> str:
+    cleaned = safe_float(value)
+    if cleaned is None:
+        return default
+    return f"{cleaned:.{digits}f}"
 
 
 def main() -> None:
@@ -188,12 +234,16 @@ def main() -> None:
     for summary in summaries:
         print(
             f"{summary['trace']} | thr={summary['threshold']} | "
-            f"acc={summary['scheduled_accuracy']:.4f} | gain={summary['scheduled_gain_over_small']:.4f} | "
-            f"trigger={summary['trigger_rate']:.4f} | "
+            f"acc={fmt_float(summary['scheduled_accuracy'])} | gain={fmt_float(summary['scheduled_gain_over_small'])} | "
+            f"trigger={fmt_float(summary['trigger_rate'])} | "
             f"err={summary['error_questions_triggered']}/{summary['error_questions_total']} | "
-            f"false_alarm={summary['false_alarm_correct_question_rate']:.4f} | "
+            f"false_alarm={fmt_float(summary['false_alarm_correct_question_rate'])} | "
             f"fixed={summary['fixed_error_questions']} | harmed={summary['harmed_correct_questions']} | "
-            f"cost={summary['avg_param_weighted_token_cost']:.1f} | lat={summary['latency_mean_s']:.2f}s"
+            f"small_actual={fmt_float(summary['avg_small_actual_generated_tokens'], 1)} | "
+            f"large={fmt_float(summary['avg_large_generated_tokens'], 1)} | "
+            f"cost={fmt_float(summary['avg_param_weighted_token_cost'], 1)} | "
+            f"cost/+1pp={fmt_float(summary['cost_per_gain_point'], 1)} | "
+            f"lat={fmt_float(summary['latency_mean_s'], 2)}s"
         )
 
     if args.csv_path:

@@ -1363,6 +1363,8 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     prefix = None
     total_tokens = 0
     total_small_tokens = 0
+    total_small_actual_tokens = 0
+    total_small_discarded_tokens = 0
     total_large_tokens = 0
     handoff_count = 0
     chunk_index = 0
@@ -1393,6 +1395,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
 
         total_tokens += small_chunk["generated_token_count"]
         total_small_tokens += small_chunk["generated_token_count"]
+        total_small_actual_tokens += small_chunk["generated_token_count"]
         progress_ratio = total_tokens / max(args.max_new_tokens, 1)
         small_chunk["chunk_id"] = chunk_index
         runtime_small_chunks.append(small_chunk)
@@ -1442,6 +1445,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             # Roll back the discarded small-model chunk before applying the large-model handoff.
             total_tokens -= small_chunk["generated_token_count"]
             total_small_tokens -= small_chunk["generated_token_count"]
+            total_small_discarded_tokens += small_chunk["generated_token_count"]
             runtime_small_chunks.pop()
 
             if args.handoff_mode == "rewrite_current_step":
@@ -1583,6 +1587,8 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         "triggered": triggered,
         "handoff_count": handoff_count,
         "small_generated_tokens": total_small_tokens,
+        "small_actual_generated_tokens": total_small_actual_tokens,
+        "small_discarded_tokens": total_small_discarded_tokens,
         "large_generated_tokens": total_large_tokens,
         "avg_trigger_score": safe_mean(trigger_scores),
         "avg_trigger_progress": safe_mean(trigger_progresses),
@@ -1600,6 +1606,8 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
     handoff_counts = []
     latencies = []
     small_generated_tokens = []
+    small_actual_generated_tokens = []
+    small_discarded_tokens = []
     large_generated_tokens = []
     large_takeover_tokens = []
     param_weighted_token_costs = []
@@ -1631,13 +1639,17 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
         latencies.append(latency_s)
 
         small_tokens = int(result["small_generated_tokens"])
+        small_actual_tokens = int(result["small_actual_generated_tokens"])
+        discarded_small_tokens = int(result["small_discarded_tokens"])
         large_tokens = int(result["large_generated_tokens"])
         small_generated_tokens.append(small_tokens)
+        small_actual_generated_tokens.append(small_actual_tokens)
+        small_discarded_tokens.append(discarded_small_tokens)
         large_generated_tokens.append(large_tokens)
         param_weighted_token_cost = None
         if args.small_model_params_b is not None and args.large_model_params_b is not None:
             param_weighted_token_cost = (
-                args.small_model_params_b * small_tokens
+                args.small_model_params_b * small_actual_tokens
                 + args.large_model_params_b * large_tokens
             )
             param_weighted_token_costs.append(param_weighted_token_cost)
@@ -1666,6 +1678,8 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
                 "avg_trigger_score": result["avg_trigger_score"],
                 "avg_trigger_progress": result["avg_trigger_progress"],
                 "small_generated_tokens": small_tokens,
+                "small_actual_generated_tokens": small_actual_tokens,
+                "small_discarded_tokens": discarded_small_tokens,
                 "large_generated_tokens": large_tokens,
                 "param_weighted_token_cost": param_weighted_token_cost,
                 "small_final_answer": record["small_final_answer"],
@@ -1690,6 +1704,8 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
         "false_alarm_correct_question_rate": false_alarm_correct_questions / correct_questions if correct_questions else float("nan"),
         "avg_handoff_count": safe_mean(handoff_counts),
         "avg_small_generated_tokens": safe_mean(small_generated_tokens),
+        "avg_small_actual_generated_tokens": safe_mean(small_actual_generated_tokens),
+        "avg_small_discarded_tokens": safe_mean(small_discarded_tokens),
         "avg_large_generated_tokens": safe_mean(large_generated_tokens),
         "avg_large_takeover_tokens": safe_mean(large_takeover_tokens),
         "latency_mean_s": safe_mean(latencies),
@@ -1751,7 +1767,9 @@ def print_summary(summary):
     print(f"False-alarm correct-question rate: {summary['false_alarm_correct_question_rate']:.4f}")
     print(f"Avg handoff count: {summary['avg_handoff_count']:.2f}")
     print(f"Avg trigger progress: {summary['avg_trigger_progress']:.4f}")
-    print(f"Avg small generated tokens: {summary['avg_small_generated_tokens']:.2f}")
+    print(f"Avg small accepted tokens: {summary['avg_small_generated_tokens']:.2f}")
+    print(f"Avg small actual generated tokens: {summary['avg_small_actual_generated_tokens']:.2f}")
+    print(f"Avg small discarded tokens: {summary['avg_small_discarded_tokens']:.2f}")
     print(f"Avg large generated tokens: {summary['avg_large_generated_tokens']:.2f}")
     print(f"Avg large takeover tokens: {summary['avg_large_takeover_tokens']:.2f}")
     print(
