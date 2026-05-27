@@ -8,7 +8,8 @@ TRAJ_DIR="${TRAJ_DIR:-dataset/mixed_probe_trajectories_fallback}"
 ARTIFACT_PATH="${ARTIFACT_PATH:-result/artifacts/probe_artifact_mixed_gsm8k_svamp.pt}"
 SMALL_MODEL_PATH="${SMALL_MODEL_PATH:-/root/autodl-tmp/models/Qwen2.5-1.5B}"
 LARGE_MODEL_PATH_GSM8K_SVAMP="${LARGE_MODEL_PATH_GSM8K_SVAMP:-/root/autodl-tmp/models/Qwen2.5-7B}"
-LARGE_MODEL_PATH_MATH500="${LARGE_MODEL_PATH_MATH500:-/root/autodl-tmp/models/Qwen2.5-32B}"
+LARGE_MODEL_PATH_MATH500="${LARGE_MODEL_PATH_MATH500:-/root/autodl-tmp/models/Qwen2.5-7B}"
+LARGE_MODEL_PARAMS_B_MATH500="${LARGE_MODEL_PARAMS_B_MATH500:-7.0}"
 THRESHOLDS="${THRESHOLDS:-0.15,0.20,0.25,0.30,0.35,0.40,0.45}"
 DATASETS="${DATASETS:-gsm8k_test svamp_test}"
 RUNTIME_CHUNKING="${RUNTIME_CHUNKING:-rsdmath}"
@@ -145,7 +146,7 @@ run_math500() {
     --cooldown-chunks 2 \
     --answer-type math500_qwen_boxed \
     --small-model-params-b 1.5 \
-    --large-model-params-b 32.0 \
+    --large-model-params-b "${LARGE_MODEL_PARAMS_B_MATH500}" \
     --trace-export-path "${trace_path}" \
     2>&1 | tee "${log_path}"
 }
