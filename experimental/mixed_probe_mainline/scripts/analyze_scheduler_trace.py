@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("trace_paths", nargs="+", help="Scheduler trace JSON files.")
     parser.add_argument("--csv-path", default=None, help="Optional CSV output path.")
     parser.add_argument("--json-path", default=None, help="Optional JSON output path.")
+    parser.add_argument("--thresholds", default=None, help="Optional comma-separated threshold filter.")
     parser.add_argument("--top-k", type=int, default=20, help="Examples per error bucket.")
     return parser.parse_args()
 
@@ -163,6 +164,9 @@ def write_csv(path: Path, summaries: List[Dict[str, Any]]) -> None:
 
 def main() -> None:
     args = parse_args()
+    threshold_filter = None
+    if args.thresholds:
+        threshold_filter = {float(part.strip()) for part in args.thresholds.split(",") if part.strip()}
     summaries: List[Dict[str, Any]] = []
     details: Dict[str, Any] = {}
     for raw_path in args.trace_paths:
@@ -172,6 +176,8 @@ def main() -> None:
             raise ValueError(f"Expected trace list in {path}")
         details[str(path)] = {}
         for row in data:
+            if threshold_filter is not None and float(row.get("threshold")) not in threshold_filter:
+                continue
             summary = summarize_threshold(path.name, row)
             summaries.append(summary)
             details[str(path)][str(row.get("threshold"))] = {
