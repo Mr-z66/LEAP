@@ -23,8 +23,14 @@ DEFAULT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "result", "analysis_outputs", "l
 
 RAW_SIGNALS = {
     "entropy": "final_entropy",
+    "mean_entropy": "mean_entropy",
+    "max_entropy": "max_entropy",
     "neg_top1_prob": "final_top1_prob",
+    "neg_mean_top1_prob": "mean_top1_prob",
+    "neg_min_top1_prob": "min_top1_prob",
     "neg_margin": "final_margin",
+    "neg_mean_margin": "mean_margin",
+    "neg_min_margin": "min_margin",
 }
 
 
@@ -193,7 +199,7 @@ def feature_matrix(rows, feature_spec):
 def raw_signal_scores(rows, signal_name):
     key = RAW_SIGNALS[signal_name]
     values = np.asarray([scalar_value(row["chunk"], key) for row in rows], dtype=np.float64)
-    if signal_name in {"neg_top1_prob", "neg_margin"}:
+    if signal_name.startswith("neg_"):
         values = -values
     return values
 

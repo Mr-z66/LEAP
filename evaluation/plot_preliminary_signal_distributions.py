@@ -12,15 +12,27 @@ DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "dataset", "mixed_probe_labels_f
 
 RAW_SCORE_FIELDS = {
     "entropy": ("final_entropy", -1.0),
+    "mean_entropy": ("mean_entropy", -1.0),
+    "max_entropy": ("max_entropy", -1.0),
     "top1": ("final_top1_prob", 1.0),
+    "mean_top1": ("mean_top1_prob", 1.0),
+    "min_top1": ("min_top1_prob", 1.0),
     "margin": ("final_margin", 1.0),
+    "mean_margin": ("mean_margin", 1.0),
+    "min_margin": ("min_margin", 1.0),
 }
 
 
 PANEL_TITLES = {
     "entropy": "Entropy confidence",
+    "mean_entropy": "Mean entropy conf.",
+    "max_entropy": "Max entropy conf.",
     "top1": "Top-1 probability",
+    "mean_top1": "Mean top-1 prob.",
+    "min_top1": "Min top-1 prob.",
     "margin": "Logit margin",
+    "mean_margin": "Mean margin",
+    "min_margin": "Min margin",
     "boundary": "Boundary probe",
     "mean": "Mean probe",
     "boundary+mean": "Boundary+mean probe",

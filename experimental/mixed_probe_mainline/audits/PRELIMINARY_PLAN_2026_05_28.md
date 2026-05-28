@@ -15,7 +15,8 @@ Preliminary should make one focused claim:
 
 > Surface-level token uncertainty signals such as entropy, top-1 probability,
 > and margin do not reliably separate correct and erroneous reasoning chunks.
-> Hidden states provide a stronger signal, motivating a learned probe for
+> A lightweight diagnostic probe over hidden states reveals stronger internal
+> correctness information, motivating hidden-state probing for
 > observe-and-rollback routing.
 
 ## Current State
@@ -52,8 +53,10 @@ The preliminary experiment should answer this question:
 
 The answer should be:
 
-1. Raw token uncertainty is too weak or unstable.
-2. Hidden states carry richer information about reasoning validity.
+1. Raw token uncertainty is too weak or unstable, even before any probe is
+   trained.
+2. Hidden states carry richer information about reasoning validity, as shown by
+   a lightweight diagnostic probe.
 3. Therefore, LEAP should use a hidden-state probe rather than a hand-written
    entropy threshold.
 
@@ -125,19 +128,82 @@ One-sentence positioning:
 
 ## Preliminary Experiments To Prioritize
 
-### Experiment P1: Surface Signals vs Hidden States
+### Experiment P1a: Raw Surface Signals
 
 Goal:
 
-- Show that raw uncertainty signals are weak for chunk-level error detection.
-- Show that hidden states separate correct and erroneous chunks better.
-- Motivate why the method uses a learned hidden-state probe.
+- Make the motivation independent of the final trained mixed probe.
+- Directly compare correct and erroneous chunks using only raw generation
+  signals.
+- Show that entropy/top1/margin are weak proxies for chunk correctness.
 
 Run on:
 
 - GSM8K calibration labels.
 - SVAMP calibration labels.
-- Mixed GSM8K+SVAMP calibration labels.
+- MATH500 calibration labels.
+- Mixed GSM8K+SVAMP+MATH500 calibration labels.
+
+Main figure command template:
+
+```bash
+python -m evaluation.plot_preliminary_signal_distributions \
+  --label-path <LABEL_PATH> \
+  --panels entropy,top1,margin \
+  --output-prefix <OUTPUT_PREFIX>
+```
+
+Concrete figure commands:
+
+```bash
+python -m evaluation.plot_preliminary_signal_distributions \
+  --label-path dataset/mixed_probe_labels_fallback_second_pass/gsm8k_calib_labels.pt \
+  --panels entropy,top1,margin \
+  --output-prefix gsm8k_calib_surface_preliminary
+```
+
+```bash
+python -m evaluation.plot_preliminary_signal_distributions \
+  --label-path dataset/mixed_probe_labels_fallback_second_pass/svamp_calib_labels.pt \
+  --panels entropy,top1,margin \
+  --output-prefix svamp_calib_surface_preliminary
+```
+
+```bash
+python -m evaluation.plot_preliminary_signal_distributions \
+  --label-path dataset/mixed_probe_labels_fallback_second_pass/math500_calib_labels.pt \
+  --panels entropy,top1,margin \
+  --output-prefix math500_calib_surface_preliminary
+```
+
+```bash
+python -m evaluation.plot_preliminary_signal_distributions \
+  --label-path dataset/mixed_gsm8k_svamp_math500_calib_labels.pt \
+  --panels entropy,top1,margin \
+  --output-prefix mixed_gsm8k_svamp_math500_surface_preliminary
+```
+
+Preliminary takeaway:
+
+> Raw uncertainty is a convenient online signal, but it is not a reliable
+> correctness detector. Wrong chunks can be generated with high local
+> confidence, so entropy-based routing is under-motivated for reasoning.
+
+### Experiment P1b: Diagnostic Hidden-State Probe
+
+Goal:
+
+- Ask whether correctness information exists internally after raw surface
+  signals fail.
+- Train lightweight diagnostic probes on hidden states for evidence only.
+- Avoid presenting this as the final scheduler probe until `Method`.
+
+Run on:
+
+- GSM8K calibration labels.
+- SVAMP calibration labels.
+- MATH500 calibration labels.
+- Mixed GSM8K+SVAMP+MATH500 calibration labels.
 
 Main command template:
 
@@ -177,12 +243,22 @@ python -m evaluation.compare_latent_uncertainty_signals \
 
 ```bash
 python -m evaluation.compare_latent_uncertainty_signals \
-  --label-path dataset/mixed_gsm8k_svamp_calib_labels.pt \
+  --label-path dataset/mixed_probe_labels_fallback_second_pass/math500_calib_labels.pt \
   --feature-specs boundary,mean,boundary+mean \
   --raw-signals entropy,neg_top1_prob,neg_margin \
   --classifier logreg \
   --trigger-rates 0.05,0.10,0.20 \
-  --output-prefix mixed_gsm8k_svamp_signal_comparison_20260528
+  --output-prefix math500_calib_signal_comparison_20260528
+```
+
+```bash
+python -m evaluation.compare_latent_uncertainty_signals \
+  --label-path dataset/mixed_gsm8k_svamp_math500_calib_labels.pt \
+  --feature-specs boundary,mean,boundary+mean \
+  --raw-signals entropy,neg_top1_prob,neg_margin \
+  --classifier logreg \
+  --trigger-rates 0.05,0.10,0.20 \
+  --output-prefix mixed_gsm8k_svamp_math500_signal_comparison_20260528
 ```
 
 Report:
@@ -196,7 +272,7 @@ Report:
 Decision rule:
 
 - If `boundary+mean` wins or is consistently top-tier, use it as the default
-  preliminary signal.
+  diagnostic latent signal.
 - If `boundary` and `mean` split by dataset, report `boundary+mean` as the robust
   combined signal.
 
@@ -209,19 +285,21 @@ Goal:
 
 Recommended figure:
 
-- Left: entropy or margin score distributions for correct/error chunks.
-- Right: `boundary+mean` probe score distributions for correct/error chunks.
+- Figure 1: raw `entropy`, `top1`, and `margin` distributions only. This figure
+  should appear before any probe is introduced.
+- Figure 2: diagnostic hidden-state probe distributions: `boundary`, `mean`, and
+  `boundary+mean`.
 
 Preferred dataset:
 
-- GSM8K calibration split first, because the labels and prior artifacts are
-  already most stable.
+- GSM8K calibration split first, then mixed GSM8K+SVAMP+MATH500.
 
 Interpretation to aim for:
 
-> Entropy assigns overlapping scores to correct and erroneous reasoning chunks,
-> while the hidden-state probe shifts erroneous chunks toward the high-risk
-> region. This motivates hidden-state probing as the routing signal.
+> Surface confidence assigns overlapping scores to correct and erroneous
+> reasoning chunks. After this failure case is established, hidden-state
+> diagnostics reveal stronger separability, motivating LEAP's learned routing
+> signal.
 
 ### Experiment P3: Trigger-Budget Motivation
 
@@ -370,11 +448,13 @@ Interpretation:
 Suggested preliminary subsection structure:
 
 1. `Surface Uncertainty Is Insufficient`
-   - Show entropy/top1/margin results.
+   - Show raw entropy/top1/margin distributions before introducing any probe.
    - Main claim: these scalar signals do not reliably separate wrong reasoning
      chunks from correct chunks.
 
 2. `Hidden States Encode Reasoning Validity`
+   - Introduce hidden-state probing as a diagnostic test after surface signals
+     fail.
    - Show boundary, mean, and boundary+mean results.
    - Main claim: hidden states give a much stronger chunk-error signal.
 
@@ -392,9 +472,10 @@ Avoid in preliminary:
 
 ## Tonight's Updated Checklist
 
-- [ ] Run or refresh signal comparison tables for GSM8K, SVAMP, and mixed labels.
-- [ ] Build one preliminary table: raw uncertainty vs hidden-state probes.
-- [ ] Build one visual separability figure: entropy vs `boundary+mean`.
+- [ ] Run or refresh signal comparison tables for GSM8K, SVAMP, MATH500, and mixed labels.
+- [ ] Build Figure 1: raw surface distributions only.
+- [ ] Build Figure 2: diagnostic latent probe distributions.
+- [ ] Build one preliminary table: raw uncertainty vs hidden-state diagnostics.
 - [ ] Build one trigger-budget table or curve: Recall@trigger-rate.
 - [ ] Write 1-2 preliminary paragraphs that motivate hidden-state probing.
 - [ ] Move scheduler/fixed4/rescue-harm material to the later experiment plan.
