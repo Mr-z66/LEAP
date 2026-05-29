@@ -60,6 +60,18 @@ def parse_args():
     parser.add_argument("--random-state", type=int, default=42, help="Question split seed.")
     parser.add_argument("--mlp-hidden-layers", default="128,32", help="Comma-separated MLP hidden sizes.")
     parser.add_argument("--mlp-max-iter", type=int, default=200, help="Max MLP iterations.")
+    parser.add_argument("--max-rows", type=int, default=None, help="Optional cap after filtering valid chunks.")
+    parser.add_argument(
+        "--balance-labels",
+        action="store_true",
+        help="Downsample the majority class after loading rows for clearer distribution plots.",
+    )
+    parser.add_argument(
+        "--balance-ratio",
+        type=float,
+        default=1.0,
+        help="Majority-to-minority ratio used with --balance-labels.",
+    )
     parser.add_argument("--bins", type=int, default=18, help="Histogram bin count.")
     parser.add_argument(
         "--raw-scale",
@@ -123,6 +135,31 @@ def probe_correctness_scores(rows, train_idx, test_idx, feature_spec, args):
     model.fit(x_train, y_train_error)
     error_scores = model.predict_proba(x_test)[:, 1]
     return 100.0 * (1.0 - error_scores)
+
+
+def subset_rows(rows, args):
+    if not args.balance_labels and args.max_rows is None:
+        return rows
+
+    rng = np.random.default_rng(args.random_state)
+    indices = np.arange(len(rows))
+
+    if args.balance_labels:
+        correct = np.asarray([index for index, row in enumerate(rows) if row["error_label"] == 0], dtype=np.int64)
+        wrong = np.asarray([index for index, row in enumerate(rows) if row["error_label"] == 1], dtype=np.int64)
+        if len(correct) and len(wrong):
+            minority = min(len(correct), len(wrong))
+            correct_keep = min(len(correct), int(np.ceil(minority * args.balance_ratio)))
+            wrong_keep = min(len(wrong), int(np.ceil(minority * args.balance_ratio)))
+            correct = rng.choice(correct, size=correct_keep, replace=False)
+            wrong = rng.choice(wrong, size=wrong_keep, replace=False)
+            indices = np.concatenate([correct, wrong])
+
+    if args.max_rows is not None and len(indices) > args.max_rows:
+        indices = rng.choice(indices, size=args.max_rows, replace=False)
+
+    indices = np.sort(indices)
+    return [rows[int(index)] for index in indices]
 
 
 def collect_panel_scores(rows, train_idx, test_idx, panel, args):
@@ -219,6 +256,7 @@ def main():
     dataset = torch.load(args.label_path, weights_only=False)
     question_records = build_question_records(dataset, args.label_key)
     rows = build_rows(question_records, args.label_key)
+    rows = subset_rows(rows, args)
     train_idx, test_idx = split_rows(rows, args.test_size, args.random_state)
     labels = np.asarray([1 - rows[i]["error_label"] for i in test_idx], dtype=np.int64)
 
