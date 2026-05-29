@@ -61,9 +61,22 @@ def parse_args():
     parser.add_argument("--mlp-hidden-layers", default="128,32", help="Comma-separated MLP hidden sizes.")
     parser.add_argument("--mlp-max-iter", type=int, default=200, help="Max MLP iterations.")
     parser.add_argument("--bins", type=int, default=18, help="Histogram bin count.")
+    parser.add_argument(
+        "--xlim",
+        default="0,100",
+        help="Comma-separated x-axis limits after score normalization, e.g. 70,100.",
+    )
+    parser.add_argument("--density", action="store_true", help="Plot normalized density instead of raw counts.")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Output directory.")
     parser.add_argument("--output-prefix", default=None, help="Optional output filename prefix.")
     return parser.parse_args()
+
+
+def parse_xlim(text):
+    pieces = [float(part.strip()) for part in text.split(",") if part.strip()]
+    if len(pieces) != 2 or pieces[0] >= pieces[1]:
+        raise ValueError("--xlim must be two increasing numbers, e.g. 70,100")
+    return pieces[0], pieces[1]
 
 
 def scalar_value(chunk, key):
@@ -111,7 +124,7 @@ def collect_panel_scores(rows, train_idx, test_idx, panel, args):
     return probe_correctness_scores(rows, train_idx, test_idx, panel, args)
 
 
-def plot_distributions(panel_rows, output_png, output_pdf, bins):
+def plot_distributions(panel_rows, output_png, output_pdf, bins, xlim, density):
     colors = {
         "all": "#8E7CC3",
         "correct": "#2F6DA3",
@@ -131,30 +144,46 @@ def plot_distributions(panel_rows, output_png, output_pdf, bins):
         scores = panel["scores"]
         correct_scores = scores[panel["labels"] == 1]
         wrong_scores = scores[panel["labels"] == 0]
-        hist_range = (0.0, 100.0)
+        hist_range = xlim
 
-        ax.hist(scores, bins=bins, range=hist_range, color=colors["all"], alpha=0.55, label="all")
-        ax.hist(correct_scores, bins=bins, range=hist_range, color=colors["correct"], alpha=0.55, label="correct")
-        ax.hist(wrong_scores, bins=bins, range=hist_range, color=colors["wrong"], alpha=0.55, label="wrong")
+        ax.hist(scores, bins=bins, range=hist_range, density=density, color=colors["all"], alpha=0.38, label="all")
+        ax.hist(
+            correct_scores,
+            bins=bins,
+            range=hist_range,
+            density=density,
+            color=colors["correct"],
+            alpha=0.58,
+            label="correct",
+        )
+        ax.hist(
+            wrong_scores,
+            bins=bins,
+            range=hist_range,
+            density=density,
+            color=colors["wrong"],
+            alpha=0.58,
+            label="wrong",
+        )
 
         correct_mean = float(np.mean(correct_scores)) if len(correct_scores) else float("nan")
         wrong_mean = float(np.mean(wrong_scores)) if len(wrong_scores) else float("nan")
         ax.axvline(correct_mean, color=colors["correct"], linewidth=1.5)
         ax.axvline(wrong_mean, color=colors["wrong"], linewidth=1.5)
-        ax.text(correct_mean, 0.97, f"{correct_mean:.2f}", transform=ax.get_xaxis_transform(), color=colors["correct"],
-                fontsize=9, fontweight="bold", ha="center", va="top")
-        ax.text(wrong_mean, 0.97, f"{wrong_mean:.2f}", transform=ax.get_xaxis_transform(), color=colors["wrong"],
-                fontsize=9, fontweight="bold", ha="center", va="top")
+        ax.text(correct_mean, 0.97, f"{correct_mean:.1f}", transform=ax.get_xaxis_transform(), color=colors["correct"],
+                fontsize=8, fontweight="bold", ha="center", va="top")
+        ax.text(wrong_mean, 0.88, f"{wrong_mean:.1f}", transform=ax.get_xaxis_transform(), color=colors["wrong"],
+                fontsize=8, fontweight="bold", ha="center", va="top")
 
-        ax.set_xlim(0, 100)
-        ax.set_title(panel["title"], fontsize=10, pad=7)
+        ax.set_xlim(*xlim)
+        ax.set_title(panel["title"], fontsize=9, pad=7)
         ax.grid(True, axis="both", linestyle="--", linewidth=0.45, alpha=0.35)
         ax.tick_params(axis="both", labelsize=8, length=2)
         ax.set_yticklabels([])
         for spine in ax.spines.values():
             spine.set_linewidth(0.8)
 
-    axes[0].legend(frameon=False, loc="upper left", bbox_to_anchor=(-0.03, 1.02), fontsize=9)
+    axes[0].legend(frameon=False, loc="upper left", bbox_to_anchor=(-0.03, 1.03), fontsize=8)
     fig.supxlabel("Correctness score (0-100, higher is more likely correct)", y=0.06, fontsize=10)
     fig.subplots_adjust(left=0.055, right=0.995, top=0.82, bottom=0.27, wspace=0.08)
     fig.savefig(output_png, dpi=300, bbox_inches="tight")
@@ -201,7 +230,7 @@ def main():
 
     output_png = os.path.join(args.output_dir, f"{output_prefix}_score_distributions.png")
     output_pdf = os.path.join(args.output_dir, f"{output_prefix}_score_distributions.pdf")
-    plot_distributions(panel_rows, output_png, output_pdf, args.bins)
+    plot_distributions(panel_rows, output_png, output_pdf, args.bins, parse_xlim(args.xlim), args.density)
 
     print(f"Wrote: {output_png}")
     print(f"Wrote: {output_pdf}")
