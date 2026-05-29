@@ -11,15 +11,15 @@ DEFAULT_LABEL_PATH = os.path.join(PROJECT_ROOT, "dataset", "mixed_probe_labels_f
 
 
 RAW_SCORE_FIELDS = {
-    "entropy": ("final_entropy", -1.0),
-    "mean_entropy": ("mean_entropy", -1.0),
-    "max_entropy": ("max_entropy", -1.0),
+    "entropy": ("final_entropy", -1.0, "Entropy"),
+    "mean_entropy": ("mean_entropy", -1.0, "Mean entropy"),
+    "max_entropy": ("max_entropy", -1.0, "Max entropy"),
     "top1": ("final_top1_prob", 1.0),
-    "mean_top1": ("mean_top1_prob", 1.0),
-    "min_top1": ("min_top1_prob", 1.0),
+    "mean_top1": ("mean_top1_prob", 1.0, "Mean top-1 probability"),
+    "min_top1": ("min_top1_prob", 1.0, "Minimum top-1 probability"),
     "margin": ("final_margin", 1.0),
-    "mean_margin": ("mean_margin", 1.0),
-    "min_margin": ("min_margin", 1.0),
+    "mean_margin": ("mean_margin", 1.0, "Mean logit margin"),
+    "min_margin": ("min_margin", 1.0, "Minimum logit margin"),
 }
 
 
@@ -62,9 +62,14 @@ def parse_args():
     parser.add_argument("--mlp-max-iter", type=int, default=200, help="Max MLP iterations.")
     parser.add_argument("--bins", type=int, default=18, help="Histogram bin count.")
     parser.add_argument(
+        "--raw-scale",
+        action="store_true",
+        help="Plot raw surface signal values instead of normalized 0-100 confidence scores.",
+    )
+    parser.add_argument(
         "--xlim",
         default="0,100",
-        help="Comma-separated x-axis limits after score normalization, e.g. 70,100.",
+        help="Comma-separated x-axis limits. Use raw units with --raw-scale, e.g. 0,2 for entropy.",
     )
     parser.add_argument("--density", action="store_true", help="Plot normalized density instead of raw counts.")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Output directory.")
@@ -99,9 +104,11 @@ def minmax_percent(values):
     return 100.0 * (values - low) / (high - low)
 
 
-def raw_correctness_scores(rows, indices, panel):
-    key, direction = RAW_SCORE_FIELDS[panel]
+def raw_panel_scores(rows, indices, panel, raw_scale):
+    key, direction, _ = RAW_SCORE_FIELDS[panel]
     values = np.asarray([scalar_value(rows[i]["chunk"], key) for i in indices], dtype=np.float64)
+    if raw_scale:
+        return values
     return minmax_percent(direction * values)
 
 
@@ -120,7 +127,7 @@ def probe_correctness_scores(rows, train_idx, test_idx, feature_spec, args):
 
 def collect_panel_scores(rows, train_idx, test_idx, panel, args):
     if panel in RAW_SCORE_FIELDS:
-        return raw_correctness_scores(rows, test_idx, panel)
+        return raw_panel_scores(rows, test_idx, panel, args.raw_scale)
     return probe_correctness_scores(rows, train_idx, test_idx, panel, args)
 
 
@@ -184,7 +191,8 @@ def plot_distributions(panel_rows, output_png, output_pdf, bins, xlim, density):
             spine.set_linewidth(0.8)
 
     axes[0].legend(frameon=False, loc="upper left", bbox_to_anchor=(-0.03, 1.03), fontsize=8)
-    fig.supxlabel("Correctness score (0-100, higher is more likely correct)", y=0.06, fontsize=10)
+    xlabel = panel_rows[0].get("xlabel", "Correctness score (0-100, higher is more likely correct)")
+    fig.supxlabel(xlabel, y=0.06, fontsize=10)
     fig.subplots_adjust(left=0.055, right=0.995, top=0.82, bottom=0.27, wspace=0.08)
     fig.savefig(output_png, dpi=300, bbox_inches="tight")
     fig.savefig(output_pdf, bbox_inches="tight")
@@ -225,6 +233,7 @@ def main():
                 "title": PANEL_TITLES.get(panel, panel),
                 "scores": collect_panel_scores(rows, train_idx, test_idx, panel, args),
                 "labels": labels,
+                "xlabel": RAW_SCORE_FIELDS[panel][2] if args.raw_scale and panel in RAW_SCORE_FIELDS else "Correctness score (0-100, higher is more likely correct)",
             }
         )
 
