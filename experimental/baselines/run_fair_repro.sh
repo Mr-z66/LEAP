@@ -7,6 +7,10 @@ CONDA_ENV="${CONDA_ENV:-care_env}"
 DATASETS="${DATASETS:-gsm8k,svamp}"
 MAX_QUESTIONS="${MAX_QUESTIONS:-300}"
 
+GSM8K_PATH="${GSM8K_PATH:-dataset/mixed_probe_splits/gsm8k_test.jsonl}"
+SVAMP_PATH="${SVAMP_PATH:-dataset/mixed_probe_splits/svamp_test.jsonl}"
+MATH500_PATH="${MATH500_PATH:-dataset/mixed_probe_splits/math500_test.jsonl}"
+
 SMALL_MODEL_PATH="${SMALL_MODEL_PATH:-/root/autodl-tmp/models/Qwen2.5-1.5B}"
 LARGE_MODEL_PATH="${LARGE_MODEL_PATH:-/root/autodl-tmp/models/Qwen2.5-7B}"
 PRM_MODEL_PATH="${PRM_MODEL_PATH:-/root/autodl-tmp/models/Skywork-o1-Open-PRM-Qwen-2.5-1.5B}"
@@ -46,6 +50,9 @@ if [[ "${RUN_GLIMP}" == "1" ]]; then
       --large-model-path "${LARGE_MODEL_PATH}" \
       --score-method first_token_entropy \
       --score-threshold "${threshold}" \
+      --gsm8k-path "${GSM8K_PATH}" \
+      --svamp-path "${SVAMP_PATH}" \
+      --math500-path "${MATH500_PATH}" \
       --gsm8k-token-budget 768 \
       --svamp-token-budget 512 \
       --math500-token-budget 1024 \
@@ -65,6 +72,9 @@ if [[ "${RUN_RSD}" == "1" ]]; then
       --prm-model-path "${PRM_MODEL_PATH}" \
       --prm-threshold "${threshold}" \
       --max-tokens-per-call 768 \
+      --gsm8k-path "${GSM8K_PATH}" \
+      --svamp-path "${SVAMP_PATH}" \
+      --math500-path "${MATH500_PATH}" \
       --draft-params-b 1.5 \
       --target-params-b 7.0 \
       --prm-params-b 1.5 \
