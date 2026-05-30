@@ -8,6 +8,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-dataset/mixed_probe_labels_existing}"
 JUDGE_MODEL_PATH="${JUDGE_MODEL_PATH:-/root/autodl-tmp/models/Qwen2.5-32B}"
 JUDGE_BACKEND="${JUDGE_BACKEND:-hf}"
 MODE="${MODE:-smoke}" # smoke or full
+DATASETS="${DATASETS:-gsm8k_calib svamp_calib math500_calib livecodebench_v5_calib}"
 
 cd "${ROOT_DIR}"
 
@@ -30,7 +31,7 @@ if [[ "${MODE}" == "smoke" ]]; then
 elif [[ "${MODE}" == "full" ]]; then
   GSM8K_N="${GSM8K_N:-300}"
   SVAMP_N="${SVAMP_N:-300}"
-  MATH500_N="${MATH500_N:-200}"
+  MATH500_N="${MATH500_N:-300}"
   LCB_N="${LCB_N:-100}"
 else
   echo "MODE must be smoke or full, got: ${MODE}" >&2
@@ -53,6 +54,8 @@ run_label() {
   echo "[judge]  ${JUDGE_MODEL_PATH} (${JUDGE_BACKEND})"
   echo "[log]    ${log_path}"
 
+  [[ -f "${input_path}" ]] || { echo "[error] missing trajectory: ${input_path}" >&2; exit 2; }
+
   python -m core_package.pipelines.label_existing_trajectories \
     --input-path "${input_path}" \
     --output-path "${output_path}" \
@@ -65,10 +68,15 @@ run_label() {
     2>&1 | tee "${log_path}"
 }
 
-run_label gsm8k "${TRAJ_DIR}/gsm8k_calib_300_15b.pt" "${OUTPUT_DIR}/gsm8k_calib_labels.pt" "${GSM8K_N}"
-run_label svamp "${TRAJ_DIR}/svamp_calib_300_15b.pt" "${OUTPUT_DIR}/svamp_calib_labels.pt" "${SVAMP_N}"
-run_label math500 "${TRAJ_DIR}/math500_calib_300_15b.pt" "${OUTPUT_DIR}/math500_calib_labels.pt" "${MATH500_N}"
-run_label livecodebench_v5 "${TRAJ_DIR}/livecodebench_v5_calib_100_15b.pt" "${OUTPUT_DIR}/livecodebench_v5_calib_labels.pt" "${LCB_N}"
+for key in ${DATASETS}; do
+  case "${key}" in
+    gsm8k_calib) run_label gsm8k "${TRAJ_DIR}/gsm8k_calib_300_15b.pt" "${OUTPUT_DIR}/gsm8k_calib_labels.pt" "${GSM8K_N}" ;;
+    svamp_calib) run_label svamp "${TRAJ_DIR}/svamp_calib_300_15b.pt" "${OUTPUT_DIR}/svamp_calib_labels.pt" "${SVAMP_N}" ;;
+    math500_calib) run_label math500 "${TRAJ_DIR}/math500_calib_300_15b.pt" "${OUTPUT_DIR}/math500_calib_labels.pt" "${MATH500_N}" ;;
+    livecodebench_v5_calib) run_label livecodebench_v5 "${TRAJ_DIR}/livecodebench_v5_calib_100_15b.pt" "${OUTPUT_DIR}/livecodebench_v5_calib_labels.pt" "${LCB_N}" ;;
+    *) echo "[error] unsupported dataset key: ${key}" >&2; exit 2 ;;
+  esac
+done
 
 echo
 echo "[done] labels saved under ${OUTPUT_DIR}"

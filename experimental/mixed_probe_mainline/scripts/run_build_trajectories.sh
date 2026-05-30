@@ -6,6 +6,7 @@ CONDA_ENV="${CONDA_ENV:-care_env}"
 SMALL_MODEL_PATH="${SMALL_MODEL_PATH:-/root/autodl-tmp/models/Qwen2.5-1.5B}"
 MODE="${MODE:-smoke}" # smoke or full
 OUTPUT_DIR="${OUTPUT_DIR:-dataset/mixed_probe_trajectories}"
+DATASETS="${DATASETS:-gsm8k_calib gsm8k_test svamp_calib svamp_test math500_calib math500_test livecodebench_v5_calib livecodebench_v5_test}"
 
 cd "${ROOT_DIR}"
 
@@ -55,8 +56,9 @@ run_build() {
   echo "[log]   ${log_path}"
   echo "[chunk] ${chunking_method} target=${target_step_tokens} max=${max_step_tokens} force=${force_step_tokens}"
 
+  [[ -f "${input_path}" ]] || { echo "[error] missing input split: ${input_path}" >&2; exit 2; }
+
   python -m core_package.pipelines.build_dataset \
-    --dataset-name jsonl \
     --dataset-name "${dataset_name}" \
     --input-path "${input_path}" \
     --answer-type "${answer_type}" \
@@ -73,21 +75,19 @@ run_build() {
     2>&1 | tee "${log_path}"
 }
 
-run_build gsm8k calib dataset/mixed_probe_splits/gsm8k_calib.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 64 96 160
-run_build gsm8k test dataset/mixed_probe_splits/gsm8k_test.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 64 96 160
-
-run_build svamp calib dataset/mixed_probe_splits/svamp_calib.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 64 96 160
-run_build svamp test dataset/mixed_probe_splits/svamp_test.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 64 96 160
-
-run_build math500 calib dataset/mixed_probe_splits/math500_calib.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 96 128 192
-run_build math500 test dataset/mixed_probe_splits/math500_test.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 96 128 192
-
-run_build livecodebench_v5 calib dataset/mixed_probe_splits/livecodebench_v5_calib.jsonl livecodebench_codegen "${LCB_N}" 1536 code_rsd_fallback 96 160 256
-
-if [[ "${MODE}" == "full" ]]; then
-  run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_TEST_N:-67}" 1536 code_rsd_fallback 96 160 256
-else
-fi
+for key in ${DATASETS}; do
+  case "${key}" in
+    gsm8k_calib) run_build gsm8k calib dataset/mixed_probe_splits/gsm8k_calib.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 64 96 160 ;;
+    gsm8k_test) run_build gsm8k test dataset/mixed_probe_splits/gsm8k_test.jsonl gsm8k_boxed_numeric "${GSM8K_N}" 768 math_rsd_fallback 64 96 160 ;;
+    svamp_calib) run_build svamp calib dataset/mixed_probe_splits/svamp_calib.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 64 96 160 ;;
+    svamp_test) run_build svamp test dataset/mixed_probe_splits/svamp_test.jsonl svamp_boxed_numeric "${SVAMP_N}" 512 math_rsd_fallback 64 96 160 ;;
+    math500_calib) run_build math500 calib dataset/mixed_probe_splits/math500_calib.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 96 128 192 ;;
+    math500_test) run_build math500 test dataset/mixed_probe_splits/math500_test.jsonl math500_qwen_boxed "${MATH500_N}" 1024 math_rsd_fallback 96 128 192 ;;
+    livecodebench_v5_calib) run_build livecodebench_v5 calib dataset/mixed_probe_splits/livecodebench_v5_calib.jsonl livecodebench_codegen "${LCB_N}" 1536 code_rsd_fallback 96 160 256 ;;
+    livecodebench_v5_test) run_build livecodebench_v5 test dataset/mixed_probe_splits/livecodebench_v5_test.jsonl livecodebench_codegen "${LCB_TEST_N:-67}" 1536 code_rsd_fallback 96 160 256 ;;
+    *) echo "[error] unsupported dataset key: ${key}" >&2; exit 2 ;;
+  esac
+done
 
 echo
 echo "[done] trajectories saved under ${OUTPUT_DIR}"
