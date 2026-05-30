@@ -146,6 +146,14 @@ def _extract_last_number(text: str) -> Optional[str]:
     return matches[-1] if matches else None
 
 
+def _extract_gsm8k_hash_answer(text: str) -> Optional[str]:
+    """Extract GSM8K's canonical final answer after the #### marker."""
+    if "####" not in text:
+        return None
+    tail = text.rsplit("####", 1)[-1]
+    return _normalize_extracted_number(_extract_last_number(tail))
+
+
 def _collect_marked_spans(text: str) -> List[Tuple[int, str, str]]:
     spans: List[Tuple[int, str, str]] = []
     lower = text.lower()
@@ -363,6 +371,10 @@ def extract_gsm8k_boxed_numeric_answer(text: str) -> Tuple[str, bool]:
         boxed_value = _extract_last_number(boxed)
         if boxed_value is not None:
             return _normalize_extracted_number(boxed_value), True
+
+    hash_answer = _extract_gsm8k_hash_answer(normalized_text)
+    if hash_answer is not None:
+        return hash_answer, True
 
     return extract_legacy_math_answer(text)
 
