@@ -111,42 +111,88 @@ def plot_stacked(summaries, signal_title, output_png, output_pdf):
     counts = [row["count"] for row in summaries]
     overall_wrong = sum(row["wrong_count"] for row in summaries) / sum(row["count"] for row in summaries) * 100.0
 
-    fig, ax = plt.subplots(figsize=(8.6, 3.2))
-    correct_color = "#3F78A8"
-    wrong_color = "#D84A3A"
-    edge_color = "#2F2F2F"
+    plt.rcParams.update(
+        {
+            "font.family": "DejaVu Sans",
+            "font.size": 8,
+            "axes.titlesize": 9,
+            "axes.labelsize": 8,
+            "xtick.labelsize": 7,
+            "ytick.labelsize": 7,
+            "legend.fontsize": 7,
+            "pdf.fonttype": 42,
+            "ps.fonttype": 42,
+        }
+    )
 
-    ax.bar(x, correct, color=correct_color, edgecolor=edge_color, linewidth=0.45, label="correct")
-    ax.bar(x, wrong, bottom=correct, color=wrong_color, edgecolor=edge_color, linewidth=0.45, label="wrong")
-    ax.axhline(100.0 - overall_wrong, color="#444444", linestyle="--", linewidth=1.1, alpha=0.65)
+    fig, ax = plt.subplots(figsize=(7.1, 2.35))
+    correct_color = "#4C78A8"
+    wrong_color = "#E45756"
+    edge_color = "white"
+
+    width = 0.74
+    ax.bar(x, correct, width=width, color=correct_color, edgecolor=edge_color, linewidth=0.5, label="Correct")
+    ax.bar(x, wrong, width=width, bottom=correct, color=wrong_color, edgecolor=edge_color, linewidth=0.5, label="Wrong")
+    ax.axhline(100.0 - overall_wrong, color="#555555", linestyle="--", linewidth=0.8, alpha=0.7)
     ax.text(
-        len(summaries) - 0.45,
-        100.0 - overall_wrong + 1.2,
-        f"overall wrong rate = {overall_wrong:.1f}%",
+        len(summaries) - 0.08,
+        100.0 - overall_wrong + 0.9,
+        f"overall wrong={overall_wrong:.1f}%",
         ha="right",
         va="bottom",
-        fontsize=8,
-        color="#444444",
+        fontsize=6.8,
+        color="#555555",
     )
 
     for idx, (correct_rate, wrong_rate, count) in enumerate(zip(correct, wrong, counts)):
         if wrong_rate >= 4.0:
-            ax.text(idx, correct_rate + wrong_rate / 2.0, f"{wrong_rate:.1f}", ha="center", va="center", fontsize=8, color="white", fontweight="bold")
-        ax.text(idx, 2.0, f"n={count}", ha="center", va="bottom", fontsize=7, color="white", rotation=90, alpha=0.85)
+            ax.text(
+                idx,
+                correct_rate + wrong_rate / 2.0,
+                f"{wrong_rate:.1f}",
+                ha="center",
+                va="center",
+                fontsize=6.8,
+                color="white",
+                fontweight="bold",
+            )
+        ax.text(
+            idx,
+            3.0,
+            str(count),
+            ha="center",
+            va="bottom",
+            fontsize=5.8,
+            color="white",
+            alpha=0.82,
+        )
 
-    ax.set_title(f"Correct/wrong chunks across {signal_title.lower()} quantiles", fontsize=12, pad=9)
-    ax.set_ylabel("Chunk composition (%)", fontsize=10)
-    ax.set_xlabel("Entropy quantile bins (low to high)", fontsize=10)
+    ax.set_title(f"Chunk correctness across {signal_title.lower()} quantiles", pad=8)
+    ax.set_ylabel("Composition (%)")
+    ax.set_xlabel("Entropy quantiles (low to high)")
     ax.set_ylim(0, 100)
+    ax.set_xlim(-0.65, len(summaries) - 0.35)
     ax.set_xticks(x)
-    ax.set_xticklabels([row["bin"] for row in summaries], fontsize=9)
-    ax.tick_params(axis="y", labelsize=9, length=2)
-    ax.grid(True, axis="y", linestyle="--", linewidth=0.45, alpha=0.32)
-    ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, 1.02), ncol=2, fontsize=9)
-    for spine in ax.spines.values():
-        spine.set_linewidth(0.8)
+    ax.set_xticklabels([row["bin"] for row in summaries])
+    ax.tick_params(axis="both", length=2.2, width=0.7)
+    ax.grid(True, axis="y", linestyle="--", linewidth=0.35, alpha=0.28)
+    ax.set_axisbelow(True)
+    ax.legend(
+        frameon=False,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        handlelength=1.3,
+        columnspacing=1.2,
+        borderaxespad=0.0,
+    )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    for spine in ["left", "bottom"]:
+        ax.spines[spine].set_linewidth(0.7)
 
-    fig.subplots_adjust(left=0.08, right=0.99, top=0.82, bottom=0.2)
+    fig.text(0.985, 0.015, "Numbers inside bars denote wrong rate; bottom numbers denote bin size.", ha="right", va="bottom", fontsize=5.8, color="#555555")
+    fig.subplots_adjust(left=0.075, right=0.99, top=0.78, bottom=0.24)
     fig.savefig(output_png, dpi=300, bbox_inches="tight")
     fig.savefig(output_pdf, bbox_inches="tight")
     plt.close(fig)
