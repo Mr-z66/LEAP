@@ -18,7 +18,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Plot preliminary diagnostics showing entropy is a weak chunk-correctness signal."
     )
-    parser.add_argument("--label-path", required=True, help="Path to labeled chunk .pt data.")
+    parser.add_argument("--label-path", default=None, help="Path to labeled chunk .pt data.")
+    parser.add_argument("--input-csv", default=None, help="Optional scalar-only CSV from export_surface_scalar_labels.py.")
     parser.add_argument("--label-key", default="label", help="Chunk label key. label=1 means prefix-correct.")
     parser.add_argument("--signal", choices=sorted(SIGNALS), default="mean_entropy")
     parser.add_argument("--bins", type=int, default=10, help="Number of entropy quantile bins.")
@@ -78,6 +79,31 @@ def load_arrays(path, label_key, signal, max_rows, seed):
         raise ValueError(f"No valid rows found for label_key={label_key!r}.")
     labels = np.asarray(labels, dtype=np.int64)
     return np.asarray(scores, dtype=np.float64), labels, 1 - labels
+
+
+def load_arrays_from_csv(path, signal, max_rows, seed):
+    field, _ = SIGNALS[signal]
+    scores = []
+    labels = []
+    with open(path, "r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            if field not in row:
+                raise KeyError(f"Missing field {field!r} in CSV: {path}")
+            label = int(row["label"])
+            if label not in {0, 1}:
+                continue
+            scores.append(float(row[field]))
+            labels.append(label)
+
+    scores = np.asarray(scores, dtype=np.float64)
+    labels = np.asarray(labels, dtype=np.int64)
+    if max_rows is not None and len(scores) > max_rows:
+        rng = np.random.default_rng(seed)
+        indices = np.sort(rng.choice(np.arange(len(scores)), size=max_rows, replace=False))
+        scores = scores[indices]
+        labels = labels[indices]
+    return scores, labels, 1 - labels
 
 
 def quantile_summaries(scores, error_labels, bins):
@@ -275,7 +301,12 @@ def main():
     args = parse_args()
     apply_paper_style()
     os.makedirs(args.output_dir, exist_ok=True)
-    scores, labels, error_labels = load_arrays(args.label_path, args.label_key, args.signal, args.max_rows, args.seed)
+    if args.input_csv:
+        scores, labels, error_labels = load_arrays_from_csv(args.input_csv, args.signal, args.max_rows, args.seed)
+    else:
+        if not args.label_path:
+            raise ValueError("Either --label-path or --input-csv is required.")
+        scores, labels, error_labels = load_arrays(args.label_path, args.label_key, args.signal, args.max_rows, args.seed)
     summaries = quantile_summaries(scores, error_labels, args.bins)
 
     prefix = args.output_prefix or os.path.splitext(os.path.basename(args.label_path))[0]
