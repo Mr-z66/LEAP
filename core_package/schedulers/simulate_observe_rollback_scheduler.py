@@ -19,6 +19,7 @@ from core_package.config import MODELS, SCHEDULER
 from core_package.gsm8k_protocol import append_gsm8k_boxed_instruction
 from core_package.pipelines.build_dataset import is_safe_boundary
 from core_package.math500_protocol import append_math500_instruction
+from core_package.schedulers.answer_aware_stop import chunk_has_complete_nonempty_boxed
 from core_package.svamp_protocol import append_svamp_boxed_instruction
 
 # ================= Default Configuration =================
@@ -159,6 +160,11 @@ def parse_args():
         "--require-consecutive-risk",
         action="store_true",
         help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
+    )
+    parser.add_argument(
+        "--answer-aware-stop",
+        action="store_true",
+        help="Experimental: finish the question when a large-model chunk emits a complete non-empty boxed answer.",
     )
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
     parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
@@ -1093,6 +1099,7 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
     total_generated_tokens = 0
     generated_chunks = 0
     reached_eos = False
+    answer_aware_stop = False
     chunks = []
 
     for handoff_chunk_idx in range(target_chunks):
@@ -1118,7 +1125,8 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
                 "reached_eos": chunk_result["reached_eos"],
             }
         )
-        if reached_eos or chunk_result["generated_token_count"] == 0:
+        answer_aware_stop = args.answer_aware_stop and chunk_has_complete_nonempty_boxed(chunk_result["chunk_text"])
+        if reached_eos or chunk_result["generated_token_count"] == 0 or answer_aware_stop:
             break
 
     return {
@@ -1126,6 +1134,7 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
         "generated_token_count": total_generated_tokens,
         "generated_chunks": generated_chunks,
         "reached_eos": reached_eos,
+        "answer_aware_stop": answer_aware_stop,
         "chunks": chunks,
     }
 
@@ -1158,6 +1167,7 @@ def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args, num_chun
 
     chunks = []
     total_generated_tokens = 0
+    answer_aware_stop = False
     for handoff_chunk_idx, chunk in enumerate(selected_chunks):
         total_generated_tokens += chunk["generated_token_count"]
         chunks.append(
@@ -1169,12 +1179,16 @@ def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args, num_chun
                 "reached_eos": reached_eos and handoff_chunk_idx == len(selected_chunks) - 1,
             }
         )
+        if args.answer_aware_stop and chunk_has_complete_nonempty_boxed(chunk["chunk_text"]):
+            answer_aware_stop = True
+            break
 
     return {
-        "full_reasoning": full_reasoning,
+        "full_reasoning": (normalized_prefix or "") + "".join(chunk["chunk_text"] for chunk in chunks),
         "generated_token_count": total_generated_tokens,
-        "generated_chunks": len(selected_chunks),
+        "generated_chunks": len(chunks),
         "reached_eos": reached_eos,
+        "answer_aware_stop": answer_aware_stop,
         "chunks": chunks,
     }
 
@@ -1205,6 +1219,7 @@ def run_rewrite_current_step_handoff(model, tokenizer, question, assistant_prefi
         "generated_token_count": chunk_result["generated_token_count"],
         "generated_chunks": 1 if chunk_result["generated_token_count"] else 0,
         "reached_eos": chunk_result["reached_eos"],
+        "answer_aware_stop": args.answer_aware_stop and chunk_has_complete_nonempty_boxed(chunk_result["chunk_text"]),
         "chunks": [
             {
                 "handoff_local_chunk_id": 0,
@@ -1237,6 +1252,7 @@ def run_rewrite_current_step_handoff_vllm(tokenizer, question, assistant_prefix,
         "generated_token_count": chunk["generated_token_count"],
         "generated_chunks": 1 if chunk["generated_token_count"] else 0,
         "reached_eos": reached_eos,
+        "answer_aware_stop": args.answer_aware_stop and chunk_has_complete_nonempty_boxed(chunk["chunk_text"]),
         "chunks": [
             {
                 "handoff_local_chunk_id": 0,
@@ -1269,6 +1285,7 @@ def run_adaptive_large_handoff(
     total_generated_tokens = 0
     generated_chunks = 0
     reached_eos = False
+    answer_aware_stop = False
     trace_events = []
     recovery_threshold = threshold if args.handoff_recovery_threshold is None else float(args.handoff_recovery_threshold)
 
@@ -1287,6 +1304,7 @@ def run_adaptive_large_handoff(
         total_generated_tokens += large_result["generated_token_count"]
         generated_chunks += large_result["generated_chunks"]
         reached_eos = large_result["reached_eos"]
+        answer_aware_stop = bool(large_result.get("answer_aware_stop", False))
         trace_events.append(
             {
                 "event": "adaptive_large_handoff_chunk",
@@ -1296,6 +1314,15 @@ def run_adaptive_large_handoff(
                 "chunks": large_result["chunks"],
             }
         )
+
+        if answer_aware_stop:
+            trace_events.append(
+                {
+                    "event": "adaptive_handoff_stop_answer",
+                    "adaptive_large_chunk_count": generated_chunks,
+                }
+            )
+            break
 
         if reached_eos or large_result["generated_token_count"] == 0:
             trace_events.append(
@@ -1363,7 +1390,7 @@ def run_adaptive_large_handoff(
             )
             break
 
-    if not reached_eos and generated_chunks >= args.max_adaptive_large_handoff_chunks:
+    if not reached_eos and not answer_aware_stop and generated_chunks >= args.max_adaptive_large_handoff_chunks:
         trace_events.append(
             {
                 "event": "adaptive_handoff_stop_max_chunks",
@@ -1376,6 +1403,7 @@ def run_adaptive_large_handoff(
         "generated_token_count": total_generated_tokens,
         "generated_chunks": generated_chunks,
         "reached_eos": reached_eos,
+        "answer_aware_stop": answer_aware_stop,
         "trace_events": trace_events,
     }
 
@@ -1615,6 +1643,14 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             reset_prev_chunk = True
             cooldown_remaining = args.cooldown_chunks
             previous_combined_score = None
+            if large_result.get("answer_aware_stop", False):
+                route_trace.append(
+                    {
+                        "event": "scheduler_stop_answer",
+                        "handoff_index": handoff_count,
+                    }
+                )
+                break
             if large_result["reached_eos"]:
                 break
             continue
