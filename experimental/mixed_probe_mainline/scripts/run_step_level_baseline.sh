@@ -19,6 +19,7 @@ NEG_TO_POS_RATIO="${NEG_TO_POS_RATIO:-5.0}"
 FEATURE_KEY="${FEATURE_KEY:-boundary+mean}"
 THRESHOLDS="${THRESHOLDS:-0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50}"
 TRACE_TAG="${TRACE_TAG:-mixed_rsdstep_5to1}"
+STEP_FORCE_TOKENS="${STEP_FORCE_TOKENS:-2048}"
 
 cd "${ROOT_DIR}"
 
@@ -42,6 +43,8 @@ echo "[step-baseline] traj_dir=${TRAJ_DIR}"
 echo "[step-baseline] merged=${MERGED_LABEL_PATH}"
 echo "[step-baseline] balanced=${BALANCED_LABEL_PATH}"
 echo "[step-baseline] artifact=${ARTIFACT_PATH}"
+echo "[step-baseline] thresholds=${THRESHOLDS}"
+echo "[step-baseline] force_tokens=${STEP_FORCE_TOKENS}"
 
 python experimental/mixed_probe_mainline/scripts/merge_labeled_datasets.py \
   --input-dir "${LABEL_DIR}" \
@@ -79,6 +82,7 @@ ARTIFACT_PATH="${ARTIFACT_PATH}" \
 DATASETS="${DATASETS_TEST}" \
 THRESHOLDS="${THRESHOLDS}" \
 RUNTIME_CHUNKING="rsd_step" \
+REWRITE_STEP_FORCE_TOKENS="${STEP_FORCE_TOKENS}" \
 TRACE_TAG="${TRACE_TAG}" \
 bash experimental/mixed_probe_mainline/scripts/run_scheduler_eval.sh
 
