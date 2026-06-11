@@ -105,10 +105,11 @@ def parse_args():
     parser.add_argument("--max-chunk-tokens", type=int, default=DEFAULT_MAX_CHUNK_TOKENS, help="Forced chunk cut length.")
     parser.add_argument(
         "--runtime-chunking",
-        choices=["punctuation", "rsdmath"],
+        choices=["punctuation", "rsdmath", "rsd_step"],
         default="punctuation",
-        help="Chunk boundary used during online scheduler generation. rsdmath matches math_rsd_fallback-style safe boundaries.",
+        help="Chunk boundary used during online scheduler generation. rsdmath matches math_rsd_fallback-style safe boundaries; rsd_step uses a textual step delimiter.",
     )
+    parser.add_argument("--runtime-step-word", default="\n\n", help="Text delimiter used by --runtime-chunking rsd_step.")
     parser.add_argument("--tail-bonus-weight", type=float, default=DEFAULT_TAIL_BONUS_WEIGHT, help="Add alpha * generation_progress to risk score.")
     parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
@@ -613,7 +614,42 @@ def chunk_generated_step_with_tokenizer(tokenizer, generated_text, args):
     }
 
 
+def chunk_generated_rsd_step_text_with_tokenizer(tokenizer, generated_text, args, target_chunks):
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    chunks = []
+    cursor = 0
+    step_word = args.runtime_step_word
+    force_tokens = max(int(args.rewrite_step_force_tokens), 1)
+    while cursor < len(token_ids) and len(chunks) < target_chunks:
+        selected_ids = []
+        cut_reason = "rsd_step_tail"
+        budget = min(len(token_ids) - cursor, force_tokens)
+        for offset in range(budget):
+            selected_ids.append(token_ids[cursor + offset])
+            decoded = decode_tokens(tokenizer, selected_ids)
+            if step_word and step_word in decoded:
+                cut_reason = "rsd_step_word"
+                break
+            if len(selected_ids) >= force_tokens:
+                cut_reason = "rsd_step_force_tokens"
+                break
+        if not selected_ids:
+            break
+        chunks.append(
+            {
+                "token_ids": selected_ids,
+                "chunk_text": decode_tokens(tokenizer, selected_ids).strip(),
+                "generated_token_count": len(selected_ids),
+                "cut_reason": cut_reason,
+            }
+        )
+        cursor += len(selected_ids)
+    return chunks
+
+
 def chunk_generated_runtime_text_with_tokenizer(tokenizer, generated_text, args, target_chunks):
+    if args.runtime_chunking == "rsd_step":
+        return chunk_generated_rsd_step_text_with_tokenizer(tokenizer, generated_text, args, target_chunks)
     if args.runtime_chunking != "rsdmath":
         return chunk_generated_text_with_tokenizer(
             tokenizer,
@@ -1046,6 +1082,101 @@ def run_step_chunk(
     }
 
 
+def run_rsd_step_chunk(
+    model,
+    tokenizer,
+    question,
+    assistant_prefix,
+    max_new_tokens,
+    args,
+):
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+    input_ids = inputs.input_ids.to(model.device)
+    past_key_values = None
+
+    chunk_token_ids = []
+    chunk_hidden_states = []
+    chunk_confidences = []
+    reached_eos = False
+    cut_reason = None
+    step_word = args.runtime_step_word
+    token_budget = max(1, min(int(max_new_tokens), int(args.rewrite_step_force_tokens)))
+
+    for _ in range(token_budget):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=input_ids,
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+
+        if chunk_token_ids:
+            chunk_hidden_states.append(outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+        logits = outputs.logits[0, -1, :]
+        past_key_values = outputs.past_key_values
+        chunk_confidences.append(compute_token_confidence(logits))
+        next_id = torch.argmax(logits).item()
+
+        if next_id == tokenizer.eos_token_id:
+            reached_eos = True
+            break
+
+        chunk_token_ids.append(next_id)
+        decoded = decode_tokens(tokenizer, chunk_token_ids)
+        if step_word and step_word in decoded:
+            cut_reason = "rsd_step_word"
+        elif len(chunk_token_ids) >= args.rewrite_step_force_tokens:
+            cut_reason = "rsd_step_force_tokens"
+
+        if cut_reason is not None:
+            with torch.no_grad():
+                final_outputs = model(
+                    input_ids=torch.tensor([[next_id]], device=model.device),
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                    output_hidden_states=True,
+                )
+            chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+            break
+
+        input_ids = torch.tensor([[next_id]], device=model.device)
+
+    if chunk_token_ids and len(chunk_hidden_states) < len(chunk_token_ids):
+        last_token_id = chunk_token_ids[-1]
+        with torch.no_grad():
+            final_outputs = model(
+                input_ids=torch.tensor([[last_token_id]], device=model.device),
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+        chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+    chunk_text = decode_tokens(tokenizer, chunk_token_ids).strip()
+    if cut_reason is None and chunk_token_ids:
+        cut_reason = "rsd_step_tail"
+
+    return {
+        "full_reasoning": (normalized_prefix or "") + chunk_text,
+        "chunk_text": chunk_text,
+        "token_ids": chunk_token_ids,
+        "generated_token_count": len(chunk_token_ids),
+        "boundary_hidden_state": chunk_hidden_states[-1] if chunk_hidden_states else None,
+        "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0) if chunk_hidden_states else None,
+        "cut_reason": cut_reason,
+        "reached_eos": reached_eos,
+        **summarize_confidence(chunk_confidences),
+    }
+
+
 def run_runtime_chunk(
     model,
     tokenizer,
@@ -1054,6 +1185,15 @@ def run_runtime_chunk(
     max_new_tokens,
     args,
 ):
+    if args.runtime_chunking == "rsd_step":
+        return run_rsd_step_chunk(
+            model=model,
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            max_new_tokens=max_new_tokens,
+            args=args,
+        )
     if args.runtime_chunking == "rsdmath":
         return run_step_chunk(
             model=model,
@@ -1141,7 +1281,7 @@ def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args, num_chun
 
     target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
     handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
-    chunk_budget = args.rewrite_step_force_tokens if args.runtime_chunking == "rsdmath" else args.max_chunk_tokens
+    chunk_budget = args.rewrite_step_force_tokens if args.runtime_chunking in {"rsdmath", "rsd_step"} else args.max_chunk_tokens
     max_request_tokens = max(1, min(target_chunks * chunk_budget, handoff_token_budget))
     completion = run_vllm_completion(args, prompt_text, max_request_tokens)
     generated_text = completion["text"]
