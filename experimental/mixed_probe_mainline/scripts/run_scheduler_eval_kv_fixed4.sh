@@ -6,6 +6,15 @@ set -euo pipefail
 # large model four chunks, with no adaptive early return.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_CONFIG_FILE="$(cd "${SCRIPT_DIR}/../configs" && pwd)/autodl_hf_kv_fixed4.env"
+CONFIG_FILE="${CONFIG_FILE:-${DEFAULT_CONFIG_FILE}}"
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+  echo "[error] missing experiment config: ${CONFIG_FILE}" >&2
+  exit 2
+fi
+# shellcheck source=/dev/null
+source "${CONFIG_FILE}"
+
 ROOT_DIR="${ROOT_DIR:-$(cd "${SCRIPT_DIR}/../../.." && pwd)}"
 
 export ROOT_DIR
@@ -27,6 +36,9 @@ export PERSISTENT_KV_CACHE="1"
 export TRACE_TAG="${TRACE_TAG:-mixedprobe_kv_fixed4}"
 
 echo "[config] mixed probe: ${ARTIFACT_PATH}"
+echo "[config] file: ${CONFIG_FILE}"
+echo "[config] trajectories: ${TRAJ_DIR}"
+echo "[config] labels: ${TRAIN_LABEL_PATH}"
 echo "[config] datasets: ${DATASETS}"
 echo "[config] policy: fixed4 + persistent KV cache"
 echo "[config] GSM8K/SVAMP large model: ${LARGE_MODEL_PATH_GSM8K_SVAMP}"
