@@ -17,6 +17,7 @@ DATASETS="${DATASETS:-gsm8k_test svamp_test}"
 RUNTIME_CHUNKING="${RUNTIME_CHUNKING:-rsdmath}"
 HANDOFF_MODE="${HANDOFF_MODE:-takeover}"
 ADAPTIVE_LARGE_HANDOFF="${ADAPTIVE_LARGE_HANDOFF:-1}"
+PERSISTENT_KV_CACHE="${PERSISTENT_KV_CACHE:-0}"
 MAX_HANDOFFS="${MAX_HANDOFFS:-2}"
 LARGE_HANDOFF_CHUNKS="${LARGE_HANDOFF_CHUNKS:-2}"
 MIN_LARGE_HANDOFF_CHUNKS="${MIN_LARGE_HANDOFF_CHUNKS:-4}"
@@ -46,6 +47,11 @@ mkdir -p result/traces result/logs/mixed_probe_mainline
 ADAPTIVE_LARGE_HANDOFF_ARGS=""
 if [[ "${ADAPTIVE_LARGE_HANDOFF}" == "1" ]]; then
   ADAPTIVE_LARGE_HANDOFF_ARGS="--adaptive-large-handoff"
+fi
+
+PERSISTENT_KV_CACHE_ARGS=""
+if [[ "${PERSISTENT_KV_CACHE}" == "1" ]]; then
+  PERSISTENT_KV_CACHE_ARGS="--persistent-kv-cache"
 fi
 
 if [[ ! -f "${TRAIN_LABEL_PATH}" ]]; then
@@ -86,6 +92,7 @@ run_gsm8k() {
     --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
     --large-handoff-chunks "${LARGE_HANDOFF_CHUNKS}" \
     ${ADAPTIVE_LARGE_HANDOFF_ARGS} \
+    ${PERSISTENT_KV_CACHE_ARGS} \
     --min-large-handoff-chunks "${MIN_LARGE_HANDOFF_CHUNKS}" \
     --max-adaptive-large-handoff-chunks "${MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS}" \
     --handoff-recovery-threshold "${HANDOFF_RECOVERY_THRESHOLD}" \
@@ -122,6 +129,7 @@ run_svamp() {
     --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
     --large-handoff-chunks "${LARGE_HANDOFF_CHUNKS}" \
     ${ADAPTIVE_LARGE_HANDOFF_ARGS} \
+    ${PERSISTENT_KV_CACHE_ARGS} \
     --min-large-handoff-chunks "${MIN_LARGE_HANDOFF_CHUNKS}" \
     --max-adaptive-large-handoff-chunks "${MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS}" \
     --handoff-recovery-threshold "${HANDOFF_RECOVERY_THRESHOLD}" \
@@ -158,6 +166,7 @@ run_math500() {
     --rewrite-step-boundary-mode "${REWRITE_STEP_BOUNDARY_MODE}" \
     --large-handoff-chunks "${LARGE_HANDOFF_CHUNKS}" \
     ${ADAPTIVE_LARGE_HANDOFF_ARGS} \
+    ${PERSISTENT_KV_CACHE_ARGS} \
     --min-large-handoff-chunks "${MIN_LARGE_HANDOFF_CHUNKS}" \
     --max-adaptive-large-handoff-chunks "${MAX_ADAPTIVE_LARGE_HANDOFF_CHUNKS}" \
     --handoff-recovery-threshold "${HANDOFF_RECOVERY_THRESHOLD}" \

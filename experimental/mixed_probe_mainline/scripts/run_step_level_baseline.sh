@@ -20,6 +20,13 @@ FEATURE_KEY="${FEATURE_KEY:-boundary+mean}"
 THRESHOLDS="${THRESHOLDS:-0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50}"
 TRACE_TAG="${TRACE_TAG:-mixed_rsdstep_5to1}"
 STEP_FORCE_TOKENS="${STEP_FORCE_TOKENS:-2048}"
+SMALL_MODEL_PATH="${SMALL_MODEL_PATH:-/root/autodl-tmp/models/Qwen2.5-1.5B}"
+LARGE_MODEL_PATH_GSM8K_SVAMP="${LARGE_MODEL_PATH_GSM8K_SVAMP:-/root/autodl-tmp/models/Qwen2.5-7B}"
+LARGE_MODEL_PATH_MATH500="${LARGE_MODEL_PATH_MATH500:-/root/autodl-tmp/models/Qwen2.5-32B}"
+LARGE_MODEL_PARAMS_B_MATH500="${LARGE_MODEL_PARAMS_B_MATH500:-32.0}"
+MAX_HANDOFFS="${MAX_HANDOFFS:-2}"
+LARGE_HANDOFF_CHUNKS="${LARGE_HANDOFF_CHUNKS:-4}"
+COOLDOWN_CHUNKS="${COOLDOWN_CHUNKS:-2}"
 
 cd "${ROOT_DIR}"
 
@@ -45,6 +52,25 @@ echo "[step-baseline] balanced=${BALANCED_LABEL_PATH}"
 echo "[step-baseline] artifact=${ARTIFACT_PATH}"
 echo "[step-baseline] thresholds=${THRESHOLDS}"
 echo "[step-baseline] force_tokens=${STEP_FORCE_TOKENS}"
+echo "[step-baseline] scheduler=fixed${LARGE_HANDOFF_CHUNKS} max_handoffs=${MAX_HANDOFFS} cooldown=${COOLDOWN_CHUNKS}"
+echo "[step-baseline] small_model=${SMALL_MODEL_PATH}"
+echo "[step-baseline] large_model_gsm8k_svamp=${LARGE_MODEL_PATH_GSM8K_SVAMP}"
+echo "[step-baseline] large_model_math500=${LARGE_MODEL_PATH_MATH500} (${LARGE_MODEL_PARAMS_B_MATH500}B)"
+
+# Fail before expensive labeling/training if the external experiment snapshot is
+# incomplete.  run_scheduler_eval.sh otherwise skips missing test trajectories,
+# which can make a partial run look successful.
+[[ -d "${LABEL_DIR}" ]] || { echo "[error] missing step-level label directory: ${LABEL_DIR}" >&2; exit 2; }
+[[ -d "${TRAJ_DIR}" ]] || { echo "[error] missing trajectory directory: ${TRAJ_DIR}" >&2; exit 2; }
+for key in ${DATASETS_TEST}; do
+  case "${key}" in
+    gsm8k_test) required_traj="${TRAJ_DIR}/gsm8k_test_300_15b.pt" ;;
+    svamp_test) required_traj="${TRAJ_DIR}/svamp_test_300_15b.pt" ;;
+    math500_test) required_traj="${TRAJ_DIR}/math500_test_300_15b.pt" ;;
+    *) echo "[error] unsupported DATASETS_TEST entry: ${key}" >&2; exit 2 ;;
+  esac
+  [[ -f "${required_traj}" ]] || { echo "[error] missing required test trajectory: ${required_traj}" >&2; exit 2; }
+done
 
 python experimental/mixed_probe_mainline/scripts/merge_labeled_datasets.py \
   --input-dir "${LABEL_DIR}" \
@@ -83,6 +109,15 @@ DATASETS="${DATASETS_TEST}" \
 THRESHOLDS="${THRESHOLDS}" \
 RUNTIME_CHUNKING="rsd_step" \
 REWRITE_STEP_FORCE_TOKENS="${STEP_FORCE_TOKENS}" \
+HANDOFF_MODE="takeover" \
+ADAPTIVE_LARGE_HANDOFF="0" \
+MAX_HANDOFFS="${MAX_HANDOFFS}" \
+LARGE_HANDOFF_CHUNKS="${LARGE_HANDOFF_CHUNKS}" \
+COOLDOWN_CHUNKS="${COOLDOWN_CHUNKS}" \
+SMALL_MODEL_PATH="${SMALL_MODEL_PATH}" \
+LARGE_MODEL_PATH_GSM8K_SVAMP="${LARGE_MODEL_PATH_GSM8K_SVAMP}" \
+LARGE_MODEL_PATH_MATH500="${LARGE_MODEL_PATH_MATH500}" \
+LARGE_MODEL_PARAMS_B_MATH500="${LARGE_MODEL_PARAMS_B_MATH500}" \
 TRACE_TAG="${TRACE_TAG}" \
 bash experimental/mixed_probe_mainline/scripts/run_scheduler_eval.sh
 
