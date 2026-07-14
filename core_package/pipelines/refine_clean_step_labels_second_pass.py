@@ -74,7 +74,7 @@ def group_by_question(rows):
     for index, row in enumerate(rows):
         if "question_id" not in row or "chunk_id" not in row:
             continue
-        groups[int(row["question_id"])].append((index, row))
+        groups[row["question_id"]].append((index, row))
     for question_id in list(groups):
         groups[question_id] = sorted(groups[question_id], key=lambda item: int(item[1]["chunk_id"]))
     return dict(groups)
@@ -83,7 +83,7 @@ def group_by_question(rows):
 def parse_question_id_filter(value):
     if not value:
         return None
-    return {int(item.strip()) for item in value.split(",") if item.strip()}
+    return {item.strip() for item in value.split(",") if item.strip()}
 
 
 def is_false(value):
@@ -123,7 +123,16 @@ def compact_chunks(chunks, max_chars_per_chunk=900):
 
 def build_second_pass_prompt(chunks):
     first = chunks[0]
-    return f"""You are auditing labels for a process-routing math reasoning dataset.
+    is_mc = first.get("answer_type") == "multiple_choice_letter"
+    task_kind = "multiple-choice reasoning" if is_mc else "math reasoning"
+    mc_policy = "" if not is_mc else """
+Multiple-choice requirements:
+- The reference final answer letter is authoritative.
+- If the trajectory explicitly commits to another `Answer: X`, that chunk is an error at the latest.
+- Trace backward and select an earlier chunk only when it contains the first concrete misconception that causes the wrong choice.
+- Do not claim a non-reference option is correct.
+"""
+    return f"""You are auditing labels for a process-routing {task_kind} dataset.
 
 The small model's final answer is wrong, but the first-pass judge labeled every reasoning prefix as valid.
 Your job is to find the earliest chunk where the trajectory first becomes wrong or misaligned with the question.
@@ -142,6 +151,7 @@ Small-model final answer:
 
 Full small-model reasoning split into chunks:
 {compact_chunks(chunks)}
+{mc_policy}
 
 Labeling policy:
 - Separate three notions:
@@ -216,6 +226,19 @@ def parse_second_pass_response(raw_text):
         "reason": str(payload.get("reason", "")).strip(),
         "parse_status": "json",
     }
+
+
+def deterministic_mc_error_chunk(chunks):
+    if not chunks or chunks[0].get("answer_type") != "multiple_choice_letter":
+        return -1
+    gold = str(chunks[0].get("ground_truth_final_answer", "")).strip().upper()
+    if gold not in {"A", "B", "C", "D", "E"}:
+        return -1
+    for chunk in chunks:
+        answers = re.findall(r"(?im)\bAnswer\s*:\s*([A-E])\b", str(chunk.get("prefix_text", "")))
+        if answers and answers[-1].upper() != gold:
+            return int(chunk["chunk_id"])
+    return -1
 
 
 def to_int(value, default=-1):
@@ -372,6 +395,18 @@ def main():
         prompt = build_second_pass_prompt(chunks)
         raw_response = judge_second_pass(prompt, tokenizer, model, args)
         judge_result = parse_second_pass_response(raw_response)
+        deterministic_error = deterministic_mc_error_chunk(chunks)
+        valid_ids = {int(chunk["chunk_id"]) for chunk in chunks}
+        if deterministic_error in valid_ids and (
+            judge_result["recommended_training_error_chunk_id"] not in valid_ids
+            or judge_result["recommended_training_error_chunk_id"] > deterministic_error
+        ):
+            judge_result["earliest_error_chunk_id"] = deterministic_error
+            judge_result["recommended_training_error_chunk_id"] = deterministic_error
+            judge_result["error_type"] = "objective_mismatch"
+            judge_result["confidence"] = 1.0
+            judge_result["parse_status"] = "json"
+            judge_result["reason"] = "Deterministic check found the first explicit answer letter that disagrees with the reference."
         if args.refine_existing_errors and is_actionable_judge_result(
             indexed_chunks,
             judge_result,

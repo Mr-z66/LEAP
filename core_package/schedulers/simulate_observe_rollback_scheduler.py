@@ -163,7 +163,7 @@ def parse_args():
         help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
     )
     parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
-    parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
+    parser.add_argument("--trace-question-id", default=None, help="Optional (numeric or string) question_id to print a detailed chunk routing trace for.")
     parser.add_argument("--trace-export-path", default=None, help="Optional JSON path to export per-question routing traces.")
     parser.add_argument(
         "--small-baseline-path",
@@ -744,7 +744,7 @@ def build_question_records(dataset, feature_key):
 
     if dataset and isinstance(dataset[0], dict) and "chunks" in dataset[0]:
         for item in dataset:
-            question_id = int(item["question_id"])
+            question_id = item["question_id"]
             chunks = []
             has_all_components = True
             for chunk in item.get("chunks", []):
@@ -782,7 +782,7 @@ def build_question_records(dataset, feature_key):
                 break
         if not has_all_components:
             continue
-        question_id = int(item["question_id"])
+        question_id = item["question_id"]
         record = question_records.setdefault(
             question_id,
             {
@@ -811,7 +811,7 @@ def apply_small_baseline_overrides(question_records, baseline_path):
     rows = payload.get("rows", [])
     updated = 0
     for row in rows:
-        qid = int(row["question_id"])
+        qid = row["question_id"]
         if qid not in question_records:
             continue
         question_records[qid]["small_final_answer"] = row.get("pred_final_answer")
@@ -834,7 +834,7 @@ def build_feature_arrays(question_records, feature_key):
             rows.append(build_feature_vector(chunk, prev_chunk, total_chunks, feature_key))
             labels.append(int(chunk["label"]))
             groups.append(question_id)
-    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64)
+    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups)
 
 
 def fit_probe(question_records, args):
@@ -850,8 +850,8 @@ def fit_probe(question_records, args):
     X_fit, y_fit = upsample_minority_class(X_train, y_train, args.random_state)
     probe.fit(X_fit, y_fit)
 
-    train_question_ids = sorted(set(int(qid) for qid in groups[train_indices]))
-    test_question_ids = sorted(set(int(qid) for qid in groups[test_indices]))
+    train_question_ids = sorted(set(groups[train_indices].tolist()), key=str)
+    test_question_ids = sorted(set(groups[test_indices].tolist()), key=str)
     return probe, scaler, train_question_ids, test_question_ids
 
 
@@ -2346,7 +2346,7 @@ def main():
     if args.trace_question_id is not None:
         for summary in summaries:
             matched = next(
-                (row for row in summary["per_question_rows"] if int(row["question_id"]) == int(args.trace_question_id)),
+                (row for row in summary["per_question_rows"] if str(row["question_id"]) == str(args.trace_question_id)),
                 None,
             )
             if matched is not None:

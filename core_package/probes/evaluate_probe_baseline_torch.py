@@ -23,13 +23,15 @@ DEFAULT_THRESHOLD_GRID = "0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
 
 
 class TorchMLPProbe(torch.nn.Module):
-    def __init__(self, input_dim, hidden_layers):
+    def __init__(self, input_dim, hidden_layers, dropout=0.0):
         super().__init__()
         dims = [input_dim, *hidden_layers, 1]
         layers = []
         for idx in range(len(dims) - 2):
             layers.append(torch.nn.Linear(dims[idx], dims[idx + 1]))
             layers.append(torch.nn.ReLU())
+            if dropout > 0:
+                layers.append(torch.nn.Dropout(dropout))
         layers.append(torch.nn.Linear(dims[-2], dims[-1]))
         self.network = torch.nn.Sequential(*layers)
 
@@ -134,12 +136,12 @@ def chunk_scalar_feature(chunk, token):
     raise KeyError(f"Unsupported derived scalar feature: {token}")
 
 
-def build_question_records(dataset):
+def build_question_records(dataset, label_key):
     question_records = {}
     for item in dataset:
-        if int(item["label"]) not in {0, 1}:
+        if label_key not in item or int(item[label_key]) not in {0, 1}:
             continue
-        question_id = int(item["question_id"])
+        question_id = item["question_id"]
         record = question_records.setdefault(question_id, {"chunks": []})
         record["chunks"].append(item)
 
@@ -194,21 +196,26 @@ def parse_csv_floats(text):
 def main():
     args = parse_args()
 
-    print(f"Loading labeled chunk dataset from: {args.data_path}")
-    dataset = torch.load(args.data_path, weights_only=False)
-    question_records = build_question_records(dataset)
-
     print(f"Loading PyTorch probe artifact from: {args.artifact_path}")
     artifact = torch.load(args.artifact_path, weights_only=False)
     feature_key = artifact["feature_key"]
-    test_question_ids = set(int(qid) for qid in artifact["test_question_ids"])
+    label_key = artifact.get("label_key", "label")
+    test_question_ids = set(artifact["test_question_ids"])
     scaler = artifact["scaler"]
     probe = artifact.get("probe")
     if probe is None:
         hidden_layers = tuple(int(x) for x in artifact["config"]["hidden_layers"].split(",") if x.strip())
-        probe = TorchMLPProbe(input_dim=int(artifact["feature_dim"]), hidden_layers=hidden_layers)
+        probe = TorchMLPProbe(
+            input_dim=int(artifact["feature_dim"]),
+            hidden_layers=hidden_layers,
+            dropout=float(artifact.get("config", {}).get("dropout", 0.0)),
+        )
         probe.load_state_dict(artifact["probe_state_dict"])
     probe.eval()
+
+    print(f"Loading labeled chunk dataset from: {args.data_path}")
+    dataset = torch.load(args.data_path, weights_only=False)
+    question_records = build_question_records(dataset, label_key)
 
     rows = []
     eval_question_ids = sorted(question_records) if args.all_questions else sorted(test_question_ids)
@@ -222,7 +229,7 @@ def main():
             prev_chunk = None if index == 0 else chunks[index - 1]
             rows.append({
                 "question_id": question_id,
-                "label": int(chunk["label"]),
+                "label": int(chunk[label_key]),
                 "features": build_feature_vector(chunk, prev_chunk, total_chunks, feature_key),
             })
 
