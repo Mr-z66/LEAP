@@ -75,15 +75,9 @@ def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
 
 
 def build_inputs(tokenizer, question: str, system_prompt: str, answer_type: str):
-    if answer_type == "math500_qwen_boxed":
-        question = append_math500_instruction(question)
-    elif answer_type == "gsm8k_boxed_numeric":
-        question = append_gsm8k_boxed_instruction(question)
-    elif answer_type == "svamp_boxed_numeric":
-        question = append_svamp_boxed_instruction(question)
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question},
+        {"role": "user", "content": build_question_text(question, answer_type)},
     ]
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt")
@@ -97,6 +91,11 @@ def build_question_text(question: str, answer_type: str) -> str:
         return append_gsm8k_boxed_instruction(question)
     if answer_type == "svamp_boxed_numeric":
         return append_svamp_boxed_instruction(question)
+    if answer_type == "multiple_choice_letter":
+        return (
+            f"{question}\n\nReason step by step, then finish with exactly one line in the form "
+            "Answer: X, where X is the correct option letter."
+        )
     return question
 
 

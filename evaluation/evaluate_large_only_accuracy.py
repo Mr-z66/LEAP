@@ -47,6 +47,11 @@ def format_question(question: str, answer_type: str) -> str:
         return append_gsm8k_boxed_instruction(question)
     if answer_type == "svamp_boxed_numeric":
         return append_svamp_boxed_instruction(question)
+    if answer_type == "multiple_choice_letter":
+        return (
+            f"{question}\n\nReason step by step, then finish with exactly one line in the form "
+            "Answer: X, where X is the correct option letter."
+        )
     return question
 
 

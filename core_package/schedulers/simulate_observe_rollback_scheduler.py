@@ -113,7 +113,25 @@ def parse_args():
     parser.add_argument("--runtime-step-word", default="\n\n", help="Text delimiter used by --runtime-chunking rsd_step.")
     parser.add_argument("--tail-bonus-weight", type=float, default=DEFAULT_TAIL_BONUS_WEIGHT, help="Add alpha * generation_progress to risk score.")
     parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
+    parser.add_argument(
+        "--max-trigger-progress",
+        type=float,
+        default=1.0,
+        help="Do not hand off after this fraction of the small-model token budget; late handoffs inherit too much committed reasoning.",
+    )
     parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
+    parser.add_argument(
+        "--large-extra-token-budget",
+        type=int,
+        default=0,
+        help="Extra tokens reserved for each large-model handoff beyond the shared generation budget.",
+    )
+    parser.add_argument(
+        "--answer-repair-tokens",
+        type=int,
+        default=48,
+        help="Independent large-model token budget used to recover a missing final answer after handoff. Set 0 to disable.",
+    )
     parser.add_argument(
         "--handoff-mode",
         choices=["takeover", "rewrite_current_chunk", "rewrite_current_step"],
@@ -490,6 +508,11 @@ def build_generation_prompt_text(tokenizer, question, assistant_prefix, system_p
         generation_question = append_gsm8k_boxed_instruction(question)
     elif answer_type == "svamp_boxed_numeric":
         generation_question = append_svamp_boxed_instruction(question)
+    elif answer_type == "multiple_choice_letter":
+        generation_question = (
+            f"{question}\n\nReason step by step, then finish with exactly one line in the form "
+            "Answer: X, where X is the correct option letter."
+        )
     else:
         generation_question = question
     messages = build_generation_messages(generation_question, assistant_prefix=normalized_prefix, system_prompt=system_prompt)
@@ -629,7 +652,7 @@ def chunk_generated_rsd_step_text_with_tokenizer(tokenizer, generated_text, args
         for offset in range(budget):
             selected_ids.append(token_ids[cursor + offset])
             decoded = decode_tokens(tokenizer, selected_ids)
-            if step_word and step_word in decoded:
+            if step_word and len(selected_ids) >= args.rewrite_step_min_tokens and step_word in decoded:
                 cut_reason = "rsd_step_word"
                 break
             if len(selected_ids) >= force_tokens:
@@ -1133,7 +1156,7 @@ def run_rsd_step_chunk(
 
         chunk_token_ids.append(next_id)
         decoded = decode_tokens(tokenizer, chunk_token_ids)
-        if step_word and step_word in decoded:
+        if step_word and len(chunk_token_ids) >= args.rewrite_step_min_tokens and step_word in decoded:
             cut_reason = "rsd_step_word"
         elif len(chunk_token_ids) >= args.rewrite_step_force_tokens:
             cut_reason = "rsd_step_force_tokens"
@@ -1189,7 +1212,11 @@ def run_cached_runtime_chunk(session, tokenizer, question, assistant_prefix, max
     def boundary_fn(token_ids, next_id):
         chunk_len = len(token_ids)
         if args.runtime_chunking == "rsd_step":
-            if args.runtime_step_word and args.runtime_step_word in decode_tokens(tokenizer, token_ids):
+            if (
+                args.runtime_step_word
+                and len(token_ids) >= args.rewrite_step_min_tokens
+                and args.runtime_step_word in decode_tokens(tokenizer, token_ids)
+            ):
                 return "rsd_step_word"
             return "rsd_step_force_tokens" if chunk_len >= args.rewrite_step_force_tokens else None
         if args.runtime_chunking == "rsdmath":
@@ -1277,6 +1304,7 @@ def run_runtime_chunk(
 def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_chunks=None, max_total_new_tokens=None, session=None):
     target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
     handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
+    answer_extractor = get_answer_extractor(args.answer_type)
     if args.large_backend == "vllm":
         return run_large_handoff_vllm(
             tokenizer=tokenizer,
@@ -1316,7 +1344,8 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
                 "cut_reason": result["cut_reason"],
                 "reached_eos": reached_eos,
             })
-            if reached_eos or total_generated_tokens >= handoff_token_budget:
+            _, has_answer = answer_extractor(prefix or "")
+            if reached_eos or has_answer or total_generated_tokens >= handoff_token_budget:
                 break
         return {
             "full_reasoning": prefix,
@@ -1362,7 +1391,11 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
 
         if args.runtime_chunking == "rsd_step":
             decoded = decode_tokens(tokenizer, chunk_token_ids)
-            if args.runtime_step_word and args.runtime_step_word in decoded:
+            if (
+                args.runtime_step_word
+                and chunk_len >= args.rewrite_step_min_tokens
+                and args.runtime_step_word in decoded
+            ):
                 cut_reason = "rsd_step_word"
             elif chunk_len >= args.rewrite_step_force_tokens:
                 cut_reason = "rsd_step_force_tokens"
@@ -1396,6 +1429,10 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
         generated_chunks += 1
         chunk_token_ids = []
         cut_reason = None
+        generated_text_so_far = (normalized_prefix or "") + decode_tokens(tokenizer, all_token_ids).strip()
+        _, has_answer = answer_extractor(generated_text_so_far)
+        if has_answer:
+            break
 
     if chunk_token_ids:
         tail_reason = {"rsd_step": "rsd_step_tail", "rsdmath": "rewrite_step_tail"}.get(args.runtime_chunking, "tail")
@@ -1537,6 +1574,51 @@ def run_rewrite_current_step_handoff_vllm(tokenizer, question, assistant_prefix,
                 "reached_eos": reached_eos,
             }
         ],
+    }
+
+
+def build_answer_repair_question(question, reasoning, answer_type):
+    if answer_type == "multiple_choice_letter":
+        # Handoff text can contain an already-committed wrong option.  For
+        # multiple choice, repair from the original question only so the 7B
+        # model acts as an independent verifier instead of anchoring on it.
+        return (
+            f"{question}\n\n"
+            "Solve the multiple-choice question independently. Ignore any previous model attempt. "
+            "Return only the final choice in the exact format `Answer: X`, where X is A, B, C, D, or E."
+        )
+    else:
+        instruction = "Return only the final answer using the answer format required by the original question."
+    return (
+        f"{question}\n\n"
+        "A previous reasoning attempt is shown below. Determine the correct final answer yourself; "
+        "do not blindly copy its conclusion.\n\n"
+        f"Previous reasoning:\n{reasoning}\n\n{instruction}"
+    )
+
+
+def run_missing_answer_repair(model, tokenizer, question, reasoning, args):
+    budget = max(int(args.answer_repair_tokens), 0)
+    if budget <= 0:
+        return {"text": "", "generated_token_count": 0, "answer": "", "has_answer": False}
+    repair_question = build_answer_repair_question(question, reasoning, args.answer_type)
+    result = run_large_handoff(
+        model=model,
+        tokenizer=tokenizer,
+        question=repair_question,
+        assistant_prefix=None,
+        args=args,
+        num_chunks=max(int(args.large_handoff_chunks), 1),
+        max_total_new_tokens=budget,
+        session=None,
+    )
+    text = result["full_reasoning"]
+    answer, has_answer = get_answer_extractor(args.answer_type)(text)
+    return {
+        "text": text,
+        "generated_token_count": int(result["generated_token_count"]),
+        "answer": answer if has_answer else "",
+        "has_answer": bool(has_answer),
     }
 
 
@@ -1759,6 +1841,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     cooldown_remaining = 0
     route_trace = []
     previous_combined_score = None
+    rolled_back_answer = ""
     if args.persistent_kv_cache and (args.large_backend != "hf" or args.adaptive_large_handoff or args.handoff_mode != "takeover"):
         raise ValueError("--persistent-kv-cache currently requires HF backend, fixed takeover handoff")
     small_session = IncrementalKVSession(small_model) if args.persistent_kv_cache else None
@@ -1824,7 +1907,10 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
         meets_risk_trigger = trigger_decision["meets_risk_trigger"]
         trigger_rule = trigger_decision["trigger_rule"]
 
-        if can_apply_large_handoff(meets_risk_trigger, handoff_count, cooldown_remaining, args):
+        if (
+            progress_ratio <= args.max_trigger_progress
+            and can_apply_large_handoff(meets_risk_trigger, handoff_count, cooldown_remaining, args)
+        ):
             triggered = True
             trigger_scores.append(combined_score)
             trigger_progresses.append(progress_ratio)
@@ -1844,6 +1930,10 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 }
             )
 
+            discarded_answer, discarded_has_answer = answer_extractor(small_chunk["full_reasoning"])
+            if discarded_has_answer:
+                rolled_back_answer = discarded_answer
+
             # Roll back the discarded small-model chunk before applying the large-model handoff.
             total_tokens -= small_chunk["generated_token_count"]
             total_small_tokens -= small_chunk["generated_token_count"]
@@ -1853,7 +1943,9 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 small_session.restore(safe_checkpoint)
 
             if args.handoff_mode == "rewrite_current_step":
-                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                remaining_handoff_budget = max(
+                    args.max_new_tokens - total_tokens + int(args.large_extra_token_budget), 1
+                )
                 large_result = run_rewrite_current_step_handoff(
                     model=large_model,
                     tokenizer=large_tokenizer,
@@ -1863,7 +1955,9 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     max_total_new_tokens=remaining_handoff_budget,
                 )
             elif args.handoff_mode == "rewrite_current_chunk":
-                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                remaining_handoff_budget = max(
+                    args.max_new_tokens - total_tokens + int(args.large_extra_token_budget), 1
+                )
                 large_result = run_large_handoff(
                     model=large_model,
                     tokenizer=large_tokenizer,
@@ -1892,7 +1986,9 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     artifact=artifact,
                 )
             else:
-                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                remaining_handoff_budget = max(
+                    args.max_new_tokens - total_tokens + int(args.large_extra_token_budget), 1
+                )
                 large_result = run_large_handoff(
                     model=large_model,
                     tokenizer=large_tokenizer,
@@ -1944,7 +2040,8 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             reset_prev_chunk = True
             cooldown_remaining = args.cooldown_chunks
             previous_combined_score = None
-            if large_result["reached_eos"]:
+            _, large_has_answer = answer_extractor(prefix or "")
+            if large_result["reached_eos"] or large_has_answer:
                 break
             continue
 
@@ -1980,6 +2077,37 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     else:
         final_reasoning = prefix or ""
         final_answer, has_answer = answer_extractor(final_reasoning)
+        if not has_answer:
+            repair = run_missing_answer_repair(
+                model=large_model,
+                tokenizer=large_tokenizer,
+                question=question,
+                reasoning=final_reasoning,
+                args=args,
+            )
+            total_large_tokens += repair["generated_token_count"]
+            route_trace.append(
+                {
+                    "event": "missing_answer_repair",
+                    "generated_token_count": repair["generated_token_count"],
+                    "has_answer": repair["has_answer"],
+                    "answer": repair["answer"],
+                }
+            )
+            if repair["has_answer"]:
+                final_answer = repair["answer"]
+                final_reasoning = f"{final_reasoning.rstrip()}\n\nAnswer: {final_answer}".strip()
+                has_answer = True
+            elif rolled_back_answer:
+                final_answer = rolled_back_answer
+                final_reasoning = f"{final_reasoning.rstrip()}\n\nAnswer: {final_answer}".strip()
+                has_answer = True
+                route_trace.append(
+                    {
+                        "event": "rolled_back_answer_fallback",
+                        "answer": final_answer,
+                    }
+                )
         scheduled_is_correct = has_answer and check_answer_correctness(
             final_answer,
             ground_truth_final_answer,

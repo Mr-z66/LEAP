@@ -108,10 +108,11 @@ schedule() {
     --probe-artifact-path "$ART/probe_${dataset}_routing_boundary_mean.pt" \
     --small-model-path "$SMALL" --large-model-path "$LARGE" --large-backend hf \
     --thresholds "$thresholds" --num-test-questions "$count" --max-new-tokens 256 \
-    --runtime-chunking rsd_step --runtime-step-word $'\n\n' --max-handoffs 2 \
-    --handoff-mode rewrite_current_step --rewrite-step-min-tokens 12 \
+    --runtime-chunking rsd_step --runtime-step-word $'\n\n' --max-handoffs 1 --max-trigger-progress 0.75 \
+    --handoff-mode takeover --require-consecutive-risk --rewrite-step-min-tokens 12 \
     --rewrite-step-target-tokens 64 --rewrite-step-force-tokens 160 \
-    --rewrite-step-boundary-mode math --large-handoff-chunks 4 --cooldown-chunks 2 \
+    --rewrite-step-boundary-mode auto --large-handoff-chunks 8 --cooldown-chunks 2 \
+    --large-extra-token-budget 128 --answer-repair-tokens 48 \
     --answer-type multiple_choice_letter --small-model-params-b 1.5 --large-model-params-b 7.0 \
     --trace-export-path "$trace_path"
 }
