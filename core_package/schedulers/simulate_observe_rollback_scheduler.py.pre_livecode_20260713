@@ -1,0 +1,2369 @@
+import argparse
+import json
+import os
+import re
+import statistics
+import time
+import urllib.error
+import urllib.request
+
+import numpy as np
+import torch
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from core_package.answer_registry import check_answer_correctness, get_answer_extractor
+from core_package.config import MODELS, SCHEDULER
+from core_package.gsm8k_protocol import append_gsm8k_boxed_instruction
+from core_package.pipelines.build_dataset import is_safe_boundary
+from core_package.math500_protocol import append_math500_instruction
+from core_package.svamp_protocol import append_svamp_boxed_instruction
+from core_package.schedulers.kv_cache_session import IncrementalKVSession
+
+# ================= Default Configuration =================
+DEFAULT_LABEL_PATH = SCHEDULER.label_path
+DEFAULT_SMALL_MODEL_PATH = MODELS.small_model_path
+DEFAULT_LARGE_MODEL_PATH = MODELS.large_model_path
+DEFAULT_TEST_SIZE = SCHEDULER.test_size
+DEFAULT_RANDOM_STATE = SCHEDULER.random_state
+DEFAULT_FEATURE_KEY = SCHEDULER.feature_key
+DEFAULT_MLP_HIDDEN_LAYERS = SCHEDULER.mlp_hidden_layers
+DEFAULT_MLP_MAX_ITER = SCHEDULER.mlp_max_iter
+DEFAULT_MLP_ALPHA = SCHEDULER.mlp_alpha
+DEFAULT_MLP_LEARNING_RATE_INIT = SCHEDULER.mlp_learning_rate_init
+DEFAULT_THRESHOLDS = SCHEDULER.thresholds
+DEFAULT_MAX_NEW_TOKENS = SCHEDULER.max_new_tokens
+DEFAULT_MIN_CHUNK_TOKENS = SCHEDULER.min_chunk_tokens
+DEFAULT_MAX_CHUNK_TOKENS = SCHEDULER.max_chunk_tokens
+DEFAULT_TAIL_BONUS_WEIGHT = SCHEDULER.tail_bonus_weight
+DEFAULT_MAX_HANDOFFS = SCHEDULER.max_handoffs
+DEFAULT_LARGE_HANDOFF_CHUNKS = SCHEDULER.large_handoff_chunks
+DEFAULT_PROBE_ARTIFACT_PATH = SCHEDULER.probe_artifact_path
+DEFAULT_SYSTEM_PROMPT = MODELS.system_prompt
+DEFAULT_BOXED_SYSTEM_PROMPT = MODELS.boxed_math_system_prompt
+DEFAULT_ANSWER_TYPE = "legacy_math"
+PUNCTUATIONS = [".", ",", "!", "?", "\n"]
+# ========================================================
+
+
+class TorchMLPProbe(torch.nn.Module):
+    def __init__(self, input_dim, hidden_layers, dropout=0.0):
+        super().__init__()
+        dims = [input_dim, *hidden_layers, 1]
+        layers = []
+        for idx in range(len(dims) - 2):
+            layers.append(torch.nn.Linear(dims[idx], dims[idx + 1]))
+            layers.append(torch.nn.ReLU())
+            if dropout > 0:
+                layers.append(torch.nn.Dropout(dropout))
+        layers.append(torch.nn.Linear(dims[-2], dims[-1]))
+        self.network = torch.nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x).squeeze(-1)
+
+    def predict_proba(self, X):
+        self.eval()
+        with torch.no_grad():
+            if isinstance(X, np.ndarray):
+                X_tensor = torch.from_numpy(X).to(torch.float32)
+            else:
+                X_tensor = X.to(torch.float32)
+            logits = self.forward(X_tensor)
+            pos_prob = torch.sigmoid(logits).cpu().numpy()
+        neg_prob = 1.0 - pos_prob
+        return np.stack([neg_prob, pos_prob], axis=1)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Simulate an observe-and-rollback chunk scheduler.")
+    parser.add_argument("--label-path", default=DEFAULT_LABEL_PATH, help="Path to strict labeled chunk data.")
+    parser.add_argument(
+        "--eval-data-path",
+        default=None,
+        help="Optional separate evaluation dataset path. Can be a strict labeled .pt or a raw trajectory .pt from build_dataset.",
+    )
+    parser.add_argument("--small-model-path", default=DEFAULT_SMALL_MODEL_PATH, help="Path to the small model.")
+    parser.add_argument("--large-model-path", default=DEFAULT_LARGE_MODEL_PATH, help="Path to the large model.")
+    parser.add_argument("--feature-key", default=DEFAULT_FEATURE_KEY, help="Chunk feature used by the probe.")
+    parser.add_argument("--probe-artifact-path", default=DEFAULT_PROBE_ARTIFACT_PATH, help="Optional fixed probe artifact to load for fair comparisons.")
+    parser.add_argument("--test-size", type=float, default=DEFAULT_TEST_SIZE, help="Held-out question ratio.")
+    parser.add_argument("--random-state", type=int, default=DEFAULT_RANDOM_STATE, help="Random seed for the split.")
+    parser.add_argument("--mlp-hidden-layers", default=DEFAULT_MLP_HIDDEN_LAYERS, help="Comma-separated MLP hidden sizes.")
+    parser.add_argument("--mlp-max-iter", type=int, default=DEFAULT_MLP_MAX_ITER, help="MLP max iterations.")
+    parser.add_argument("--mlp-alpha", type=float, default=DEFAULT_MLP_ALPHA, help="MLP L2 regularization.")
+    parser.add_argument(
+        "--mlp-learning-rate-init",
+        type=float,
+        default=DEFAULT_MLP_LEARNING_RATE_INIT,
+        help="MLP initial learning rate.",
+    )
+    parser.add_argument("--thresholds", default=DEFAULT_THRESHOLDS, help="Comma-separated risk thresholds to simulate.")
+    parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS, help="Max total generation tokens.")
+    parser.add_argument("--min-chunk-tokens", type=int, default=DEFAULT_MIN_CHUNK_TOKENS, help="Min tokens before punctuation can end a chunk.")
+    parser.add_argument("--max-chunk-tokens", type=int, default=DEFAULT_MAX_CHUNK_TOKENS, help="Forced chunk cut length.")
+    parser.add_argument(
+        "--runtime-chunking",
+        choices=["punctuation", "rsdmath", "rsd_step"],
+        default="punctuation",
+        help="Chunk boundary used during online scheduler generation. rsdmath matches math_rsd_fallback-style safe boundaries; rsd_step uses a textual step delimiter.",
+    )
+    parser.add_argument("--runtime-step-word", default="\n\n", help="Text delimiter used by --runtime-chunking rsd_step.")
+    parser.add_argument("--tail-bonus-weight", type=float, default=DEFAULT_TAIL_BONUS_WEIGHT, help="Add alpha * generation_progress to risk score.")
+    parser.add_argument("--max-handoffs", type=int, default=DEFAULT_MAX_HANDOFFS, help="Maximum number of large-model interventions.")
+    parser.add_argument("--large-handoff-chunks", type=int, default=DEFAULT_LARGE_HANDOFF_CHUNKS, help="How many chunks large model handles per intervention.")
+    parser.add_argument(
+        "--handoff-mode",
+        choices=["takeover", "rewrite_current_chunk", "rewrite_current_step"],
+        default="takeover",
+        help=(
+            "Large-model intervention mode. 'takeover' keeps the existing behavior; "
+            "'rewrite_current_chunk' rolls back the risky small chunk and lets the large model generate one replacement chunk; "
+            "'rewrite_current_step' lets the large model continue until a safe step boundary."
+        ),
+    )
+    parser.add_argument("--rewrite-step-min-tokens", type=int, default=12, help="Minimum tokens before rewrite_current_step can stop at a safe boundary.")
+    parser.add_argument("--rewrite-step-target-tokens", type=int, default=64, help="Preferred token count before rewrite_current_step stops at a safe boundary.")
+    parser.add_argument("--rewrite-step-force-tokens", type=int, default=160, help="Hard token cap for rewrite_current_step if no safe boundary appears.")
+    parser.add_argument(
+        "--rewrite-step-boundary-mode",
+        choices=["auto", "math", "code"],
+        default="auto",
+        help="Safe-boundary mode for rewrite_current_step. Auto uses code for livecodebench_codegen and math otherwise.",
+    )
+    parser.add_argument(
+        "--adaptive-large-handoff",
+        action="store_true",
+        help="Use adaptive large-model handoff length based on whether a small-model re-entry probe looks stable.",
+    )
+    parser.add_argument(
+        "--min-large-handoff-chunks",
+        type=int,
+        default=1,
+        help="Minimum number of large-model chunks to generate before testing whether control can return to the small model.",
+    )
+    parser.add_argument(
+        "--max-adaptive-large-handoff-chunks",
+        type=int,
+        default=4,
+        help="Maximum number of large-model chunks to generate in a single adaptive handoff.",
+    )
+    parser.add_argument(
+        "--handoff-recovery-threshold",
+        type=float,
+        default=None,
+        help="Risk threshold below which a small-model re-entry probe is considered stable. Defaults to the main trigger threshold.",
+    )
+    parser.add_argument("--cooldown-chunks", type=int, default=SCHEDULER.cooldown_chunks, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
+    parser.add_argument(
+        "--require-consecutive-risk",
+        action="store_true",
+        help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
+    )
+    parser.add_argument("--num-test-questions", type=int, default=None, help="Optional cap on held-out test questions.")
+    parser.add_argument("--trace-question-id", type=int, default=None, help="Optional question_id to print a detailed chunk routing trace for.")
+    parser.add_argument("--trace-export-path", default=None, help="Optional JSON path to export per-question routing traces.")
+    parser.add_argument(
+        "--small-baseline-path",
+        default=None,
+        help="Optional JSON produced by evaluation/evaluate_model_only_accuracy.py to override stored small-model correctness.",
+    )
+    parser.add_argument("--answer-type", default=DEFAULT_ANSWER_TYPE, help="Answer protocol used for extraction and correctness.")
+    parser.add_argument("--system-prompt", default=DEFAULT_SYSTEM_PROMPT, help="System prompt used for both small and large model generation.")
+    parser.add_argument(
+        "--large-backend",
+        choices=["hf", "vllm"],
+        default="hf",
+        help="Backend used for large-model handoff generation. Defaults to local Hugging Face generation.",
+    )
+    parser.add_argument(
+        "--vllm-base-url",
+        default="http://127.0.0.1:8000",
+        help="Base URL for an OpenAI-compatible vLLM server. Only used when --large-backend vllm.",
+    )
+    parser.add_argument(
+        "--vllm-api-key",
+        default="EMPTY",
+        help="API key for the vLLM OpenAI-compatible server. Only used when --large-backend vllm.",
+    )
+    parser.add_argument(
+        "--vllm-model-name",
+        default=None,
+        help="Served model name exposed by the vLLM server. Defaults to the basename of --large-model-path.",
+    )
+    parser.add_argument(
+        "--vllm-timeout",
+        type=float,
+        default=300.0,
+        help="HTTP timeout in seconds for vLLM calls.",
+    )
+    parser.add_argument("--small-model-params-b", type=float, default=None, help="Small model parameter count in billions for token-cost reporting.")
+    parser.add_argument("--large-model-params-b", type=float, default=None, help="Large model parameter count in billions for token-cost reporting.")
+    parser.add_argument("--persistent-kv-cache", action="store_true", help="Reuse model-specific KV caches across chunks and handoffs (HF backend, fixed handoff).")
+    return parser.parse_args()
+
+
+def resolve_system_prompt(answer_type: str, system_prompt: str) -> str:
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric", "gsm8k_boxed_numeric"} and system_prompt == DEFAULT_SYSTEM_PROMPT:
+        return DEFAULT_BOXED_SYSTEM_PROMPT
+    return system_prompt
+
+
+def tensor_to_numpy(value):
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().to(torch.float32).numpy()
+    return np.asarray(value, dtype=np.float32)
+
+
+def canonical_feature_name(name):
+    aliases = {
+        "boundary": "boundary_hidden_state",
+        "mean": "mean_hidden_state",
+        "entropy": "final_entropy",
+        "top1_prob": "final_top1_prob",
+        "margin": "final_margin",
+    }
+    return aliases.get(name, name)
+
+
+def parse_feature_spec(feature_spec):
+    parts = []
+    for part in feature_spec.split("+"):
+        token = part.strip()
+        if token:
+            parts.append(token)
+    if not parts:
+        raise ValueError(f"Empty feature spec: {feature_spec}")
+    return parts
+
+
+DERIVED_SCALAR_FEATURES = {
+    "relative_position",
+    "remaining_ratio",
+    "digit_count",
+    "operator_count",
+    "numeric_density",
+    "contains_multiple_numbers",
+    "has_equation_like_pattern",
+    "has_finalization_cue",
+}
+
+
+def chunk_text(chunk):
+    return str(chunk.get("chunk_text", "") or "")
+
+
+def decide_small_chunk_trigger(
+    combined_score,
+    previous_combined_score,
+    threshold,
+    args,
+):
+    meets_risk_trigger = combined_score >= threshold
+    trigger_rule = "single_chunk_risk"
+
+    if args.require_consecutive_risk:
+        meets_risk_trigger = (
+            combined_score >= threshold
+            and previous_combined_score is not None
+            and previous_combined_score >= threshold
+        )
+        trigger_rule = "consecutive_two_chunk_risk"
+
+    return {
+        "meets_risk_trigger": meets_risk_trigger,
+        "trigger_rule": trigger_rule,
+    }
+
+
+def can_apply_large_handoff(meets_risk_trigger, handoff_count, cooldown_remaining, args):
+    return meets_risk_trigger and handoff_count < args.max_handoffs and cooldown_remaining <= 0
+
+
+def chunk_scalar_feature(chunk, token):
+    text = chunk_text(chunk)
+    compact_text = text.replace(",", "")
+    digits = re.findall(r"\d", compact_text)
+    numbers = re.findall(r"-?\d+(?:\.\d+)?", compact_text)
+    non_space_chars = len(re.findall(r"\S", text))
+    lower_text = text.lower()
+
+    if token == "digit_count":
+        return np.asarray([len(digits)], dtype=np.float32)
+    if token == "operator_count":
+        return np.asarray([sum(text.count(symbol) for symbol in "+-*/=")], dtype=np.float32)
+    if token == "numeric_density":
+        return np.asarray([len(digits) / max(non_space_chars, 1)], dtype=np.float32)
+    if token == "contains_multiple_numbers":
+        return np.asarray([1.0 if len(set(numbers)) >= 2 else 0.0], dtype=np.float32)
+    if token == "has_equation_like_pattern":
+        has_pattern = "=" in text or bool(re.search(r"\d\s*[-+*/]\s*\d", compact_text))
+        return np.asarray([1.0 if has_pattern else 0.0], dtype=np.float32)
+    if token == "has_finalization_cue":
+        has_cue = bool(re.search(r"(therefore|thus|so|answer|final answer|total)", lower_text))
+        return np.asarray([1.0 if has_cue else 0.0], dtype=np.float32)
+    raise KeyError(f"Unsupported derived scalar feature: {token}")
+
+
+def is_derived_feature_token(token):
+    return token in {"delta_prev", "abs_delta_prev"} or token in DERIVED_SCALAR_FEATURES
+
+
+def build_feature_vector(chunk, prev_chunk, total_chunks, feature_spec):
+    values = []
+    for token in parse_feature_spec(feature_spec):
+        if token == "delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = base - tensor_to_numpy(prev_chunk["boundary_hidden_state"])
+        elif token == "abs_delta_prev":
+            base = tensor_to_numpy(chunk["boundary_hidden_state"])
+            if prev_chunk is None:
+                value = np.zeros_like(base, dtype=np.float32)
+            else:
+                value = np.abs(base - tensor_to_numpy(prev_chunk["boundary_hidden_state"]))
+        elif token == "relative_position":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([int(chunk["chunk_id"]) / denom], dtype=np.float32)
+        elif token == "remaining_ratio":
+            denom = max(total_chunks - 1, 1)
+            value = np.asarray([(denom - int(chunk["chunk_id"])) / denom], dtype=np.float32)
+        elif token in DERIVED_SCALAR_FEATURES:
+            value = chunk_scalar_feature(chunk, token)
+        else:
+            feature_key = canonical_feature_name(token)
+            if feature_key not in chunk:
+                raise KeyError(f"Feature component '{token}' (resolved to '{feature_key}') not found in chunk.")
+            value = tensor_to_numpy(chunk[feature_key])
+        values.append(np.asarray(value, dtype=np.float32).reshape(-1))
+    return np.concatenate(values, axis=0)
+
+
+def parse_csv_floats(text):
+    values = []
+    for part in text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        values.append(float(part))
+    if not values:
+        raise ValueError("Expected at least one numeric value.")
+    return values
+
+
+def infer_model_params_b(model_path):
+    matches = re.findall(r"(\d+(?:\.\d+)?)\s*b", str(model_path).lower())
+    if not matches:
+        return None
+    return float(matches[-1])
+
+
+def percentile(values, p):
+    if not values:
+        return float("nan")
+    if len(values) == 1:
+        return values[0]
+    ordered = sorted(values)
+    idx = (len(ordered) - 1) * p
+    lo = int(idx)
+    hi = min(lo + 1, len(ordered) - 1)
+    frac = idx - lo
+    return ordered[lo] * (1.0 - frac) + ordered[hi] * frac
+
+
+def parse_hidden_layer_sizes(hidden_layers_text):
+    layer_sizes = []
+    for part in hidden_layers_text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        layer_sizes.append(int(part))
+    if not layer_sizes:
+        raise ValueError("MLP hidden layers cannot be empty.")
+    return tuple(layer_sizes)
+
+
+def upsample_minority_class(X, y, random_state):
+    unique_labels, counts = np.unique(y, return_counts=True)
+    if len(unique_labels) < 2 or counts[0] == counts[1]:
+        return X, y
+
+    majority_label = unique_labels[np.argmax(counts)]
+    minority_label = unique_labels[np.argmin(counts)]
+    majority_indices = np.flatnonzero(y == majority_label)
+    minority_indices = np.flatnonzero(y == minority_label)
+
+    rng = np.random.default_rng(random_state)
+    sampled_minority_indices = rng.choice(minority_indices, size=len(majority_indices), replace=True)
+    balanced_indices = np.concatenate([majority_indices, sampled_minority_indices])
+    rng.shuffle(balanced_indices)
+    return X[balanced_indices], y[balanced_indices]
+
+
+def build_probe(args):
+    return MLPClassifier(
+        hidden_layer_sizes=parse_hidden_layer_sizes(args.mlp_hidden_layers),
+        activation="relu",
+        solver="adam",
+        alpha=args.mlp_alpha,
+        batch_size="auto",
+        learning_rate_init=args.mlp_learning_rate_init,
+        max_iter=args.mlp_max_iter,
+        early_stopping=True,
+        n_iter_no_change=15,
+        random_state=args.random_state,
+    )
+
+
+def compute_token_confidence(logits):
+    probabilities = torch.softmax(logits.to(torch.float32), dim=-1)
+    entropy = float(-(probabilities * torch.log(probabilities.clamp_min(1e-12))).sum().item())
+    top_values = torch.topk(probabilities, k=2)
+    top1_prob = float(top_values.values[0].item())
+    top2_prob = float(top_values.values[1].item()) if top_values.values.numel() > 1 else 0.0
+    return {
+        "entropy": entropy,
+        "top1_prob": top1_prob,
+        "margin": float(top1_prob - top2_prob),
+    }
+
+
+def summarize_confidence(token_confidences):
+    if not token_confidences:
+        zero = torch.tensor([0.0], dtype=torch.float32)
+        return {
+            "mean_entropy": zero.clone(),
+            "max_entropy": zero.clone(),
+            "final_entropy": zero.clone(),
+            "mean_top1_prob": zero.clone(),
+            "min_top1_prob": zero.clone(),
+            "final_top1_prob": zero.clone(),
+            "mean_margin": zero.clone(),
+            "min_margin": zero.clone(),
+            "final_margin": zero.clone(),
+        }
+
+    entropy_values = np.asarray([item["entropy"] for item in token_confidences], dtype=np.float32)
+    top1_values = np.asarray([item["top1_prob"] for item in token_confidences], dtype=np.float32)
+    margin_values = np.asarray([item["margin"] for item in token_confidences], dtype=np.float32)
+
+    def scalar_tensor(value):
+        return torch.tensor([float(value)], dtype=torch.float32)
+
+    return {
+        "mean_entropy": scalar_tensor(np.mean(entropy_values)),
+        "max_entropy": scalar_tensor(np.max(entropy_values)),
+        "final_entropy": scalar_tensor(entropy_values[-1]),
+        "mean_top1_prob": scalar_tensor(np.mean(top1_values)),
+        "min_top1_prob": scalar_tensor(np.min(top1_values)),
+        "final_top1_prob": scalar_tensor(top1_values[-1]),
+        "mean_margin": scalar_tensor(np.mean(margin_values)),
+        "min_margin": scalar_tensor(np.min(margin_values)),
+        "final_margin": scalar_tensor(margin_values[-1]),
+    }
+
+
+def build_generation_messages(question, assistant_prefix=None, system_prompt=DEFAULT_SYSTEM_PROMPT):
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": question},
+    ]
+    if assistant_prefix is not None:
+        messages.append({"role": "assistant", "content": assistant_prefix})
+    return messages
+
+
+def build_generation_prompt_text(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
+    normalized_prefix = None
+    if assistant_prefix is not None:
+        normalized_prefix = assistant_prefix
+        if not normalized_prefix.strip():
+            normalized_prefix = None
+
+    if answer_type == "math500_qwen_boxed":
+        generation_question = append_math500_instruction(question)
+    elif answer_type == "gsm8k_boxed_numeric":
+        generation_question = append_gsm8k_boxed_instruction(question)
+    elif answer_type == "svamp_boxed_numeric":
+        generation_question = append_svamp_boxed_instruction(question)
+    else:
+        generation_question = question
+    messages = build_generation_messages(generation_question, assistant_prefix=normalized_prefix, system_prompt=system_prompt)
+    if normalized_prefix is None:
+        prompt_text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+    else:
+        prompt_text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            continue_final_message=True,
+        )
+    return prompt_text, normalized_prefix
+
+
+def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
+    prompt_text, normalized_prefix = build_generation_prompt_text(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=system_prompt,
+        answer_type=answer_type,
+    )
+    return tokenizer(prompt_text, return_tensors="pt"), normalized_prefix
+
+
+def prompt_token_count(tokenizer, question, system_prompt, answer_type):
+    inputs, _ = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix=None,
+        system_prompt=system_prompt,
+        answer_type=answer_type,
+    )
+    return int(inputs["input_ids"].shape[1])
+
+def decode_tokens(tokenizer, token_ids):
+    if not token_ids:
+        return ""
+    return tokenizer.decode(token_ids, skip_special_tokens=True)
+
+
+def chunk_generated_text_with_tokenizer(tokenizer, generated_text, min_chunk_tokens, max_chunk_tokens):
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    if not token_ids:
+        return []
+
+    chunks = []
+    current_token_ids = []
+    for token_id in token_ids:
+        current_token_ids.append(token_id)
+        token_text = tokenizer.decode([token_id], skip_special_tokens=False)
+        chunk_len = len(current_token_ids)
+        hit_punctuation = any(p in token_text for p in PUNCTUATIONS)
+
+        cut_reason = None
+        if hit_punctuation and chunk_len >= min_chunk_tokens:
+            cut_reason = "punctuation"
+        elif chunk_len >= max_chunk_tokens:
+            cut_reason = "max_tokens"
+
+        if cut_reason is None:
+            continue
+
+        chunks.append(
+            {
+                "token_ids": list(current_token_ids),
+                "chunk_text": decode_tokens(tokenizer, current_token_ids).strip(),
+                "generated_token_count": len(current_token_ids),
+                "cut_reason": cut_reason,
+            }
+        )
+        current_token_ids = []
+
+    if current_token_ids:
+        chunks.append(
+            {
+                "token_ids": list(current_token_ids),
+                "chunk_text": decode_tokens(tokenizer, current_token_ids).strip(),
+                "generated_token_count": len(current_token_ids),
+                "cut_reason": "tail",
+            }
+        )
+    return chunks
+
+
+def resolve_rewrite_step_boundary_mode(args):
+    if args.rewrite_step_boundary_mode != "auto":
+        return args.rewrite_step_boundary_mode
+    if args.answer_type == "livecodebench_codegen":
+        return "code"
+    return "math"
+
+
+def chunk_generated_step_with_tokenizer(tokenizer, generated_text, args):
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    if not token_ids:
+        return None
+
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+    selected_ids = []
+    cut_reason = "rewrite_step_tail"
+    for token_id in token_ids[: max(int(args.rewrite_step_force_tokens), 1)]:
+        selected_ids.append(token_id)
+        current_len = len(selected_ids)
+        if current_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+            cut_reason = f"target_{boundary_mode}_rewrite_step_boundary"
+            break
+        if current_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+            cut_reason = f"{boundary_mode}_rewrite_step_boundary"
+            break
+        if current_len >= args.rewrite_step_force_tokens:
+            cut_reason = "rewrite_step_force_tokens"
+            break
+
+    return {
+        "token_ids": selected_ids,
+        "chunk_text": decode_tokens(tokenizer, selected_ids).strip(),
+        "generated_token_count": len(selected_ids),
+        "cut_reason": cut_reason,
+    }
+
+
+def chunk_generated_rsd_step_text_with_tokenizer(tokenizer, generated_text, args, target_chunks):
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    chunks = []
+    cursor = 0
+    step_word = args.runtime_step_word
+    force_tokens = max(int(args.rewrite_step_force_tokens), 1)
+    while cursor < len(token_ids) and len(chunks) < target_chunks:
+        selected_ids = []
+        cut_reason = "rsd_step_tail"
+        budget = min(len(token_ids) - cursor, force_tokens)
+        for offset in range(budget):
+            selected_ids.append(token_ids[cursor + offset])
+            decoded = decode_tokens(tokenizer, selected_ids)
+            if step_word and step_word in decoded:
+                cut_reason = "rsd_step_word"
+                break
+            if len(selected_ids) >= force_tokens:
+                cut_reason = "rsd_step_force_tokens"
+                break
+        if not selected_ids:
+            break
+        chunks.append(
+            {
+                "token_ids": selected_ids,
+                "chunk_text": decode_tokens(tokenizer, selected_ids).strip(),
+                "generated_token_count": len(selected_ids),
+                "cut_reason": cut_reason,
+            }
+        )
+        cursor += len(selected_ids)
+    return chunks
+
+
+def chunk_generated_runtime_text_with_tokenizer(tokenizer, generated_text, args, target_chunks):
+    if args.runtime_chunking == "rsd_step":
+        return chunk_generated_rsd_step_text_with_tokenizer(tokenizer, generated_text, args, target_chunks)
+    if args.runtime_chunking != "rsdmath":
+        return chunk_generated_text_with_tokenizer(
+            tokenizer,
+            generated_text,
+            min_chunk_tokens=args.min_chunk_tokens,
+            max_chunk_tokens=args.max_chunk_tokens,
+        )[:target_chunks]
+
+    token_ids = tokenizer.encode(generated_text, add_special_tokens=False)
+    chunks = []
+    cursor = 0
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+    while cursor < len(token_ids) and len(chunks) < target_chunks:
+        selected_ids = []
+        cut_reason = "rewrite_step_tail"
+        budget = min(len(token_ids) - cursor, max(int(args.rewrite_step_force_tokens), 1))
+        for offset in range(budget):
+            selected_ids.append(token_ids[cursor + offset])
+            current_len = len(selected_ids)
+            if current_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+                cut_reason = f"target_{boundary_mode}_rewrite_step_boundary"
+                break
+            if current_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, selected_ids, boundary_mode):
+                cut_reason = f"{boundary_mode}_rewrite_step_boundary"
+                break
+            if current_len >= args.rewrite_step_force_tokens:
+                cut_reason = "rewrite_step_force_tokens"
+                break
+        if not selected_ids:
+            break
+        chunks.append(
+            {
+                "token_ids": selected_ids,
+                "chunk_text": decode_tokens(tokenizer, selected_ids).strip(),
+                "generated_token_count": len(selected_ids),
+                "cut_reason": cut_reason,
+            }
+        )
+        cursor += len(selected_ids)
+    return chunks
+
+
+def build_vllm_request_payload(args, prompt_text, max_new_tokens):
+    model_name = args.vllm_model_name or os.path.basename(args.large_model_path.rstrip("/\\"))
+    return {
+        "model": model_name,
+        "prompt": prompt_text,
+        "max_tokens": int(max_new_tokens),
+        "temperature": 0.0,
+        "top_p": 1.0,
+    }
+
+
+def run_vllm_completion(args, prompt_text, max_new_tokens):
+    base_url = args.vllm_base_url.rstrip("/")
+    url = f"{base_url}/v1/completions"
+    payload = build_vllm_request_payload(args, prompt_text, max_new_tokens)
+    body = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {args.vllm_api_key}",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=args.vllm_timeout) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"vLLM request failed with HTTP {exc.code}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"vLLM request failed: {exc}") from exc
+
+    choices = response_payload.get("choices", [])
+    if not choices:
+        raise RuntimeError(f"vLLM response did not contain choices: {response_payload}")
+    choice = choices[0]
+    return {
+        "text": choice.get("text", "") or "",
+        "finish_reason": choice.get("finish_reason"),
+    }
+
+
+def build_question_records(dataset, feature_key):
+    question_records = {}
+    required_tokens = parse_feature_spec(feature_key)
+
+    if dataset and isinstance(dataset[0], dict) and "chunks" in dataset[0]:
+        for item in dataset:
+            question_id = int(item["question_id"])
+            chunks = []
+            has_all_components = True
+            for chunk in item.get("chunks", []):
+                for token in required_tokens:
+                    if is_derived_feature_token(token):
+                        continue
+                    resolved_key = canonical_feature_name(token)
+                    if resolved_key not in chunk:
+                        has_all_components = False
+                        break
+                if not has_all_components:
+                    break
+                chunks.append(chunk)
+            if not has_all_components or not chunks:
+                continue
+
+            question_records[question_id] = {
+                "question_id": question_id,
+                "question": item["question"],
+                "ground_truth_final_answer": item.get("ground_truth_final_answer"),
+                "small_final_answer": item.get("model_final_answer"),
+                "small_is_correct": bool(item.get("is_final_correct", False)),
+                "chunks": sorted(chunks, key=lambda chunk: int(chunk["chunk_id"])),
+            }
+        return question_records
+
+    for item in dataset:
+        has_all_components = True
+        for token in required_tokens:
+            if is_derived_feature_token(token):
+                continue
+            resolved_key = canonical_feature_name(token)
+            if resolved_key not in item:
+                has_all_components = False
+                break
+        if not has_all_components:
+            continue
+        question_id = int(item["question_id"])
+        record = question_records.setdefault(
+            question_id,
+            {
+                "question_id": question_id,
+                "question": item["question"],
+                "ground_truth_final_answer": item["ground_truth_final_answer"],
+                "small_final_answer": item["model_final_answer"],
+                "small_is_correct": bool(item["is_final_correct"]),
+                "chunks": [],
+            },
+        )
+        record["chunks"].append(item)
+
+    for record in question_records.values():
+        record["chunks"] = sorted(record["chunks"], key=lambda chunk: int(chunk["chunk_id"]))
+    return question_records
+
+
+def apply_small_baseline_overrides(question_records, baseline_path):
+    if not baseline_path or not os.path.exists(baseline_path):
+        return 0
+
+    with open(baseline_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    rows = payload.get("rows", [])
+    updated = 0
+    for row in rows:
+        qid = int(row["question_id"])
+        if qid not in question_records:
+            continue
+        question_records[qid]["small_final_answer"] = row.get("pred_final_answer")
+        question_records[qid]["small_is_correct"] = bool(row.get("is_correct", False))
+        updated += 1
+    return updated
+
+
+def build_feature_arrays(question_records, feature_key):
+    rows = []
+    labels = []
+    groups = []
+    for question_id, record in question_records.items():
+        chunks = record["chunks"]
+        total_chunks = len(chunks)
+        for index, chunk in enumerate(chunks):
+            if "label" not in chunk:
+                raise KeyError("Chunk labels are required for probe fitting but missing in the provided training dataset.")
+            prev_chunk = None if index == 0 else chunks[index - 1]
+            rows.append(build_feature_vector(chunk, prev_chunk, total_chunks, feature_key))
+            labels.append(int(chunk["label"]))
+            groups.append(question_id)
+    return np.stack(rows), np.asarray(labels, dtype=np.int64), np.asarray(groups, dtype=np.int64)
+
+
+def fit_probe(question_records, args):
+    X, y, groups = build_feature_arrays(question_records, args.feature_key)
+    splitter = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.random_state)
+    train_indices, test_indices = next(splitter.split(X, y, groups))
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X[train_indices])
+    y_train = y[train_indices]
+
+    probe = build_probe(args)
+    X_fit, y_fit = upsample_minority_class(X_train, y_train, args.random_state)
+    probe.fit(X_fit, y_fit)
+
+    train_question_ids = sorted(set(int(qid) for qid in groups[train_indices]))
+    test_question_ids = sorted(set(int(qid) for qid in groups[test_indices]))
+    return probe, scaler, train_question_ids, test_question_ids
+
+
+def artifact_trigger_score(artifact, positive_prob):
+    label_key = artifact.get("label_key", "label")
+    if label_key == "takeover_beneficial":
+        return positive_prob
+    return 1.0 - positive_prob
+
+
+def load_probe_artifact(args):
+    if not args.probe_artifact_path or not os.path.exists(args.probe_artifact_path):
+        return None
+    artifact = torch.load(args.probe_artifact_path, weights_only=False)
+    probe = artifact.get("probe")
+    if probe is None and artifact.get("probe_state_dict") is not None:
+        hidden_layers_text = artifact["config"]["hidden_layers"]
+        hidden_layers = tuple(int(part.strip()) for part in hidden_layers_text.split(",") if part.strip())
+        dropout = float(artifact.get("config", {}).get("dropout", 0.0))
+        probe = TorchMLPProbe(
+            input_dim=int(artifact["feature_dim"]),
+            hidden_layers=hidden_layers,
+            dropout=dropout,
+        )
+        probe.load_state_dict(artifact["probe_state_dict"])
+        artifact["probe"] = probe
+    return artifact
+
+
+def run_chunk(
+    model,
+    tokenizer,
+    question,
+    assistant_prefix,
+    max_new_tokens,
+    min_chunk_tokens,
+    max_chunk_tokens,
+    system_prompt=DEFAULT_SYSTEM_PROMPT,
+    answer_type=DEFAULT_ANSWER_TYPE,
+):
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=system_prompt,
+        answer_type=answer_type,
+    )
+    input_ids = inputs.input_ids.to(model.device)
+    past_key_values = None
+
+    generated_token_ids = []
+    chunk_token_ids = []
+    chunk_hidden_states = []
+    chunk_confidences = []
+    reached_eos = False
+    cut_reason = None
+
+    for _ in range(max_new_tokens):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=input_ids,
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+
+        if chunk_token_ids:
+            chunk_hidden_states.append(outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+        logits = outputs.logits[0, -1, :]
+        past_key_values = outputs.past_key_values
+        chunk_confidences.append(compute_token_confidence(logits))
+        next_id = torch.argmax(logits).item()
+        generated_token_ids.append(next_id)
+
+        if next_id == tokenizer.eos_token_id:
+            reached_eos = True
+            break
+
+        chunk_token_ids.append(next_id)
+        token_text = tokenizer.decode([next_id], skip_special_tokens=False)
+        chunk_len = len(chunk_token_ids)
+        hit_punctuation = any(p in token_text for p in PUNCTUATIONS)
+
+        if hit_punctuation and chunk_len >= min_chunk_tokens:
+            cut_reason = "punctuation"
+        elif chunk_len >= max_chunk_tokens:
+            cut_reason = "max_tokens"
+
+        if cut_reason is not None:
+            with torch.no_grad():
+                final_outputs = model(
+                    input_ids=torch.tensor([[next_id]], device=model.device),
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                    output_hidden_states=True,
+                )
+            chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+            break
+
+        input_ids = torch.tensor([[next_id]], device=model.device)
+
+    if chunk_token_ids and len(chunk_hidden_states) < len(chunk_token_ids):
+        last_token_id = chunk_token_ids[-1]
+        with torch.no_grad():
+            final_outputs = model(
+                input_ids=torch.tensor([[last_token_id]], device=model.device),
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+        chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+    chunk_text = decode_tokens(tokenizer, chunk_token_ids).strip()
+    full_reasoning = (normalized_prefix or "") + chunk_text
+    boundary_hidden_state = chunk_hidden_states[-1] if chunk_hidden_states else None
+    mean_hidden_state = torch.stack(chunk_hidden_states).mean(dim=0) if chunk_hidden_states else None
+
+    if cut_reason is None and chunk_token_ids:
+        cut_reason = "tail"
+
+    return {
+        "full_reasoning": full_reasoning,
+        "chunk_text": chunk_text,
+        "token_ids": chunk_token_ids,
+        "generated_token_count": len(chunk_token_ids),
+        "boundary_hidden_state": boundary_hidden_state,
+        "mean_hidden_state": mean_hidden_state,
+        "cut_reason": cut_reason,
+        "reached_eos": reached_eos,
+        **summarize_confidence(chunk_confidences),
+    }
+
+
+def run_step_chunk(
+    model,
+    tokenizer,
+    question,
+    assistant_prefix,
+    max_new_tokens,
+    args,
+):
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+    input_ids = inputs.input_ids.to(model.device)
+    past_key_values = None
+
+    chunk_token_ids = []
+    chunk_hidden_states = []
+    chunk_confidences = []
+    reached_eos = False
+    cut_reason = None
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+    token_budget = max(1, min(int(max_new_tokens), int(args.rewrite_step_force_tokens)))
+
+    for _ in range(token_budget):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=input_ids,
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+
+        if chunk_token_ids:
+            chunk_hidden_states.append(outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+        logits = outputs.logits[0, -1, :]
+        past_key_values = outputs.past_key_values
+        chunk_confidences.append(compute_token_confidence(logits))
+        next_id = torch.argmax(logits).item()
+
+        if next_id == tokenizer.eos_token_id:
+            reached_eos = True
+            break
+
+        chunk_token_ids.append(next_id)
+        chunk_len = len(chunk_token_ids)
+
+        if chunk_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, chunk_token_ids, boundary_mode):
+            cut_reason = f"target_{boundary_mode}_rewrite_step_boundary"
+        elif chunk_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, chunk_token_ids, boundary_mode):
+            cut_reason = f"{boundary_mode}_rewrite_step_boundary"
+        elif chunk_len >= args.rewrite_step_force_tokens:
+            cut_reason = "rewrite_step_force_tokens"
+
+        if cut_reason is not None:
+            with torch.no_grad():
+                final_outputs = model(
+                    input_ids=torch.tensor([[next_id]], device=model.device),
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                    output_hidden_states=True,
+                )
+            chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+            break
+
+        input_ids = torch.tensor([[next_id]], device=model.device)
+
+    if chunk_token_ids and len(chunk_hidden_states) < len(chunk_token_ids):
+        last_token_id = chunk_token_ids[-1]
+        with torch.no_grad():
+            final_outputs = model(
+                input_ids=torch.tensor([[last_token_id]], device=model.device),
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+        chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+    chunk_text = decode_tokens(tokenizer, chunk_token_ids).strip()
+    if cut_reason is None and chunk_token_ids:
+        cut_reason = "rewrite_step_tail"
+
+    return {
+        "full_reasoning": (normalized_prefix or "") + chunk_text,
+        "chunk_text": chunk_text,
+        "token_ids": chunk_token_ids,
+        "generated_token_count": len(chunk_token_ids),
+        "boundary_hidden_state": chunk_hidden_states[-1] if chunk_hidden_states else None,
+        "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0) if chunk_hidden_states else None,
+        "cut_reason": cut_reason,
+        "reached_eos": reached_eos,
+        **summarize_confidence(chunk_confidences),
+    }
+
+
+def run_rsd_step_chunk(
+    model,
+    tokenizer,
+    question,
+    assistant_prefix,
+    max_new_tokens,
+    args,
+):
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+    input_ids = inputs.input_ids.to(model.device)
+    past_key_values = None
+
+    chunk_token_ids = []
+    chunk_hidden_states = []
+    chunk_confidences = []
+    reached_eos = False
+    cut_reason = None
+    step_word = args.runtime_step_word
+    token_budget = max(1, min(int(max_new_tokens), int(args.rewrite_step_force_tokens)))
+
+    for _ in range(token_budget):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=input_ids,
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+
+        if chunk_token_ids:
+            chunk_hidden_states.append(outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+        logits = outputs.logits[0, -1, :]
+        past_key_values = outputs.past_key_values
+        chunk_confidences.append(compute_token_confidence(logits))
+        next_id = torch.argmax(logits).item()
+
+        if next_id == tokenizer.eos_token_id:
+            reached_eos = True
+            break
+
+        chunk_token_ids.append(next_id)
+        decoded = decode_tokens(tokenizer, chunk_token_ids)
+        if step_word and step_word in decoded:
+            cut_reason = "rsd_step_word"
+        elif len(chunk_token_ids) >= args.rewrite_step_force_tokens:
+            cut_reason = "rsd_step_force_tokens"
+
+        if cut_reason is not None:
+            with torch.no_grad():
+                final_outputs = model(
+                    input_ids=torch.tensor([[next_id]], device=model.device),
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                    output_hidden_states=True,
+                )
+            chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+            break
+
+        input_ids = torch.tensor([[next_id]], device=model.device)
+
+    if chunk_token_ids and len(chunk_hidden_states) < len(chunk_token_ids):
+        last_token_id = chunk_token_ids[-1]
+        with torch.no_grad():
+            final_outputs = model(
+                input_ids=torch.tensor([[last_token_id]], device=model.device),
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+            )
+        chunk_hidden_states.append(final_outputs.hidden_states[-1][0, -1, :].detach().to(torch.float32).cpu())
+
+    chunk_text = decode_tokens(tokenizer, chunk_token_ids).strip()
+    if cut_reason is None and chunk_token_ids:
+        cut_reason = "rsd_step_tail"
+
+    return {
+        "full_reasoning": (normalized_prefix or "") + chunk_text,
+        "chunk_text": chunk_text,
+        "token_ids": chunk_token_ids,
+        "generated_token_count": len(chunk_token_ids),
+        "boundary_hidden_state": chunk_hidden_states[-1] if chunk_hidden_states else None,
+        "mean_hidden_state": torch.stack(chunk_hidden_states).mean(dim=0) if chunk_hidden_states else None,
+        "cut_reason": cut_reason,
+        "reached_eos": reached_eos,
+        **summarize_confidence(chunk_confidences),
+    }
+
+
+def run_cached_runtime_chunk(session, tokenizer, question, assistant_prefix, max_new_tokens, args, capture_hidden=True):
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer, question, assistant_prefix, system_prompt=args.system_prompt, answer_type=args.answer_type
+    )
+    session.sync(inputs.input_ids)
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+
+    def boundary_fn(token_ids, next_id):
+        chunk_len = len(token_ids)
+        if args.runtime_chunking == "rsd_step":
+            if args.runtime_step_word and args.runtime_step_word in decode_tokens(tokenizer, token_ids):
+                return "rsd_step_word"
+            return "rsd_step_force_tokens" if chunk_len >= args.rewrite_step_force_tokens else None
+        if args.runtime_chunking == "rsdmath":
+            if chunk_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, token_ids, boundary_mode):
+                return f"target_{boundary_mode}_rewrite_step_boundary"
+            if chunk_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, token_ids, boundary_mode):
+                return f"{boundary_mode}_rewrite_step_boundary"
+            return "rewrite_step_force_tokens" if chunk_len >= args.rewrite_step_force_tokens else None
+        token_text = tokenizer.decode([next_id], skip_special_tokens=False)
+        if any(p in token_text for p in PUNCTUATIONS) and chunk_len >= args.min_chunk_tokens:
+            return "punctuation"
+        return "max_tokens" if chunk_len >= args.max_chunk_tokens else None
+
+    result = session.generate(
+        max_new_tokens=max_new_tokens,
+        eos_token_id=tokenizer.eos_token_id,
+        boundary_fn=boundary_fn,
+        confidence_fn=compute_token_confidence,
+        capture_hidden=capture_hidden,
+    )
+    token_ids = result["token_ids"]
+    hidden_states = result["hidden_states"]
+    chunk_text = decode_tokens(tokenizer, token_ids)
+    cut_reason = result["cut_reason"]
+    if cut_reason is None and token_ids:
+        cut_reason = {"rsd_step": "rsd_step_tail", "rsdmath": "rewrite_step_tail"}.get(args.runtime_chunking, "tail")
+    return {
+        "full_reasoning": (normalized_prefix or "") + chunk_text,
+        "chunk_text": chunk_text,
+        "token_ids": token_ids,
+        "generated_token_count": len(token_ids),
+        "boundary_hidden_state": hidden_states[-1] if hidden_states else None,
+        "mean_hidden_state": torch.stack(hidden_states).mean(dim=0) if hidden_states else None,
+        "cut_reason": cut_reason,
+        "reached_eos": result["reached_eos"],
+        **summarize_confidence(result["confidences"]),
+    }
+
+
+def run_runtime_chunk(
+    model,
+    tokenizer,
+    question,
+    assistant_prefix,
+    max_new_tokens,
+    args,
+    session=None,
+    capture_hidden=True,
+):
+    if session is not None:
+        return run_cached_runtime_chunk(
+            session, tokenizer, question, assistant_prefix, max_new_tokens, args, capture_hidden=capture_hidden
+        )
+    if args.runtime_chunking == "rsd_step":
+        return run_rsd_step_chunk(
+            model=model,
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            max_new_tokens=max_new_tokens,
+            args=args,
+        )
+    if args.runtime_chunking == "rsdmath":
+        return run_step_chunk(
+            model=model,
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            max_new_tokens=max_new_tokens,
+            args=args,
+        )
+    return run_chunk(
+        model=model,
+        tokenizer=tokenizer,
+        question=question,
+        assistant_prefix=assistant_prefix,
+        max_new_tokens=max_new_tokens,
+        min_chunk_tokens=args.min_chunk_tokens,
+        max_chunk_tokens=args.max_chunk_tokens,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+
+
+def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_chunks=None, max_total_new_tokens=None, session=None):
+    target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
+    handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
+    if args.large_backend == "vllm":
+        return run_large_handoff_vllm(
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            args=args,
+            num_chunks=target_chunks,
+            max_total_new_tokens=handoff_token_budget,
+        )
+
+    if session is not None:
+        prefix = assistant_prefix
+        total_generated_tokens = 0
+        chunks = []
+        reached_eos = False
+        for handoff_chunk_idx in range(target_chunks):
+            result = run_runtime_chunk(
+                model,
+                tokenizer,
+                question,
+                prefix,
+                max(handoff_token_budget - total_generated_tokens, 1),
+                args,
+                session=session,
+                capture_hidden=False,
+            )
+            if result["generated_token_count"] == 0:
+                reached_eos = result["reached_eos"]
+                break
+            prefix = result["full_reasoning"]
+            total_generated_tokens += result["generated_token_count"]
+            reached_eos = result["reached_eos"]
+            chunks.append({
+                "handoff_local_chunk_id": handoff_chunk_idx,
+                "chunk_text": result["chunk_text"],
+                "generated_token_count": result["generated_token_count"],
+                "cut_reason": result["cut_reason"],
+                "reached_eos": reached_eos,
+            })
+            if reached_eos or total_generated_tokens >= handoff_token_budget:
+                break
+        return {
+            "full_reasoning": prefix,
+            "generated_token_count": total_generated_tokens,
+            "generated_chunks": len(chunks),
+            "reached_eos": reached_eos,
+            "chunks": chunks,
+        }
+
+    inputs, normalized_prefix = build_generation_inputs(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+    input_ids = inputs.input_ids.to(model.device)
+    past_key_values = None
+    total_generated_tokens = 0
+    generated_chunks = 0
+    reached_eos = False
+    chunks = []
+    all_token_ids = []
+    chunk_token_ids = []
+    cut_reason = None
+    boundary_mode = resolve_rewrite_step_boundary_mode(args)
+
+    # One prefix prefill for the complete handoff. Chunk boundaries are control
+    # points only; they must not discard the target model's KV cache.
+    while total_generated_tokens < handoff_token_budget and generated_chunks < target_chunks:
+        with torch.no_grad():
+            outputs = model(input_ids=input_ids, past_key_values=past_key_values, use_cache=True)
+        past_key_values = outputs.past_key_values
+        next_id = int(torch.argmax(outputs.logits[0, -1, :]).item())
+        if next_id == tokenizer.eos_token_id:
+            reached_eos = True
+            break
+
+        all_token_ids.append(next_id)
+        chunk_token_ids.append(next_id)
+        total_generated_tokens += 1
+        chunk_len = len(chunk_token_ids)
+
+        if args.runtime_chunking == "rsd_step":
+            decoded = decode_tokens(tokenizer, chunk_token_ids)
+            if args.runtime_step_word and args.runtime_step_word in decoded:
+                cut_reason = "rsd_step_word"
+            elif chunk_len >= args.rewrite_step_force_tokens:
+                cut_reason = "rsd_step_force_tokens"
+        elif args.runtime_chunking == "rsdmath":
+            if chunk_len >= args.rewrite_step_target_tokens and is_safe_boundary(tokenizer, chunk_token_ids, boundary_mode):
+                cut_reason = f"target_{boundary_mode}_rewrite_step_boundary"
+            elif chunk_len >= args.rewrite_step_min_tokens and is_safe_boundary(tokenizer, chunk_token_ids, boundary_mode):
+                cut_reason = f"{boundary_mode}_rewrite_step_boundary"
+            elif chunk_len >= args.rewrite_step_force_tokens:
+                cut_reason = "rewrite_step_force_tokens"
+        else:
+            token_text = tokenizer.decode([next_id], skip_special_tokens=False)
+            if any(p in token_text for p in PUNCTUATIONS) and chunk_len >= args.min_chunk_tokens:
+                cut_reason = "punctuation"
+            elif chunk_len >= args.max_chunk_tokens:
+                cut_reason = "max_tokens"
+
+        input_ids = torch.tensor([[next_id]], device=model.device)
+        if cut_reason is None:
+            continue
+
+        chunks.append(
+            {
+                "handoff_local_chunk_id": generated_chunks,
+                "chunk_text": decode_tokens(tokenizer, chunk_token_ids).strip(),
+                "generated_token_count": chunk_len,
+                "cut_reason": cut_reason,
+                "reached_eos": False,
+            }
+        )
+        generated_chunks += 1
+        chunk_token_ids = []
+        cut_reason = None
+
+    if chunk_token_ids:
+        tail_reason = {"rsd_step": "rsd_step_tail", "rsdmath": "rewrite_step_tail"}.get(args.runtime_chunking, "tail")
+        chunks.append(
+            {
+                "handoff_local_chunk_id": generated_chunks,
+                "chunk_text": decode_tokens(tokenizer, chunk_token_ids).strip(),
+                "generated_token_count": len(chunk_token_ids),
+                "cut_reason": tail_reason,
+                "reached_eos": reached_eos,
+            }
+        )
+        generated_chunks += 1
+    elif reached_eos and chunks:
+        chunks[-1]["reached_eos"] = True
+
+    return {
+        "full_reasoning": (normalized_prefix or "") + decode_tokens(tokenizer, all_token_ids).strip(),
+        "generated_token_count": total_generated_tokens,
+        "generated_chunks": generated_chunks,
+        "reached_eos": reached_eos,
+        "chunks": chunks,
+    }
+
+
+def run_large_handoff_vllm(tokenizer, question, assistant_prefix, args, num_chunks=None, max_total_new_tokens=None):
+    prompt_text, normalized_prefix = build_generation_prompt_text(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+
+    target_chunks = args.large_handoff_chunks if num_chunks is None else int(num_chunks)
+    handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
+    chunk_budget = args.rewrite_step_force_tokens if args.runtime_chunking in {"rsdmath", "rsd_step"} else args.max_chunk_tokens
+    max_request_tokens = max(1, min(target_chunks * chunk_budget, handoff_token_budget))
+    completion = run_vllm_completion(args, prompt_text, max_request_tokens)
+    generated_text = completion["text"]
+    selected_chunks = chunk_generated_runtime_text_with_tokenizer(
+        tokenizer,
+        generated_text,
+        args,
+        target_chunks=target_chunks,
+    )
+    continued_text = "".join(chunk["chunk_text"] for chunk in selected_chunks)
+    full_reasoning = (normalized_prefix or "") + continued_text
+    selected_token_count = sum(chunk["generated_token_count"] for chunk in selected_chunks)
+    reached_eos = completion["finish_reason"] == "stop" and selected_token_count >= len(tokenizer.encode(generated_text, add_special_tokens=False))
+
+    chunks = []
+    total_generated_tokens = 0
+    for handoff_chunk_idx, chunk in enumerate(selected_chunks):
+        total_generated_tokens += chunk["generated_token_count"]
+        chunks.append(
+            {
+                "handoff_local_chunk_id": handoff_chunk_idx,
+                "chunk_text": chunk["chunk_text"],
+                "generated_token_count": chunk["generated_token_count"],
+                "cut_reason": chunk["cut_reason"],
+                "reached_eos": reached_eos and handoff_chunk_idx == len(selected_chunks) - 1,
+            }
+        )
+
+    return {
+        "full_reasoning": full_reasoning,
+        "generated_token_count": total_generated_tokens,
+        "generated_chunks": len(selected_chunks),
+        "reached_eos": reached_eos,
+        "chunks": chunks,
+    }
+
+
+def run_rewrite_current_step_handoff(model, tokenizer, question, assistant_prefix, args, max_total_new_tokens=None):
+    handoff_token_budget = args.max_new_tokens if max_total_new_tokens is None else int(max_total_new_tokens)
+    step_token_budget = max(1, min(int(args.rewrite_step_force_tokens), handoff_token_budget))
+    if args.large_backend == "vllm":
+        return run_rewrite_current_step_handoff_vllm(
+            tokenizer=tokenizer,
+            question=question,
+            assistant_prefix=assistant_prefix,
+            args=args,
+            max_total_new_tokens=step_token_budget,
+        )
+
+    chunk_result = run_step_chunk(
+        model=model,
+        tokenizer=tokenizer,
+        question=question,
+        assistant_prefix=assistant_prefix,
+        max_new_tokens=step_token_budget,
+        args=args,
+    )
+
+    return {
+        "full_reasoning": chunk_result["full_reasoning"],
+        "generated_token_count": chunk_result["generated_token_count"],
+        "generated_chunks": 1 if chunk_result["generated_token_count"] else 0,
+        "reached_eos": chunk_result["reached_eos"],
+        "chunks": [
+            {
+                "handoff_local_chunk_id": 0,
+                "chunk_text": chunk_result["chunk_text"],
+                "generated_token_count": chunk_result["generated_token_count"],
+                "cut_reason": chunk_result["cut_reason"],
+                "reached_eos": chunk_result["reached_eos"],
+            }
+        ],
+    }
+
+
+def run_rewrite_current_step_handoff_vllm(tokenizer, question, assistant_prefix, args, max_total_new_tokens=None):
+    prompt_text, normalized_prefix = build_generation_prompt_text(
+        tokenizer,
+        question,
+        assistant_prefix,
+        system_prompt=args.system_prompt,
+        answer_type=args.answer_type,
+    )
+    step_token_budget = max(1, min(int(args.rewrite_step_force_tokens), int(max_total_new_tokens or args.rewrite_step_force_tokens)))
+    completion = run_vllm_completion(args, prompt_text, step_token_budget)
+    chunk = chunk_generated_step_with_tokenizer(tokenizer, completion["text"], args)
+    if chunk is None:
+        chunk = {"chunk_text": "", "generated_token_count": 0, "cut_reason": "rewrite_step_empty", "token_ids": []}
+    full_reasoning = (normalized_prefix or "") + chunk["chunk_text"]
+    reached_eos = completion["finish_reason"] == "stop" and chunk["generated_token_count"] < step_token_budget
+    return {
+        "full_reasoning": full_reasoning,
+        "generated_token_count": chunk["generated_token_count"],
+        "generated_chunks": 1 if chunk["generated_token_count"] else 0,
+        "reached_eos": reached_eos,
+        "chunks": [
+            {
+                "handoff_local_chunk_id": 0,
+                "chunk_text": chunk["chunk_text"],
+                "generated_token_count": chunk["generated_token_count"],
+                "cut_reason": chunk["cut_reason"],
+                "reached_eos": reached_eos,
+            }
+        ],
+    }
+
+
+def run_adaptive_large_handoff(
+    question,
+    assistant_prefix,
+    current_total_tokens,
+    next_chunk_index,
+    runtime_small_chunks,
+    small_model,
+    small_tokenizer,
+    large_model,
+    large_tokenizer,
+    probe,
+    scaler,
+    threshold,
+    args,
+    artifact=None,
+):
+    prefix = assistant_prefix
+    total_generated_tokens = 0
+    generated_chunks = 0
+    reached_eos = False
+    trace_events = []
+    recovery_threshold = threshold if args.handoff_recovery_threshold is None else float(args.handoff_recovery_threshold)
+
+    while generated_chunks < args.max_adaptive_large_handoff_chunks:
+        remaining_budget = max(args.max_new_tokens - current_total_tokens - total_generated_tokens, 1)
+        large_result = run_large_handoff(
+            model=large_model,
+            tokenizer=large_tokenizer,
+            question=question,
+            assistant_prefix=prefix,
+            args=args,
+            num_chunks=1,
+            max_total_new_tokens=remaining_budget,
+        )
+        prefix = large_result["full_reasoning"]
+        total_generated_tokens += large_result["generated_token_count"]
+        generated_chunks += large_result["generated_chunks"]
+        reached_eos = large_result["reached_eos"]
+        trace_events.append(
+            {
+                "event": "adaptive_large_handoff_chunk",
+                "adaptive_large_chunk_count": generated_chunks,
+                "generated_token_count": large_result["generated_token_count"],
+                "generated_chunks": large_result["generated_chunks"],
+                "chunks": large_result["chunks"],
+            }
+        )
+
+        if reached_eos or large_result["generated_token_count"] == 0:
+            trace_events.append(
+                {
+                    "event": "adaptive_handoff_stop_reached_eos",
+                    "adaptive_large_chunk_count": generated_chunks,
+                }
+            )
+            break
+
+        if generated_chunks < args.min_large_handoff_chunks:
+            continue
+
+        observation_remaining_budget = max(args.max_new_tokens - current_total_tokens - total_generated_tokens, 1)
+        observation_chunk = run_runtime_chunk(
+            model=small_model,
+            tokenizer=small_tokenizer,
+            question=question,
+            assistant_prefix=prefix,
+            max_new_tokens=observation_remaining_budget,
+            args=args,
+        )
+        observation_chunk["chunk_id"] = next_chunk_index + generated_chunks
+        if observation_chunk["generated_token_count"] == 0:
+            trace_events.append(
+                {
+                    "event": "adaptive_handoff_stop_empty_small_probe",
+                    "adaptive_large_chunk_count": generated_chunks,
+                }
+            )
+            break
+
+        total_chunks_for_features = max(len(runtime_small_chunks), int(observation_chunk["chunk_id"]) + 1)
+        risk_info = compute_chunk_risk_score(
+            observation_chunk,
+            prev_chunk=None,
+            total_chunks_for_features=total_chunks_for_features,
+            progress_ratio=(current_total_tokens + total_generated_tokens + observation_chunk["generated_token_count"]) / max(args.max_new_tokens, 1),
+            probe=probe,
+            scaler=scaler,
+            args=args,
+            artifact=artifact,
+        )
+        is_stable = risk_info["combined_score"] < recovery_threshold
+        trace_events.append(
+            {
+                "event": "small_reentry_probe",
+                "chunk_id": int(observation_chunk["chunk_id"]),
+                "chunk_text": observation_chunk["chunk_text"],
+                "generated_token_count": observation_chunk["generated_token_count"],
+                "trigger_score": float(risk_info["trigger_score"]),
+                "combined_score": float(risk_info["combined_score"]),
+                "progress_ratio": float((current_total_tokens + total_generated_tokens + observation_chunk["generated_token_count"]) / max(args.max_new_tokens, 1)),
+                "recovery_threshold": float(recovery_threshold),
+                "decision": "stable_return_to_small" if is_stable else "rollback_and_continue_large",
+                "cut_reason": observation_chunk["cut_reason"],
+            }
+        )
+        if is_stable:
+            trace_events.append(
+                {
+                    "event": "adaptive_handoff_stop_recovered",
+                    "adaptive_large_chunk_count": generated_chunks,
+                }
+            )
+            break
+
+    if not reached_eos and generated_chunks >= args.max_adaptive_large_handoff_chunks:
+        trace_events.append(
+            {
+                "event": "adaptive_handoff_stop_max_chunks",
+                "adaptive_large_chunk_count": generated_chunks,
+            }
+        )
+
+    return {
+        "full_reasoning": prefix,
+        "generated_token_count": total_generated_tokens,
+        "generated_chunks": generated_chunks,
+        "reached_eos": reached_eos,
+        "trace_events": trace_events,
+    }
+
+
+def safe_mean(values):
+    return statistics.mean(values) if values else float("nan")
+
+
+def average_kv_cache_stats(rows):
+    summary = {}
+    for model_key in ("small", "large"):
+        model_rows = [row[model_key] for row in rows if row.get(model_key) is not None]
+        if not model_rows:
+            summary[model_key] = None
+            continue
+        keys = model_rows[0].keys()
+        summary[model_key] = {
+            key: safe_mean([float(row[key]) for row in model_rows]) for key in keys
+        }
+    return summary
+
+
+def kv_processed_tokens(stats):
+    if stats is None:
+        return 0
+    return sum(stats[key] for key in (
+        "initial_prefill_tokens", "delta_prefill_tokens", "rebuild_prefill_tokens", "decode_tokens"
+    ))
+
+
+def to_jsonable(value):
+    if isinstance(value, dict):
+        return {key: to_jsonable(sub_value) for key, sub_value in value.items()}
+    if isinstance(value, list):
+        return [to_jsonable(item) for item in value]
+    if isinstance(value, tuple):
+        return [to_jsonable(item) for item in value]
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
+def compute_chunk_risk_score(
+    chunk,
+    prev_chunk,
+    total_chunks_for_features,
+    progress_ratio,
+    probe,
+    scaler,
+    args,
+    artifact=None,
+):
+    feature_spec = artifact.get("feature_key", args.feature_key) if artifact is not None else args.feature_key
+    feature_vector = build_feature_vector(chunk, prev_chunk, total_chunks_for_features, feature_spec)
+    features = scaler.transform([feature_vector])
+    positive_prob = probe.predict_proba(features)[0, 1]
+    trigger_score = artifact_trigger_score(artifact, positive_prob) if artifact is not None else (1.0 - positive_prob)
+    combined_score = trigger_score + args.tail_bonus_weight * progress_ratio
+    return {
+        "feature_spec": feature_spec,
+        "positive_prob": float(positive_prob),
+        "trigger_score": float(trigger_score),
+        "combined_score": float(combined_score),
+    }
+
+
+def simulate_question(record, small_model, small_tokenizer, large_model, large_tokenizer, probe, scaler, threshold, args, artifact=None):
+    question = record["question"]
+    ground_truth_final_answer = record["ground_truth_final_answer"]
+    answer_extractor = get_answer_extractor(args.answer_type)
+    question_prompt_token_count = prompt_token_count(
+        small_tokenizer,
+        question,
+        args.system_prompt,
+        args.answer_type,
+    )
+    prefix = None
+    total_tokens = 0
+    total_small_tokens = 0
+    total_small_actual_tokens = 0
+    total_small_discarded_tokens = 0
+    total_large_tokens = 0
+    handoff_count = 0
+    chunk_index = 0
+    triggered = False
+    trigger_scores = []
+    trigger_progresses = []
+    runtime_small_chunks = []
+    reset_prev_chunk = False
+    cooldown_remaining = 0
+    route_trace = []
+    previous_combined_score = None
+    if args.persistent_kv_cache and (args.large_backend != "hf" or args.adaptive_large_handoff or args.handoff_mode != "takeover"):
+        raise ValueError("--persistent-kv-cache currently requires HF backend, fixed takeover handoff")
+    small_session = IncrementalKVSession(small_model) if args.persistent_kv_cache else None
+    large_session = IncrementalKVSession(large_model) if args.persistent_kv_cache else None
+
+    while total_tokens < args.max_new_tokens:
+        safe_prefix = prefix
+        remaining_budget = max(args.max_new_tokens - total_tokens, 1)
+        safe_checkpoint = None
+        if small_session is not None:
+            safe_inputs, _ = build_generation_inputs(
+                small_tokenizer, question, prefix, system_prompt=args.system_prompt, answer_type=args.answer_type
+            )
+            small_session.sync(safe_inputs.input_ids)
+            safe_checkpoint = small_session.checkpoint()
+        small_chunk = run_runtime_chunk(
+            model=small_model,
+            tokenizer=small_tokenizer,
+            question=question,
+            assistant_prefix=prefix,
+            max_new_tokens=remaining_budget,
+            args=args,
+            session=small_session,
+        )
+
+        if small_chunk["generated_token_count"] == 0:
+            prefix = safe_prefix
+            break
+
+        total_tokens += small_chunk["generated_token_count"]
+        total_small_tokens += small_chunk["generated_token_count"]
+        total_small_actual_tokens += small_chunk["generated_token_count"]
+        progress_ratio = total_tokens / max(args.max_new_tokens, 1)
+        small_chunk["chunk_id"] = chunk_index
+        runtime_small_chunks.append(small_chunk)
+
+        if reset_prev_chunk:
+            prev_chunk = None
+            reset_prev_chunk = False
+        else:
+            prev_chunk = runtime_small_chunks[-2] if len(runtime_small_chunks) >= 2 else None
+        total_chunks_for_features = max(len(runtime_small_chunks), int(small_chunk["chunk_id"]) + 1)
+        risk_info = compute_chunk_risk_score(
+            small_chunk,
+            prev_chunk=prev_chunk,
+            total_chunks_for_features=total_chunks_for_features,
+            progress_ratio=progress_ratio,
+            probe=probe,
+            scaler=scaler,
+            args=args,
+            artifact=artifact,
+        )
+        trigger_score = risk_info["trigger_score"]
+        combined_score = risk_info["combined_score"]
+        prev_score_for_trace = previous_combined_score
+
+        trigger_decision = decide_small_chunk_trigger(
+            combined_score=combined_score,
+            previous_combined_score=previous_combined_score,
+            threshold=threshold,
+            args=args,
+        )
+        meets_risk_trigger = trigger_decision["meets_risk_trigger"]
+        trigger_rule = trigger_decision["trigger_rule"]
+
+        if can_apply_large_handoff(meets_risk_trigger, handoff_count, cooldown_remaining, args):
+            triggered = True
+            trigger_scores.append(combined_score)
+            trigger_progresses.append(progress_ratio)
+
+            route_trace.append(
+                {
+                    "event": "small_observe_rollback",
+                    "chunk_id": int(small_chunk["chunk_id"]),
+                    "chunk_text": small_chunk["chunk_text"],
+                    "generated_token_count": small_chunk["generated_token_count"],
+                    "trigger_score": float(trigger_score),
+                    "combined_score": float(combined_score),
+                    "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
+                    "progress_ratio": float(progress_ratio),
+                    "cut_reason": small_chunk["cut_reason"],
+                    "trigger_rule": trigger_rule,
+                }
+            )
+
+            # Roll back the discarded small-model chunk before applying the large-model handoff.
+            total_tokens -= small_chunk["generated_token_count"]
+            total_small_tokens -= small_chunk["generated_token_count"]
+            total_small_discarded_tokens += small_chunk["generated_token_count"]
+            runtime_small_chunks.pop()
+            if small_session is not None:
+                small_session.restore(safe_checkpoint)
+
+            if args.handoff_mode == "rewrite_current_step":
+                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                large_result = run_rewrite_current_step_handoff(
+                    model=large_model,
+                    tokenizer=large_tokenizer,
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    args=args,
+                    max_total_new_tokens=remaining_handoff_budget,
+                )
+            elif args.handoff_mode == "rewrite_current_chunk":
+                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                large_result = run_large_handoff(
+                    model=large_model,
+                    tokenizer=large_tokenizer,
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    args=args,
+                    num_chunks=1,
+                    max_total_new_tokens=remaining_handoff_budget,
+                    session=large_session,
+                )
+            elif args.adaptive_large_handoff:
+                large_result = run_adaptive_large_handoff(
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    current_total_tokens=total_tokens,
+                    next_chunk_index=chunk_index,
+                    runtime_small_chunks=runtime_small_chunks,
+                    small_model=small_model,
+                    small_tokenizer=small_tokenizer,
+                    large_model=large_model,
+                    large_tokenizer=large_tokenizer,
+                    probe=probe,
+                    scaler=scaler,
+                    threshold=threshold,
+                    args=args,
+                    artifact=artifact,
+                )
+            else:
+                remaining_handoff_budget = max(args.max_new_tokens - total_tokens, 1)
+                large_result = run_large_handoff(
+                    model=large_model,
+                    tokenizer=large_tokenizer,
+                    question=question,
+                    assistant_prefix=safe_prefix,
+                    args=args,
+                    num_chunks=args.large_handoff_chunks,
+                    max_total_new_tokens=remaining_handoff_budget,
+                    session=large_session,
+                )
+            prefix = large_result["full_reasoning"]
+            total_tokens += large_result["generated_token_count"]
+            total_large_tokens += large_result["generated_token_count"]
+            handoff_count += 1
+            if args.handoff_mode in {"rewrite_current_chunk", "rewrite_current_step"}:
+                route_trace.append(
+                    {
+                        "event": "large_handoff",
+                        "handoff_index": handoff_count,
+                        "mode": args.handoff_mode,
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                        "chunks": large_result["chunks"],
+                    }
+                )
+            elif args.adaptive_large_handoff:
+                route_trace.append(
+                    {
+                        "event": "large_handoff",
+                        "handoff_index": handoff_count,
+                        "mode": "adaptive",
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                    }
+                )
+                route_trace.extend(large_result["trace_events"])
+            else:
+                route_trace.append(
+                    {
+                        "event": "large_handoff",
+                        "handoff_index": handoff_count,
+                        "mode": "fixed",
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                        "chunks": large_result["chunks"],
+                    }
+                )
+            chunk_index += large_result["generated_chunks"]
+            reset_prev_chunk = True
+            cooldown_remaining = args.cooldown_chunks
+            previous_combined_score = None
+            if large_result["reached_eos"]:
+                break
+            continue
+
+        route_trace.append(
+            {
+                "event": "small_accept",
+                "chunk_id": int(small_chunk["chunk_id"]),
+                "chunk_text": small_chunk["chunk_text"],
+                "generated_token_count": small_chunk["generated_token_count"],
+                "trigger_score": float(trigger_score),
+                "combined_score": float(combined_score),
+                "previous_combined_score": None if prev_score_for_trace is None else float(prev_score_for_trace),
+                "progress_ratio": float(progress_ratio),
+                "cut_reason": small_chunk["cut_reason"],
+            }
+        )
+        prefix = small_chunk["full_reasoning"]
+        chunk_index += 1
+        if cooldown_remaining > 0:
+            cooldown_remaining -= 1
+        previous_combined_score = combined_score
+        if small_chunk["reached_eos"]:
+            break
+
+    # Evaluation hygiene fix:
+    # If no handoff happened, the scheduler should exactly inherit the stored
+    # small-model baseline instead of being judged on chunk-by-chunk decoding
+    # drift. This keeps "no trigger" rows from looking like fake harms/rescues.
+    if handoff_count == 0:
+        final_reasoning = prefix or ""
+        final_answer = record.get("small_final_answer")
+        scheduled_is_correct = bool(record.get("small_is_correct", False))
+    else:
+        final_reasoning = prefix or ""
+        final_answer, has_answer = answer_extractor(final_reasoning)
+        scheduled_is_correct = has_answer and check_answer_correctness(
+            final_answer,
+            ground_truth_final_answer,
+            args.answer_type,
+        )
+    return {
+        "scheduled_is_correct": scheduled_is_correct,
+        "scheduled_final_answer": final_answer,
+        "full_reasoning": final_reasoning,
+        "prompt_token_count": question_prompt_token_count,
+        "triggered": triggered,
+        "handoff_count": handoff_count,
+        "small_generated_tokens": total_small_tokens,
+        "small_actual_generated_tokens": total_small_actual_tokens,
+        "small_discarded_tokens": total_small_discarded_tokens,
+        "large_generated_tokens": total_large_tokens,
+        "avg_trigger_score": safe_mean(trigger_scores),
+        "avg_trigger_progress": safe_mean(trigger_progresses),
+        "route_trace": route_trace,
+        "kv_cache_stats": {
+            "small": small_session.summary() if small_session is not None else None,
+            "large": large_session.summary() if large_session is not None else None,
+        },
+    }
+
+
+def simulate_threshold(test_records, small_model, small_tokenizer, large_model, large_tokenizer, probe, scaler, threshold, args, artifact=None):
+    small_only_correct = 0
+    scheduled_correct = 0
+    error_questions = 0
+    triggered_questions = 0
+    triggered_wrong_questions = 0
+    false_alarm_correct_questions = 0
+    handoff_counts = []
+    latencies = []
+    small_generated_tokens = []
+    small_actual_generated_tokens = []
+    small_discarded_tokens = []
+    large_generated_tokens = []
+    large_takeover_tokens = []
+    param_weighted_token_costs = []
+    kv_param_weighted_token_costs = []
+    trigger_progresses = []
+    kv_cache_stats = []
+    per_question_rows = []
+
+    progress = tqdm(test_records, desc=f"Threshold {threshold:.2f}", leave=False)
+    for record in progress:
+        small_is_correct = record["small_is_correct"]
+        if small_is_correct:
+            small_only_correct += 1
+        else:
+            error_questions += 1
+
+        item_start = time.time()
+        result = simulate_question(
+            record=record,
+            small_model=small_model,
+            small_tokenizer=small_tokenizer,
+            large_model=large_model,
+            large_tokenizer=large_tokenizer,
+            probe=probe,
+            scaler=scaler,
+            threshold=threshold,
+            args=args,
+            artifact=artifact,
+        )
+        latency_s = time.time() - item_start
+        latencies.append(latency_s)
+
+        small_tokens = int(result["small_generated_tokens"])
+        small_actual_tokens = int(result["small_actual_generated_tokens"])
+        discarded_small_tokens = int(result["small_discarded_tokens"])
+        large_tokens = int(result["large_generated_tokens"])
+        small_generated_tokens.append(small_tokens)
+        small_actual_generated_tokens.append(small_actual_tokens)
+        small_discarded_tokens.append(discarded_small_tokens)
+        large_generated_tokens.append(large_tokens)
+        kv_cache_stats.append(result["kv_cache_stats"])
+        param_weighted_token_cost = None
+        kv_param_weighted_token_cost = None
+        if args.small_model_params_b is not None and args.large_model_params_b is not None:
+            param_weighted_token_cost = (
+                args.small_model_params_b * small_actual_tokens
+                + args.large_model_params_b * large_tokens
+            )
+            param_weighted_token_costs.append(param_weighted_token_cost)
+            if args.persistent_kv_cache:
+                kv_param_weighted_token_cost = (
+                    args.small_model_params_b * kv_processed_tokens(result["kv_cache_stats"]["small"])
+                    + args.large_model_params_b * kv_processed_tokens(result["kv_cache_stats"]["large"])
+                )
+                kv_param_weighted_token_costs.append(kv_param_weighted_token_cost)
+
+        scheduled_correct += int(result["scheduled_is_correct"])
+        if result["triggered"]:
+            triggered_questions += 1
+            handoff_counts.append(result["handoff_count"])
+            large_takeover_tokens.append(large_tokens)
+            if not np.isnan(result["avg_trigger_progress"]):
+                trigger_progresses.append(result["avg_trigger_progress"])
+            if not small_is_correct:
+                triggered_wrong_questions += 1
+            else:
+                false_alarm_correct_questions += 1
+
+        per_question_rows.append(
+            {
+                "question_id": record["question_id"],
+                "prompt_token_count": result["prompt_token_count"],
+                "small_is_correct": small_is_correct,
+                "scheduled_is_correct": result["scheduled_is_correct"],
+                "triggered": result["triggered"],
+                "handoff_count": result["handoff_count"],
+                "latency_s": latency_s,
+                "avg_trigger_score": result["avg_trigger_score"],
+                "avg_trigger_progress": result["avg_trigger_progress"],
+                "small_generated_tokens": small_tokens,
+                "small_actual_generated_tokens": small_actual_tokens,
+                "small_discarded_tokens": discarded_small_tokens,
+                "large_generated_tokens": large_tokens,
+                "param_weighted_token_cost": param_weighted_token_cost,
+                "kv_param_weighted_token_cost": kv_param_weighted_token_cost,
+                "small_final_answer": record["small_final_answer"],
+                "scheduled_final_answer": result["scheduled_final_answer"],
+                "route_trace": result["route_trace"],
+                "kv_cache_stats": result["kv_cache_stats"],
+            }
+        )
+
+    total_questions = len(test_records)
+    correct_questions = total_questions - error_questions
+    return {
+        "threshold": threshold,
+        "tail_bonus_weight": args.tail_bonus_weight,
+        "questions_total": total_questions,
+        "small_only_accuracy": small_only_correct / total_questions,
+        "scheduled_accuracy": scheduled_correct / total_questions,
+        "scheduled_gain_over_small": (scheduled_correct - small_only_correct) / total_questions,
+        "trigger_rate": triggered_questions / total_questions,
+        "questions_triggered": triggered_questions,
+        "error_questions_total": error_questions,
+        "error_questions_triggered": triggered_wrong_questions,
+        "false_alarm_correct_question_rate": false_alarm_correct_questions / correct_questions if correct_questions else float("nan"),
+        "avg_handoff_count": safe_mean(handoff_counts),
+        "avg_small_generated_tokens": safe_mean(small_generated_tokens),
+        "avg_small_actual_generated_tokens": safe_mean(small_actual_generated_tokens),
+        "avg_small_discarded_tokens": safe_mean(small_discarded_tokens),
+        "avg_large_generated_tokens": safe_mean(large_generated_tokens),
+        "avg_large_takeover_tokens": safe_mean(large_takeover_tokens),
+        "latency_mean_s": safe_mean(latencies),
+        "latency_median_s": statistics.median(latencies) if latencies else float("nan"),
+        "latency_p90_s": percentile(latencies, 0.9),
+        "sec_per_question_mean": safe_mean(latencies),
+        "small_model_params_b": args.small_model_params_b,
+        "large_model_params_b": args.large_model_params_b,
+        "avg_param_weighted_token_cost": safe_mean(param_weighted_token_costs),
+        "avg_kv_param_weighted_token_cost": safe_mean(kv_param_weighted_token_costs),
+        "avg_trigger_progress": safe_mean(trigger_progresses),
+        "avg_kv_cache_stats": average_kv_cache_stats(kv_cache_stats),
+        "per_question_rows": per_question_rows,
+    }
+
+
+def print_route_trace(row):
+    print("\nRoute trace")
+    print("=" * 50)
+    print(
+        f"question_id={row['question_id']} | "
+        f"small_correct={row['small_is_correct']} | "
+        f"scheduled_correct={row['scheduled_is_correct']} | "
+        f"handoff_count={row['handoff_count']}"
+    )
+    for step_idx, event in enumerate(row.get("route_trace", []), start=1):
+        if event["event"] == "small_accept":
+            print(
+                f"[{step_idx}] SMALL accept chunk#{event['chunk_id']} | "
+                f"score={event['combined_score']:.4f} | text={event['chunk_text']!r}"
+            )
+        elif event["event"] == "small_observe_rollback":
+            print(
+                f"[{step_idx}] SMALL rollback chunk#{event['chunk_id']} | "
+                f"score={event['combined_score']:.4f} | text={event['chunk_text']!r}"
+            )
+        elif event["event"] == "large_handoff":
+            print(
+                f"[{step_idx}] LARGE handoff#{event['handoff_index']} | "
+                f"mode={event.get('mode', 'fixed')} | "
+                f"chunks={event['generated_chunks']} | tokens={event['generated_token_count']}"
+            )
+            for chunk in event.get("chunks", []):
+                print(
+                    f"      - large_chunk#{chunk['handoff_local_chunk_id']} | "
+                    f"text={chunk['chunk_text']!r}"
+                )
+        elif event["event"] == "adaptive_large_handoff_chunk":
+            print(
+                f"[{step_idx}] LARGE adaptive_chunk_count={event['adaptive_large_chunk_count']} | "
+                f"chunks={event['generated_chunks']} | tokens={event['generated_token_count']}"
+            )
+            for chunk in event.get("chunks", []):
+                print(
+                    f"      - large_chunk#{chunk['handoff_local_chunk_id']} | "
+                    f"text={chunk['chunk_text']!r}"
+                )
+        elif event["event"] == "small_reentry_probe":
+            print(
+                f"[{step_idx}] SMALL reentry_probe chunk#{event['chunk_id']} | "
+                f"score={event['combined_score']:.4f} | decision={event['decision']} | "
+                f"text={event['chunk_text']!r}"
+            )
+        elif event["event"].startswith("adaptive_handoff_stop_"):
+            print(f"[{step_idx}] {event['event']} | adaptive_large_chunk_count={event['adaptive_large_chunk_count']}")
+
+
+def print_summary(summary):
+    print("\nObserve-and-rollback scheduler simulation")
+    print("=" * 50)
+    print(f"Threshold: {summary['threshold']:.2f}")
+    print(f"Tail bonus weight: {summary['tail_bonus_weight']:.4f}")
+    print(f"Questions total: {summary['questions_total']}")
+    print(f"Small-only accuracy: {summary['small_only_accuracy']:.4f}")
+    print(f"Scheduled accuracy: {summary['scheduled_accuracy']:.4f}")
+    print(f"Scheduled gain over small: {summary['scheduled_gain_over_small']:+.4f}")
+    print(f"Trigger rate: {summary['trigger_rate']:.4f} ({summary['questions_triggered']}/{summary['questions_total']})")
+    print(f"Error questions total: {summary['error_questions_total']}")
+    print(f"Error questions triggered: {summary['error_questions_triggered']}")
+    print(f"False-alarm correct-question rate: {summary['false_alarm_correct_question_rate']:.4f}")
+    print(f"Avg handoff count: {summary['avg_handoff_count']:.2f}")
+    print(f"Avg trigger progress: {summary['avg_trigger_progress']:.4f}")
+    print(f"Avg small accepted tokens: {summary['avg_small_generated_tokens']:.2f}")
+    print(f"Avg small actual generated tokens: {summary['avg_small_actual_generated_tokens']:.2f}")
+    print(f"Avg small discarded tokens: {summary['avg_small_discarded_tokens']:.2f}")
+    print(f"Avg large generated tokens: {summary['avg_large_generated_tokens']:.2f}")
+    print(f"Avg large takeover tokens: {summary['avg_large_takeover_tokens']:.2f}")
+    print(
+        f"Avg latency: {summary['latency_mean_s']:.4f}s | "
+        f"median: {summary['latency_median_s']:.4f}s | "
+        f"p90: {summary['latency_p90_s']:.4f}s"
+    )
+    if not np.isnan(summary["avg_param_weighted_token_cost"]):
+        print(f"Avg param-weighted token cost: {summary['avg_param_weighted_token_cost']:.2f}")
+
+
+def main():
+    args = parse_args()
+    args.system_prompt = resolve_system_prompt(args.answer_type, args.system_prompt)
+    thresholds = parse_csv_floats(args.thresholds)
+    if args.small_model_params_b is None:
+        args.small_model_params_b = infer_model_params_b(args.small_model_path)
+    if args.large_model_params_b is None:
+        args.large_model_params_b = infer_model_params_b(args.large_model_path)
+    if args.small_model_params_b is not None and args.large_model_params_b is not None:
+        print(
+            "Using token-cost params: "
+            f"small={args.small_model_params_b}B | large={args.large_model_params_b}B"
+        )
+    else:
+        print("Token-cost params unavailable; pass --small-model-params-b and --large-model-params-b to report cost.")
+
+    print(f"Loading training dataset from: {args.label_path}")
+    dataset = torch.load(args.label_path, weights_only=False)
+
+    requested_feature_key = args.feature_key
+    artifact = load_probe_artifact(args)
+    if artifact is not None:
+        args.feature_key = artifact.get("feature_key", args.feature_key)
+        if requested_feature_key != args.feature_key:
+            print(f"Using artifact feature spec '{args.feature_key}' instead of requested '{requested_feature_key}'.")
+
+    question_records = build_question_records(dataset, args.feature_key)
+    updated_small_records = apply_small_baseline_overrides(question_records, args.small_baseline_path)
+    print(f"Loaded training questions with {args.feature_key}: {len(question_records)}")
+    if updated_small_records:
+        print(f"Overrode stored small-model baseline for {updated_small_records} training questions from: {args.small_baseline_path}")
+
+    eval_question_records = question_records
+    if args.eval_data_path is not None:
+        print(f"Loading separate evaluation dataset from: {args.eval_data_path}")
+        eval_dataset = torch.load(args.eval_data_path, map_location="cpu", weights_only=False)
+        eval_question_records = build_question_records(eval_dataset, args.feature_key)
+        updated_eval_small_records = apply_small_baseline_overrides(eval_question_records, args.small_baseline_path)
+        print(f"Loaded eval questions with {args.feature_key}: {len(eval_question_records)}")
+        if updated_eval_small_records:
+            print(f"Overrode stored small-model baseline for {updated_eval_small_records} eval questions from: {args.small_baseline_path}")
+    if artifact is not None:
+        print(f"Loading fixed probe artifact from: {args.probe_artifact_path}")
+        probe = artifact.get("probe")
+        scaler = artifact["scaler"]
+        train_question_ids = list(artifact["train_question_ids"])
+        if args.eval_data_path is not None:
+            test_question_ids = sorted(eval_question_records.keys())
+        else:
+            test_question_ids = list(artifact["test_question_ids"])
+    else:
+        raise FileNotFoundError(
+            "Multi-handoff scheduler now requires a trained takeover_beneficial artifact. "
+            "Please run core_package/probes/train_probe_artifact_torch.py with the desired label key first."
+        )
+    print(f"Train questions: {len(train_question_ids)} | Test questions: {len(test_question_ids)}")
+
+    test_records = [eval_question_records[question_id] for question_id in sorted(test_question_ids) if question_id in eval_question_records]
+    if args.num_test_questions is not None:
+        test_records = test_records[: args.num_test_questions]
+        print(f"Using first {len(test_records)} held-out questions for multi hand-off simulation.")
+
+    print(f"Loading small model from: {args.small_model_path}")
+    small_tokenizer = AutoTokenizer.from_pretrained(args.small_model_path, local_files_only=True)
+    small_model = AutoModelForCausalLM.from_pretrained(
+        args.small_model_path,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        local_files_only=True,
+    )
+    small_model.eval()
+
+    large_tokenizer = AutoTokenizer.from_pretrained(args.large_model_path, local_files_only=True)
+    if args.large_backend == "hf":
+        print(f"Loading large model from: {args.large_model_path}")
+        large_model = AutoModelForCausalLM.from_pretrained(
+            args.large_model_path,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+            local_files_only=True,
+        )
+        large_model.eval()
+    else:
+        large_model = None
+        served_name = args.vllm_model_name or os.path.basename(args.large_model_path.rstrip("/\\"))
+        print(f"Using vLLM backend for large handoff: {args.vllm_base_url} | served_model={served_name}")
+
+    print(f"Simulating thresholds: {thresholds}")
+    summaries = []
+    for threshold in thresholds:
+        summary = simulate_threshold(
+            test_records=test_records,
+            small_model=small_model,
+            small_tokenizer=small_tokenizer,
+            large_model=large_model,
+            large_tokenizer=large_tokenizer,
+            probe=probe,
+            scaler=scaler,
+            threshold=threshold,
+            args=args,
+            artifact=artifact,
+        )
+        summaries.append(summary)
+        print_summary(summary)
+
+    if args.trace_export_path:
+        export_rows = []
+        for summary in summaries:
+            summary_metrics = {key: value for key, value in summary.items() if key != "per_question_rows"}
+            export_rows.append(
+                {
+                    **summary_metrics,
+                    "per_question_rows": summary["per_question_rows"],
+                }
+            )
+        with open(args.trace_export_path, "w", encoding="utf-8") as f:
+            json.dump(to_jsonable(export_rows), f, ensure_ascii=False, indent=2)
+        print(f"Saved routing traces to: {args.trace_export_path}")
+
+    if args.trace_question_id is not None:
+        for summary in summaries:
+            matched = next(
+                (row for row in summary["per_question_rows"] if int(row["question_id"]) == int(args.trace_question_id)),
+                None,
+            )
+            if matched is not None:
+                print(f"\nDetailed trace for threshold={summary['threshold']:.2f}")
+                print_route_trace(matched)
+                break
+
+    best_summary = max(summaries, key=lambda item: item["scheduled_gain_over_small"])
+    print("\nRecommended observe-and-rollback threshold")
+    print("=" * 50)
+    print(
+        f"threshold={best_summary['threshold']:.2f} | "
+        f"scheduled_accuracy={best_summary['scheduled_accuracy']:.4f} | "
+        f"gain_over_small={best_summary['scheduled_gain_over_small']:+.4f} | "
+        f"trigger_rate={best_summary['trigger_rate']:.4f}"
+    )
+
+
+if __name__ == "__main__":
+    main()
