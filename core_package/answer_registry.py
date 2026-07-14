@@ -80,6 +80,27 @@ COMMON_UNITS = (
 )
 
 
+def extract_multiple_choice_letter_answer(text: str) -> Tuple[str, bool]:
+    """Extract a final A-E choice while avoiding option letters mentioned in reasoning."""
+    if not text:
+        return "", False
+    patterns = (
+        r"(?im)^\s*(?:final\s+)?answer\s*(?:is|:|=)\s*\(?\s*([A-E])\s*\)?\b",
+        r"(?i)\b(?:final\s+)?answer\s+(?:is|=)\s*\(?\s*([A-E])\s*\)?\b",
+        r"(?i)\\boxed\{\s*([A-E])\s*\}",
+    )
+    matches = []
+    for pattern in patterns:
+        matches.extend((match.start(), match.group(1)) for match in re.finditer(pattern, text))
+    if matches:
+        _, answer = max(matches, key=lambda item: item[0])
+        return answer.upper(), True
+    tail = re.findall(r"(?im)^\s*\(?([A-E])\)?[.)]?\s*$", text)
+    if tail:
+        return tail[-1].upper(), True
+    return "", False
+
+
 def _normalize_answer_text(value) -> str:
     if value is None:
         return ""
@@ -411,6 +432,9 @@ def check_answer_correctness(predicted: str, actual: str, answer_type: str) -> b
     if answer_type == "livecodebench_codegen":
         return check_livecodebench_correctness(predicted_text, actual_text)
 
+    if answer_type == "multiple_choice_letter":
+        return predicted_text.strip().upper() == actual_text.strip().upper()
+
     raise ValueError(f"Unsupported answer type for correctness check: {answer_type}")
 
 
@@ -423,6 +447,7 @@ def get_answer_extractor(answer_type: str) -> AnswerExtractor:
         "svamp_numeric": extract_svamp_numeric_answer,
         "svamp_boxed_numeric": extract_svamp_boxed_numeric_answer,
         "livecodebench_codegen": extract_livecodebench_code_answer,
+        "multiple_choice_letter": extract_multiple_choice_letter_answer,
     }
     if answer_type not in extractors:
         raise ValueError(f"Unsupported answer type: {answer_type}")

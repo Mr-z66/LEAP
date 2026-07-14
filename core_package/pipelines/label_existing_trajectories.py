@@ -1,4 +1,5 @@
 import argparse
+import re
 import os
 
 import torch
@@ -49,7 +50,7 @@ def load_existing_rows(path, resume):
 
 
 def processed_question_ids(rows):
-    return {int(row["question_id"]) for row in rows}
+    return {row["question_id"] for row in rows}
 
 
 def save_rows(rows, path):
@@ -95,9 +96,9 @@ def main():
     done_questions = processed_question_ids(labeled_rows)
     newly_processed = 0
 
-    for sample in tqdm(trajectories, desc="Label existing trajectories"):
-        question_id = int(sample["question_id"])
-        if question_id < args.start_question or question_id in done_questions:
+    for question_index, sample in enumerate(tqdm(trajectories, desc="Label existing trajectories")):
+        question_id = sample["question_id"]
+        if question_index < args.start_question or question_id in done_questions:
             continue
 
         chunks = sample.get("chunks", [])
@@ -106,18 +107,53 @@ def main():
             continuation = "\n".join(
                 next_chunk["chunk_text"] for next_chunk in chunks[idx + 1: idx + 1 + args.lookahead_steps]
             )
+            reference_answer = sample.get("ground_truth_answer_text", "")
+            if answer_type == "multiple_choice_letter":
+                reference_answer = (
+                    f"Correct option letter: {sample.get('ground_truth_final_answer', '')}\n"
+                    f"Reference payload: {reference_answer}"
+                )
             prompt = build_clean_judge_prompt(
                 question=sample["question"],
                 prefix_text=chunk["prefix_text"],
                 current_chunk_text=chunk["chunk_text"],
                 continuation_text=continuation,
-                reference_answer=sample.get("ground_truth_answer_text", ""),
+                reference_answer=reference_answer,
                 include_reference_answer=args.include_reference_answer,
                 answer_type=answer_type,
             )
             raw_response = judge_prefix(prompt, judge_tokenizer, judge_model, args)
             judge_result = parse_judge_response(raw_response)
             label, label_source = label_from_judge_result(judge_result, chunk, args)
+            if answer_type == "multiple_choice_letter":
+                answers = re.findall(r"(?im)\bAnswer\s*:\s*([A-E])\b", chunk["prefix_text"])
+                gold = str(sample.get("ground_truth_final_answer", "")).strip().upper()
+                if answers and gold in {"A", "B", "C", "D", "E"} and answers[-1].upper() != gold:
+                    label = 0
+                    label_source = "deterministic_mc_answer_mismatch"
+                elif label == 0 and not judge_result["is_explicit_error"]:
+                    label = -1
+                    label_source = "judge_inconsistent"
+                elif label == 1 and judge_result["is_explicit_error"]:
+                    label = 0
+                    label_source = "judge_consistency_repair"
+                elif (
+                    answers
+                    and answers[-1].upper() == gold
+                    and label == 0
+                    and judge_result["is_explicit_error"]
+                    and any(
+                        phrase in judge_result["reason"].lower()
+                        for phrase in (
+                            "does not match the reference",
+                            "contradicts the reference",
+                            "incorrect as per the reference",
+                            "incorrectly identifies",
+                        )
+                    )
+                ):
+                    label = 1
+                    label_source = "deterministic_mc_reference_consistency"
 
             labeled_rows.append(
                 {
@@ -162,6 +198,8 @@ def main():
                     "judge_prompt": prompt,
                     "judge_raw_response": raw_response,
                     "judge_parse_status": judge_result["parse_status"],
+                    "judge_is_explicit_error": judge_result["is_explicit_error"],
+                    "judge_is_ambiguous": judge_result["is_ambiguous"],
                     "judge_confidence": judge_result["confidence"],
                     "judge_error_type": judge_result["error_type"],
                     "judge_reason": judge_result["reason"],

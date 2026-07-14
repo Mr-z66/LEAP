@@ -172,7 +172,7 @@ def build_question_records(dataset, label_key):
         label_value = int(item[label_key])
         if label_value not in {0, 1}:
             continue
-        question_id = int(item["question_id"])
+        question_id = item["question_id"]
         record = question_records.setdefault(question_id, {"chunks": []})
         record["chunks"].append(item)
 
@@ -230,7 +230,7 @@ def build_feature_arrays(question_records, feature_spec, label_key, args):
     return (
         np.stack(rows),
         np.asarray(labels, dtype=np.float32),
-        np.asarray(groups, dtype=np.int64),
+        np.asarray(groups),
         np.asarray(sample_weights, dtype=np.float32),
     )
 
@@ -317,14 +317,14 @@ def main():
             f"Label {args.label_key!r} has only one class in the dataset: "
             f"labels={unique_labels.tolist()} counts={label_counts.tolist()}"
         )
-    if len(set(int(qid) for qid in groups)) < 3:
+    if len(set(groups.tolist())) < 3:
         raise ValueError("Need at least three question groups to make train/val/test grouped splits.")
 
     outer_splitter = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.random_state)
     train_pool_indices, test_indices = next(outer_splitter.split(X, y, groups))
 
     inner_groups = groups[train_pool_indices]
-    if len(set(int(qid) for qid in inner_groups)) < 2:
+    if len(set(inner_groups.tolist())) < 2:
         raise ValueError("Need at least two training question groups to make a validation split.")
     inner_splitter = GroupShuffleSplit(n_splits=1, test_size=args.val_size, random_state=args.random_state + 1)
     inner_train_rel, val_rel = next(inner_splitter.split(X[train_pool_indices], y[train_pool_indices], inner_groups))
@@ -400,14 +400,13 @@ def main():
     probe.load_state_dict(best_state_dict)
     probe = probe.cpu()
 
-    train_question_ids = sorted(set(int(qid) for qid in groups[train_pool_indices]))
-    train_inner_question_ids = sorted(set(int(qid) for qid in groups[inner_train_indices]))
-    val_question_ids = sorted(set(int(qid) for qid in groups[val_indices]))
-    test_question_ids = sorted(set(int(qid) for qid in groups[test_indices]))
+    train_question_ids = sorted(set(groups[train_pool_indices].tolist()), key=str)
+    train_inner_question_ids = sorted(set(groups[inner_train_indices].tolist()), key=str)
+    val_question_ids = sorted(set(groups[val_indices].tolist()), key=str)
+    test_question_ids = sorted(set(groups[test_indices].tolist()), key=str)
     low_entropy_train_count = int(np.sum(train_sample_weights > 1.0))
 
     artifact = {
-        "probe": probe,
         "probe_state_dict": probe.state_dict(),
         "scaler": scaler,
         "feature_key": args.feature_key,

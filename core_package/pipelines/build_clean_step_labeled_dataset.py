@@ -592,6 +592,19 @@ Important rules:
 3. Do not require the final program to be complete at this prefix.
 4. If a code statement/string/markdown fence appears cut off, return label = -1 rather than guessing.
 5. Return JSON only."""
+    elif answer_type == "multiple_choice_letter":
+        label_definition = """Label definition for multiple-choice reasoning:
+- label = 1 if everything explicitly written so far remains compatible with the question and the reference option.
+- label = 0 if the prefix contains an explicit factual/logical error, rejects the reference option for an invalid reason, or states a final `Answer: X` whose letter differs from the reference final answer.
+- label = -1 only if the current chunk is genuinely truncated/ambiguous or the evidence is insufficient.
+
+Important rules:
+1. The reference answer is authoritative. Compare every explicit final `Answer: X` against its letter.
+2. A wrong explicit answer letter is always label = 0, even if earlier prose sounds plausible.
+3. A matching answer letter does not erase an earlier explicit reasoning error.
+4. Incomplete but still valid reasoning is label = 1.
+5. Keep `label`, `is_explicit_error`, and `is_ambiguous` consistent: label 0 means explicit error=true; label 1 means both flags=false; label -1 means ambiguous=true.
+6. Return JSON only."""
     else:
         label_definition = """Label definition:
 - label = 1 if everything explicitly written so far is still mathematically/logically valid, even if the reasoning is incomplete, redundant, verbose, or has not reached the target yet.
