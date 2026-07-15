@@ -542,6 +542,24 @@ def build_generation_prompt_text(tokenizer, question, assistant_prefix, system_p
     return prompt_text, normalized_prefix
 
 
+def has_explicit_terminal_answer(text, answer_type):
+    """Return whether generation emitted the protocol's final-answer marker.
+
+    Numeric answer extractors intentionally include permissive fallbacks for
+    final evaluation.  Those fallbacks must not be used as online stopping
+    criteria because ordinary intermediate numbers would terminate a fixed-N
+    repair after its first chunk.
+    """
+    if not text:
+        return False
+    if answer_type in {"boxed", "math500_qwen_boxed", "svamp_boxed_numeric", "gsm8k_boxed_numeric"}:
+        return bool(re.search(r"\\boxed\s*\{", text))
+    if answer_type == "multiple_choice_letter":
+        return bool(re.search(r"(?im)^\s*(?:final\s+)?answer\s*:\s*[A-E]\b", text))
+    _, has_answer = get_answer_extractor(answer_type)(text)
+    return bool(has_answer)
+
+
 def build_generation_inputs(tokenizer, question, assistant_prefix, system_prompt=DEFAULT_SYSTEM_PROMPT, answer_type=DEFAULT_ANSWER_TYPE):
     prompt_text, normalized_prefix = build_generation_prompt_text(
         tokenizer,
@@ -1355,8 +1373,8 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
                 "cut_reason": result["cut_reason"],
                 "reached_eos": reached_eos,
             })
-            _, has_answer = answer_extractor(prefix or "")
-            if reached_eos or has_answer or total_generated_tokens >= handoff_token_budget:
+            has_terminal_answer = has_explicit_terminal_answer(prefix or "", args.answer_type)
+            if reached_eos or has_terminal_answer or total_generated_tokens >= handoff_token_budget:
                 break
         return {
             "full_reasoning": prefix,
@@ -1441,8 +1459,7 @@ def run_large_handoff(model, tokenizer, question, assistant_prefix, args, num_ch
         chunk_token_ids = []
         cut_reason = None
         generated_text_so_far = (normalized_prefix or "") + decode_tokens(tokenizer, all_token_ids).strip()
-        _, has_answer = answer_extractor(generated_text_so_far)
-        if has_answer:
+        if has_explicit_terminal_answer(generated_text_so_far, args.answer_type):
             break
 
     if chunk_token_ids:
@@ -2111,8 +2128,8 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             reset_prev_chunk = True
             cooldown_remaining = args.cooldown_chunks
             previous_combined_score = None
-            _, large_has_answer = answer_extractor(prefix or "")
-            if args.controller_ablation_mode == "no_return" or large_result["reached_eos"] or large_has_answer:
+            large_has_terminal_answer = has_explicit_terminal_answer(prefix or "", args.answer_type)
+            if args.controller_ablation_mode == "no_return" or large_result["reached_eos"] or large_has_terminal_answer:
                 break
             continue
 
