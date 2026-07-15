@@ -176,6 +176,17 @@ def parse_args():
     )
     parser.add_argument("--cooldown-chunks", type=int, default=SCHEDULER.cooldown_chunks, help="How many accepted small-model chunks to wait before another rollback handoff is allowed.")
     parser.add_argument(
+        "--controller-ablation-mode",
+        choices=["standard", "no_rollback", "slm_repair", "no_return", "no_intervention"],
+        default="standard",
+        help=(
+            "Controller-only ablation. standard uses the configured LEAP controller; "
+            "no_rollback retains the risky SLM chunk before LLM repair; slm_repair rolls "
+            "back and assigns the repair chunks to the SLM; no_return rolls back and lets "
+            "the LLM continue to the answer/token limit; no_intervention disables handoffs."
+        ),
+    )
+    parser.add_argument(
         "--require-consecutive-risk",
         action="store_true",
         help="Require two consecutive risky chunks before triggering handoff. Off by default so the old single-chunk trigger can be recovered by simply omitting this flag.",
@@ -1842,6 +1853,8 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
     route_trace = []
     previous_combined_score = None
     rolled_back_answer = ""
+    if args.controller_ablation_mode == "no_intervention":
+        args.max_handoffs = 0
     if args.persistent_kv_cache and (args.large_backend != "hf" or args.adaptive_large_handoff or args.handoff_mode != "takeover"):
         raise ValueError("--persistent-kv-cache currently requires HF backend, fixed takeover handoff")
     small_session = IncrementalKVSession(small_model) if args.persistent_kv_cache else None
@@ -1915,9 +1928,11 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             trigger_scores.append(combined_score)
             trigger_progresses.append(progress_ratio)
 
+            should_rollback = args.controller_ablation_mode != "no_rollback"
+            handoff_prefix = safe_prefix if should_rollback else small_chunk["full_reasoning"]
             route_trace.append(
                 {
-                    "event": "small_observe_rollback",
+                    "event": "small_observe_rollback" if should_rollback else "small_observe_no_rollback",
                     "chunk_id": int(small_chunk["chunk_id"]),
                     "chunk_text": small_chunk["chunk_text"],
                     "generated_token_count": small_chunk["generated_token_count"],
@@ -1930,19 +1945,49 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 }
             )
 
-            discarded_answer, discarded_has_answer = answer_extractor(small_chunk["full_reasoning"])
-            if discarded_has_answer:
-                rolled_back_answer = discarded_answer
+            if should_rollback:
+                discarded_answer, discarded_has_answer = answer_extractor(small_chunk["full_reasoning"])
+                if discarded_has_answer:
+                    rolled_back_answer = discarded_answer
 
-            # Roll back the discarded small-model chunk before applying the large-model handoff.
-            total_tokens -= small_chunk["generated_token_count"]
-            total_small_tokens -= small_chunk["generated_token_count"]
-            total_small_discarded_tokens += small_chunk["generated_token_count"]
-            runtime_small_chunks.pop()
-            if small_session is not None:
-                small_session.restore(safe_checkpoint)
+                # Roll back the discarded small-model chunk before applying the repair policy.
+                total_tokens -= small_chunk["generated_token_count"]
+                total_small_tokens -= small_chunk["generated_token_count"]
+                total_small_discarded_tokens += small_chunk["generated_token_count"]
+                runtime_small_chunks.pop()
+                if small_session is not None:
+                    small_session.restore(safe_checkpoint)
 
-            if args.handoff_mode == "rewrite_current_step":
+            repair_with_slm = args.controller_ablation_mode == "slm_repair"
+            if repair_with_slm:
+                remaining_handoff_budget = max(
+                    args.max_new_tokens - total_tokens + int(args.large_extra_token_budget), 1
+                )
+                large_result = run_large_handoff(
+                    model=small_model,
+                    tokenizer=small_tokenizer,
+                    question=question,
+                    assistant_prefix=handoff_prefix,
+                    args=args,
+                    num_chunks=args.large_handoff_chunks,
+                    max_total_new_tokens=remaining_handoff_budget,
+                    session=small_session,
+                )
+            elif args.controller_ablation_mode == "no_return":
+                remaining_handoff_budget = max(
+                    args.max_new_tokens - total_tokens + int(args.large_extra_token_budget), 1
+                )
+                large_result = run_large_handoff(
+                    model=large_model,
+                    tokenizer=large_tokenizer,
+                    question=question,
+                    assistant_prefix=handoff_prefix,
+                    args=args,
+                    num_chunks=max(int(args.max_new_tokens), 1),
+                    max_total_new_tokens=remaining_handoff_budget,
+                    session=large_session,
+                )
+            elif args.handoff_mode == "rewrite_current_step":
                 remaining_handoff_budget = max(
                     args.max_new_tokens - total_tokens + int(args.large_extra_token_budget), 1
                 )
@@ -1950,7 +1995,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     model=large_model,
                     tokenizer=large_tokenizer,
                     question=question,
-                    assistant_prefix=safe_prefix,
+                    assistant_prefix=handoff_prefix,
                     args=args,
                     max_total_new_tokens=remaining_handoff_budget,
                 )
@@ -1962,7 +2007,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     model=large_model,
                     tokenizer=large_tokenizer,
                     question=question,
-                    assistant_prefix=safe_prefix,
+                    assistant_prefix=handoff_prefix,
                     args=args,
                     num_chunks=1,
                     max_total_new_tokens=remaining_handoff_budget,
@@ -1971,7 +2016,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             elif args.adaptive_large_handoff:
                 large_result = run_adaptive_large_handoff(
                     question=question,
-                    assistant_prefix=safe_prefix,
+                    assistant_prefix=handoff_prefix,
                     current_total_tokens=total_tokens,
                     next_chunk_index=chunk_index,
                     runtime_small_chunks=runtime_small_chunks,
@@ -1993,7 +2038,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                     model=large_model,
                     tokenizer=large_tokenizer,
                     question=question,
-                    assistant_prefix=safe_prefix,
+                    assistant_prefix=handoff_prefix,
                     args=args,
                     num_chunks=args.large_handoff_chunks,
                     max_total_new_tokens=remaining_handoff_budget,
@@ -2001,9 +2046,35 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                 )
             prefix = large_result["full_reasoning"]
             total_tokens += large_result["generated_token_count"]
-            total_large_tokens += large_result["generated_token_count"]
+            if repair_with_slm:
+                total_small_tokens += large_result["generated_token_count"]
+                total_small_actual_tokens += large_result["generated_token_count"]
+            else:
+                total_large_tokens += large_result["generated_token_count"]
             handoff_count += 1
-            if args.handoff_mode in {"rewrite_current_chunk", "rewrite_current_step"}:
+            if repair_with_slm:
+                route_trace.append(
+                    {
+                        "event": "small_repair",
+                        "handoff_index": handoff_count,
+                        "mode": "slm_repair",
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                        "chunks": large_result["chunks"],
+                    }
+                )
+            elif args.controller_ablation_mode == "no_return":
+                route_trace.append(
+                    {
+                        "event": "large_handoff",
+                        "handoff_index": handoff_count,
+                        "mode": "no_return",
+                        "generated_token_count": large_result["generated_token_count"],
+                        "generated_chunks": large_result["generated_chunks"],
+                        "chunks": large_result["chunks"],
+                    }
+                )
+            elif args.handoff_mode in {"rewrite_current_chunk", "rewrite_current_step"}:
                 route_trace.append(
                     {
                         "event": "large_handoff",
@@ -2036,12 +2107,12 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
                         "chunks": large_result["chunks"],
                     }
                 )
-            chunk_index += large_result["generated_chunks"]
+            chunk_index += large_result["generated_chunks"] + (0 if should_rollback else 1)
             reset_prev_chunk = True
             cooldown_remaining = args.cooldown_chunks
             previous_combined_score = None
             _, large_has_answer = answer_extractor(prefix or "")
-            if large_result["reached_eos"] or large_has_answer:
+            if args.controller_ablation_mode == "no_return" or large_result["reached_eos"] or large_has_answer:
                 break
             continue
 
@@ -2114,6 +2185,7 @@ def simulate_question(record, small_model, small_tokenizer, large_model, large_t
             args.answer_type,
         )
     return {
+        "controller_ablation_mode": args.controller_ablation_mode,
         "scheduled_is_correct": scheduled_is_correct,
         "scheduled_final_answer": final_answer,
         "full_reasoning": final_reasoning,
@@ -2241,6 +2313,16 @@ def simulate_threshold(test_records, small_model, small_tokenizer, large_model, 
     total_questions = len(test_records)
     correct_questions = total_questions - error_questions
     return {
+        "controller_ablation_mode": args.controller_ablation_mode,
+        "runtime_chunking": args.runtime_chunking,
+        "handoff_mode": args.handoff_mode,
+        "large_handoff_chunks": args.large_handoff_chunks,
+        "max_handoffs": args.max_handoffs,
+        "cooldown_chunks": args.cooldown_chunks,
+        "adaptive_large_handoff": args.adaptive_large_handoff,
+        "persistent_kv_cache": args.persistent_kv_cache,
+        "answer_type": args.answer_type,
+        "max_new_tokens": args.max_new_tokens,
         "threshold": threshold,
         "tail_bonus_weight": args.tail_bonus_weight,
         "questions_total": total_questions,
